@@ -1,0 +1,25 @@
+"use strict";
+/*
+ * ATTENTION: An "eval-source-map" devtool has been used.
+ * This devtool is neither made for production nor for readable output files.
+ * It uses "eval()" calls to create a separate source file with attached SourceMaps in the browser devtools.
+ * If you are trying to read the output file, select a different devtool (https://webpack.js.org/configuration/devtool/)
+ * or disable the default devtool with "devtool: false".
+ * If you are looking for production-ready output files, see mode: "production" (https://webpack.js.org/configuration/mode/).
+ */
+exports.id = "_rsc_i18n_locales_it_json";
+exports.ids = ["_rsc_i18n_locales_it_json"];
+exports.modules = {
+
+/***/ "(rsc)/./i18n/locales/it.json":
+/*!******************************!*\
+  !*** ./i18n/locales/it.json ***!
+  \******************************/
+/***/ ((module) => {
+
+module.exports = JSON.parse('{"form":{"title":"Fattura","description":"Genera Fattura","newInvBadge":"Nuova Fattura","wizard":{"fromAndTo":"Da & A","invoiceDetails":"Dettagli Fattura","lineItems":"Elementi Linea","paymentInfo":"Informazioni Pagamento","summary":"Riassunto","next":"Avanti","back":"Indietro"},"steps":{"fromAndTo":{"billFrom":"Fattura Da","billTo":"Fattura A","name":"Nome","address":"Indirizzo","zipCode":"CAP","city":"Città","country":"Paese","email":"Email","phone":"Telefono","addCustomInput":"Aggiungi Campo Custom","sender":"Mittente","receiver":"Destinatario"},"invoiceDetails":{"heading":"Dettagli Fattura","invoiceLogo":{"label":"Logo Fattura","placeholder":"Fare clic per caricare un\'immagine"},"invoiceNumber":"Numero Fattura","issuedDate":"Data di emissione","dueDate":"Data di scadenza","currency":"Valuta"},"lineItems":{"heading":"Elementi","item":"Elemento","name":"Nome","quantity":"Quantità","rate":"Tasso","total":"Totale","description":"Descrizione","addNewItem":"Aggiungi nuovo elemento","removeItem":"Rimuovi Elemento"},"paymentInfo":{"heading":"Informazioni sul pagamento","bankName":"Nome della banca","accountName":"Intestatario del conto","accountNumber":"Numero Conto"},"summary":{"heading":"Sintesi","signature":{"heading":"Firma","placeholder":"Fare clic per aggiungere la firma","draw":"Disegno","type":"Digita","upload":"Carica"},"additionalNotes":"Note aggiuntive","paymentTerms":"Termini di pagamento","discount":"Sconto","tax":"Imposte (IVA)","shipping":"Spedizione","subTotal":"Imponibile","totalAmount":"Importo totale","includeTotalInWords":"Includere il totale in parole?","yes":"Si","no":"No"}}},"actions":{"title":"Azioni","description":"Operazioni e anteprima","loadInvoice":"Caricare la fattura","exportInvoice":"Esportazione della fattura","newInvoice":"Nuova fattura","generatePdf":"Generare PDF","pdfView":"Vista in PDF"},"footer":{"developedBy":"Sviluppato da"}}');
+
+/***/ })
+
+};
+;
