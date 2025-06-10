@@ -5,7 +5,7 @@
     "scripts": {
         "dev": "next dev",
         "build": "next build",
-         "start": " node server.js",
+        "start": " next start",
         "lint": "next lint",
         "analyze": "cross-env ANALYZE=true next build"
     },
