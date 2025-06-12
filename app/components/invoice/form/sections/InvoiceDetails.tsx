@@ -29,8 +29,12 @@ const InvoiceDetails = () => {
         if (response.ok && data.invoiceNumber) {
           let invoiceNumber = data.invoiceNumber;
           const isInvoiceValue = invoiceNumber.startsWith("INV");
-          setValue("details.isInvoice", isInvoiceValue, { shouldValidate: true });
-          setValue("details.invoiceNumber", invoiceNumber, { shouldValidate: true });
+          setValue("details.isInvoice", isInvoiceValue, {
+            shouldValidate: true,
+          });
+          setValue("details.invoiceNumber", invoiceNumber, {
+            shouldValidate: true,
+          });
           setInvoiceNum(invoiceNumber);
         } else {
           const fallback = `INV-${Date.now()}`;
@@ -50,13 +54,15 @@ const InvoiceDetails = () => {
     fetchInvoiceNumber();
   }, [setValue]);
 
-  const handleSwitchChange = (checked:any) => {
+  const handleSwitchChange = (checked: any) => {
     setValue("details.isInvoice", checked, { shouldValidate: true });
     if (invoiceNum) {
       const newInvoiceNum = checked
         ? invoiceNum.replace(/^QUOT/, "INV")
         : invoiceNum.replace(/^INV/, "QUOT");
-      setValue("details.invoiceNumber", newInvoiceNum, { shouldValidate: true });
+      setValue("details.invoiceNumber", newInvoiceNum, {
+        shouldValidate: true,
+      });
       setInvoiceNum(newInvoiceNum);
     }
   };
@@ -65,16 +71,16 @@ const InvoiceDetails = () => {
     <section className="flex flex-col flex-wrap gap-5">
       <Subheading>{_t("form.steps.invoiceDetails.heading")}:</Subheading>
       <div className="flex flex-row flex-wrap gap-5">
-        <div className="flex items-center gap-2">
-          <Switch
-            checked={isInvoice} // Controlled by form value
-            onCheckedChange={handleSwitchChange}
-          />
-          <span className="text-sm">
-            {isInvoice ? "Invoice" : "Quote"}
-          </span>
-        </div>
         <div className="flex flex-col gap-2">
+          <div className="flex items-center gap-2 w-full mb-2">
+            <label >PDF Type</label>
+            <Switch
+              checked={isInvoice} 
+              onCheckedChange={handleSwitchChange}
+              className="ml-[50px]"
+            />
+            <span className="text-sm">{isInvoice ? "Invoice" : "Quote"}</span>
+          </div>
           <FormInput
             name="details.invoiceNumber"
             label={_t("form.steps.invoiceDetails.invoiceNumber")}
