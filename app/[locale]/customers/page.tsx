@@ -59,7 +59,12 @@ const Page = () => {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
   const [authChecked, setAuthChecked] = useState<boolean>(false);
+  const [mounted, setMounted] = useState<boolean>(false);
   const router = useRouter();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -190,7 +195,7 @@ const Page = () => {
     }
   };
 
-  if (!authChecked) {
+  if (!mounted || !authChecked) {
     return (
       <div className="flex justify-center items-center h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -227,7 +232,7 @@ const Page = () => {
       ) : (
         <Table className={filteredUsers.length > 0 ? "w-full" : "w-1/2 mx-auto"}>
           <TableHeader>
-            <TableRow>
+            <TableRow className="bg-muted/50">
               <TableHead>Name</TableHead>
               <TableHead>Email</TableHead>
               <TableHead>Phone</TableHead>
@@ -236,7 +241,10 @@ const Page = () => {
           </TableHeader>
           <TableBody>
             {filteredUsers.map((user) => (
-              <TableRow key={user._id}>
+              <TableRow
+                key={user._id}
+                className="odd:bg-muted/50 even:bg-background hover:bg-muted transition-colors"
+              >
                 <TableCell>{user.name}</TableCell>
                 <TableCell>{user.email}</TableCell>
                 <TableCell>{user.phone}</TableCell>
