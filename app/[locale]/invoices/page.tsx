@@ -107,12 +107,7 @@ const Page: React.FC = () => {
   const [authChecked, setAuthChecked] = useState<boolean>(false);
   const [viewInvoiceDialog, setViewInvoiceDialog] = useState<boolean>(false);
   const [viewInvoice, setViewInvoice] = useState<Invoice | undefined>(undefined);
-  const [mounted, setMounted] = useState<boolean>(false);
   const router = useRouter();
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -181,55 +176,52 @@ const Page: React.FC = () => {
     setSearchTerm(e.target.value);
   };
 
-  if (!mounted || !authChecked) {
+  if (!authChecked) {
     return (
       <div className="flex justify-center items-center h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <Loader2 className={`h-8 w-8 animate-spin ${theme === "dark" ? "text-gray-300" : "text-gray-500"}`} />
       </div>
     );
   }
 
   return (
-    <div className="p-6 max-w-6xl mx-auto transition-colors duration-300">
+    <div className={`p-6 max-w-6xl mx-auto ${theme === "dark" ? "bg-gray-900 text-white" : "bg-white text-black"} transition-colors duration-300`}>
       <h1 className="text-2xl font-bold mb-4">Invoice Management</h1>
 
       <div className="flex items-center justify-between mb-4">
         <div className="relative w-64">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
           <Input
             placeholder="Search by invoice number, sender, or email..."
             value={searchTerm}
             onChange={handleSearch}
-            className="pl-10"
+            className={`pl-10 ${theme === "dark" ? "bg-gray-800 text-white border-gray-700" : "bg-white text-black border-gray-300"}`}
           />
         </div>
       </div>
 
       {loading ? (
         <div className="flex justify-center items-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          <Loader2 className={`h-8 w-8 animate-spin ${theme === "dark" ? "text-gray-300" : "text-gray-500"}`} />
         </div>
       ) : filteredInvoices.length === 0 ? (
-        <div className="text-center text-lg text-muted-foreground mt-8">
+        <div className={`text-center text-lg ${theme === "dark" ? "text-gray-300" : "text-gray-500"} mt-8`}>
           No invoices available
         </div>
       ) : (
-        <Table className={filteredInvoices.length > 0 ? "w-full" : "w-1/2 mx-auto"}>
+        <Table className={`${theme === "dark" ? "bg-gray-800 text-white" : "bg-white text-black"} w-full`}>
           <TableHeader>
-            <TableRow className="bg-muted/50">
-              <TableHead>Invoice Number</TableHead>
-              <TableHead>Customer</TableHead>
-              <TableHead>Amount</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Actions</TableHead>
+            <TableRow className={theme === "dark" ? "bg-gray-700" : "bg-gray-100"}>
+              <TableHead className={theme === "dark" ? "text-white" : "text-black"}>Invoice Number</TableHead>
+              <TableHead className={theme === "dark" ? "text-white" : "text-black"}>Customer</TableHead>
+              <TableHead className={theme === "dark" ? "text-white" : "text-black"}>Amount</TableHead>
+              <TableHead className={theme === "dark" ? "text-white" : "text-black"}>Date</TableHead>
+              <TableHead className={theme === "dark" ? "text-white" : "text-black"}>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredInvoices.map((invoice) => (
-              <TableRow
-                key={invoice._id}
-                className="odd:bg-muted/50 even:bg-background hover:bg-muted transition-colors"
-              >
+              <TableRow key={invoice._id} className={theme === "dark" ? "hover:bg-gray-700" : "hover:bg-gray-50"}>
                 <TableCell>{invoice.invoiceNumber}</TableCell>
                 <TableCell>{invoice.receiver.name}</TableCell>
                 <TableCell>
@@ -244,6 +236,7 @@ const Page: React.FC = () => {
                   <Button
                     variant="ghost"
                     size="sm"
+                    className={theme === "dark" ? "bg-gray-600 text-white hover:bg-gray-500" : "bg-gray-200 text-black hover:bg-gray-300"}
                     onClick={() => {
                       setViewInvoiceDialog(true);
                       setViewInvoice(invoice);
@@ -259,12 +252,12 @@ const Page: React.FC = () => {
       )}
 
       <Dialog open={viewInvoiceDialog} onOpenChange={setViewInvoiceDialog}>
-        <DialogContent className="max-w-3xl shadow-lg rounded-lg">
+        <DialogContent className={`${theme === "dark" ? "bg-gray-800 text-white border-gray-700" : "bg-white text-black border-gray-200"} max-w-3xl shadow-lg rounded-lg`}>
           <DialogHeader className="border-b pb-4">
             <DialogTitle className="text-2xl font-bold">
               Invoice #{viewInvoice?.invoiceNumber}
             </DialogTitle>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-gray-500">
               <strong>Created At:</strong>{" "}
               {viewInvoice?.createdAt
                 ? new Date(viewInvoice.createdAt).toLocaleString()
@@ -273,7 +266,7 @@ const Page: React.FC = () => {
           </DialogHeader>
           {viewInvoice && (
             <div className="max-h-[70vh] overflow-y-auto p-4 space-y-6">
-              <div className="bg-muted p-4 rounded-md shadow-sm">
+              <div className={theme === "dark" ? "bg-gray-700 p-4 rounded-md shadow-sm" : "bg-gray-50 p-4 rounded-md shadow-sm"}>
                 <h3 className="text-lg font-semibold mb-2">Invoice Details</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <p className="text-sm">
@@ -282,17 +275,11 @@ const Page: React.FC = () => {
                   </p>
                   <p className="text-sm">
                     <strong>Invoice Date:</strong>{" "}
-                    <span>
-                      {new Date(
-                        viewInvoice.details.invoiceDate
-                      ).toLocaleDateString()}
-                    </span>
+                    <span>{new Date(viewInvoice.details.invoiceDate).toLocaleDateString()}</span>
                   </p>
                   <p className="text-sm">
                     <strong>Due Date:</strong>{" "}
-                    <span>
-                      {new Date(viewInvoice.details.dueDate).toLocaleDateString()}
-                    </span>
+                    <span>{new Date(viewInvoice.details.dueDate).toLocaleDateString()}</span>
                   </p>
                   <p className="text-sm">
                     <strong>Currency:</strong>{" "}
@@ -308,10 +295,8 @@ const Page: React.FC = () => {
                   </p>
                 </div>
               </div>
-              <div className="bg-muted p-4 rounded-md shadow-sm">
-                <h3 className="text-lg font-semibold mb-2">
-                  Receiver Information
-                </h3>
+              <div className={theme === "dark" ? "bg-gray-700 p-4 rounded-md shadow-sm" : "bg-gray-50 p-4 rounded-md shadow-sm"}>
+                <h3 className="text-lg font-semibold mb-2">Receiver Information</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <p className="text-sm">
                     <strong>Name:</strong>{" "}
@@ -339,26 +324,29 @@ const Page: React.FC = () => {
                   </p>
                 </div>
               </div>
-              <div className="bg-muted p-4 rounded-md shadow-sm">
+              <div className={theme === "dark" ? "bg-gray-700 p-4 rounded-md shadow-sm" : "bg-gray-50 p-4 rounded-md shadow-sm"}>
                 <h3 className="text-lg font-semibold mb-2">Items</h3>
                 {viewInvoice.details.items.map((item, index) => (
                   <div
                     key={item._id || index}
-                    className="border p-3 rounded-md my-2 odd:bg-muted/50 even:bg-background"
+                    className={theme === "dark" ? "border border-gray-600 p-3 rounded-md my-2 bg-gray-800" : "border border-gray-200 p-3 rounded-md my-2 bg-white"}
                   >
                     <div className="grid grid-cols-2 gap-4">
                       <p className="text-sm">
-                        <strong>Name:</strong> <span>{item.name}</span>
+                        <strong>Name:</strong>{" "}
+                        <span>{item.name}</span>
                       </p>
                       <p className="text-sm">
                         <strong>Description:</strong>{" "}
                         <span>{item.description}</span>
                       </p>
                       <p className="text-sm">
-                        <strong>Quantity:</strong> <span>{item.quantity}</span>
+                        <strong>Quantity:</strong>{" "}
+                        <span>{item.quantity}</span>
                       </p>
                       <p className="text-sm">
-                        <strong>Unit Price:</strong> <span>{item.unitPrice}</span>
+                        <strong>Unit Price:</strong>{" "}
+                        <span>{item.unitPrice}</span>
                       </p>
                       <p className="text-sm">
                         <strong>Total:</strong>{" "}
@@ -368,10 +356,8 @@ const Page: React.FC = () => {
                   </div>
                 ))}
               </div>
-              <div className="bg-muted p-4 rounded-md shadow-sm">
-                <h3 className="text-lg font-semibold mb-2">
-                  Tax, Discount & Shipping Details
-                </h3>
+              <div className={theme === "dark" ? "bg-gray-700 p-4 rounded-md shadow-sm" : "bg-gray-50 p-4 rounded-md shadow-sm"}>
+                <h3 className="text-lg font-semibold mb-2">Tax, Discount & Shipping Details</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <p className="text-sm">
                     <strong>Tax Amount:</strong>{" "}
@@ -387,10 +373,8 @@ const Page: React.FC = () => {
                   </p>
                 </div>
               </div>
-              <div className="bg-muted p-4 rounded-md shadow-sm">
-                <h3 className="text-lg font-semibold mb-2">
-                  Payment Information
-                </h3>
+              <div className={theme === "dark" ? "bg-gray-700 p-4 rounded-md shadow-sm" : "bg-gray-50 p-4 rounded-md shadow-sm"}>
+                <h3 className="text-lg font-semibold mb-2">Payment Information</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <p className="text-sm">
                     <strong>Bank Name:</strong>{" "}
@@ -398,22 +382,16 @@ const Page: React.FC = () => {
                   </p>
                   <p className="text-sm">
                     <strong>Account Name:</strong>{" "}
-                    <span>
-                      {viewInvoice.details.paymentInformation.accountName}
-                    </span>
+                    <span>{viewInvoice.details.paymentInformation.accountName}</span>
                   </p>
                   <p className="text-sm">
                     <strong>Account Number:</strong>{" "}
-                    <span>
-                      {viewInvoice.details.paymentInformation.accountNumber}
-                    </span>
+                    <span>{viewInvoice.details.paymentInformation.accountNumber}</span>
                   </p>
                 </div>
               </div>
-              <div className="bg-muted p-4 rounded-md shadow-sm">
-                <h3 className="text-lg font-semibold mb-2">
-                  Additional Information
-                </h3>
+              <div className={theme === "dark" ? "bg-gray-700 p-4 rounded-md shadow-sm" : "bg-gray-50 p-4 rounded-md shadow-sm"}>
+                <h3 className="text-lg font-semibold mb-2">Additional Information</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <p className="text-sm">
                     <strong>Additional Notes:</strong>{" "}
@@ -425,9 +403,7 @@ const Page: React.FC = () => {
                   </p>
                   <p className="text-sm">
                     <strong>Signature:</strong>{" "}
-                    <span>
-                      {viewInvoice.details.signature?.data ? "Present" : "N/A"}
-                    </span>
+                    <span>{viewInvoice.details.signature?.data ? "Present" : "N/A"}</span>
                   </p>
                 </div>
               </div>
