@@ -1,1 +1,8 @@
-{}
+{
+
+  "build": {
+    "env": {
+      "PUPPETEER_CACHE_DIR": "/tmp"
+    }
+  }
+}

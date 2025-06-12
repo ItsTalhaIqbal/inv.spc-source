@@ -38,7 +38,6 @@ export const metadata: Metadata = {
     title: "SPC Source",
     description:
         "Spc Source invoice app",
-    icons: [{ rel: "icon", url: Favicon.src }],
     keywords: ROOTKEYWORDS,
     viewport: "width=device-width, initial-scale=1",
     robots: {

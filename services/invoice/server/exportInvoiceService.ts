@@ -33,7 +33,7 @@ export async function generatePdfService(req: NextRequest) {
         defaultViewport: chromium.defaultViewport,
         executablePath: await chromium.executablePath(CHROMIUM_EXECUTABLE_PATH),
         headless: true,
-        ignoreHTTPSErrors: true,
+
       });
     } else {
       const puppeteer = await import("puppeteer");

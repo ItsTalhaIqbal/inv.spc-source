@@ -1,6 +1,7 @@
 {
+  "/api/invoice/auth/token/route": "app/api/invoice/auth/token/route.js",
+  "/api/invoice/customer/route": "app/api/invoice/customer/route.js",
   "/api/invoice/next-number/route": "app/api/invoice/next-number/route.js",
   "/api/invoice/generate/route": "app/api/invoice/generate/route.js",
-  "/api/invoice/new_invoice/route": "app/api/invoice/new_invoice/route.js",
   "/[locale]/page": "app/[locale]/page.js"
 }
