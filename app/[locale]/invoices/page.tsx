@@ -107,7 +107,12 @@ const Page: React.FC = () => {
   const [authChecked, setAuthChecked] = useState<boolean>(false);
   const [viewInvoiceDialog, setViewInvoiceDialog] = useState<boolean>(false);
   const [viewInvoice, setViewInvoice] = useState<Invoice | undefined>(undefined);
+  const [mounted, setMounted] = useState<boolean>(false);
   const router = useRouter();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -176,7 +181,7 @@ const Page: React.FC = () => {
     setSearchTerm(e.target.value);
   };
 
-  if (!authChecked) {
+  if (!mounted || !authChecked) {
     return (
       <div className="flex justify-center items-center h-screen">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -211,7 +216,7 @@ const Page: React.FC = () => {
       ) : (
         <Table className={filteredInvoices.length > 0 ? "w-full" : "w-1/2 mx-auto"}>
           <TableHeader>
-            <TableRow>
+            <TableRow className="bg-muted/50">
               <TableHead>Invoice Number</TableHead>
               <TableHead>Customer</TableHead>
               <TableHead>Amount</TableHead>
@@ -221,7 +226,10 @@ const Page: React.FC = () => {
           </TableHeader>
           <TableBody>
             {filteredInvoices.map((invoice) => (
-              <TableRow key={invoice._id}>
+              <TableRow
+                key={invoice._id}
+                className="odd:bg-muted/50 even:bg-background hover:bg-muted transition-colors"
+              >
                 <TableCell>{invoice.invoiceNumber}</TableCell>
                 <TableCell>{invoice.receiver.name}</TableCell>
                 <TableCell>
@@ -336,7 +344,7 @@ const Page: React.FC = () => {
                 {viewInvoice.details.items.map((item, index) => (
                   <div
                     key={item._id || index}
-                    className="border p-3 rounded-md my-2"
+                    className="border p-3 rounded-md my-2 odd:bg-muted/50 even:bg-background"
                   >
                     <div className="grid grid-cols-2 gap-4">
                       <p className="text-sm">
