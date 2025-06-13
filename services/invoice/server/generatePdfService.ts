@@ -1,5 +1,5 @@
-import chromium from '@sparticuz/chromium-min';
-import puppeteerCore from 'puppeteer-core';
+import chromium from "@sparticuz/chromium-min";
+import puppeteerCore from "puppeteer-core";
 import { InvoiceType } from "@/types";
 import { TAILWIND_CDN } from "@/lib/variables";
 import { connectToDatabase } from "@/lib/mongoose";
@@ -75,7 +75,10 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
 
   // Load Tailwind CSS (prefer local file, fallback to CDN)
   let tailwindCss = "";
-  const localTailwindPath = path.resolve(process.cwd(), "public/tailwind.min.css");
+  const localTailwindPath = path.resolve(
+    process.cwd(),
+    "public/tailwind.min.css"
+  );
   try {
     if (fs.existsSync(localTailwindPath)) {
       tailwindCss = fs.readFileSync(localTailwindPath, "utf8");
@@ -89,8 +92,14 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
 
   // Prepare tax, discount, and shipping details
   const taxDetails = details.taxDetails || { amount: 0, amountType: "amount" };
-  const discountDetails = details.discountDetails || { amount: 0, amountType: "amount" };
-  const shippingDetails = details.shippingDetails || { cost: 0, costType: "amount" };
+  const discountDetails = details.discountDetails || {
+    amount: 0,
+    amountType: "amount",
+  };
+  const shippingDetails = details.shippingDetails || {
+    cost: 0,
+    costType: "amount",
+  };
 
   const hasTax = taxDetails.amount && taxDetails.amount > 0;
   const hasDiscount = discountDetails.amount && discountDetails.amount > 0;
@@ -220,9 +229,11 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
           <div class="invoice-details">
             <p class="text-base text-gray-800">${senderData.phone || ""}</p>
             <p class="text-base text-gray-800">${senderData.address || ""}</p>
-            <h2 class="text-xl font-bold text-gray-800 mt-2">${details.invoiceNumber.includes("INV") ? "INVOICE# " : "QUOATION# "} <span class="text-lg text-gray-600 font-thin">${
-              details.invoiceNumber || ""
-            }</span> </h2>
+            <h2 class="text-xl font-bold text-gray-800 mt-2">${
+              details.invoiceNumber.includes("INV") ? "INVOICE# " : "QUOATION# "
+            } <span class="text-lg text-gray-600 font-thin">${
+    details.invoiceNumber || ""
+  }</span> </h2>
             <p class="text-base text-gray-800">${new Date(
               details.invoiceDate || new Date()
             ).toLocaleDateString("en-US", DATE_OPTIONS)}</p>
@@ -265,40 +276,49 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
         </div>
 
         <div class="footer">
-          <div class="flex justify-between">
-            <p class="text-base font-bold text-gray-800">Receiver's Sign _________________</p>
-            <p class="text-base font-bold text-gray-800">for ${
-              senderData.name || ""
-            }</p>
-          </div>
-          <div class="footer-bar">
-            <div class="flex items-center">
-              <span class="mr-2 text-base">📧</span>
-              <span class="text-base">${senderData.email || ""}</span>
-            </div>
-            <div class="flex items-center">
-              <span class="mr-2 text-base">🌐</span>
-              <span class="text-base">www.example.com</span>
-            </div>
-          </div>
-        </div>
+  <div class="flex justify-between">
+    <p class="text-base font-bold text-gray-800">Receiver's Sign _________________</p>
+    <p class="text-base font-bold text-gray-800">for ${
+      senderData.name || ""
+    }</p>
+  </div>
+  <div class="footer-bar" style="width: 100%; background-color: #fb923c; color: black; padding: 10px; display: flex; justify-content: space-between; align-items: center;">
+    <div class="flex items-center">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
+        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+        <polyline points="22,6 12,13 2,6"></polyline>
+      </svg>
+      <span class="text-base">${
+        senderData.email || "contact@spcsource.com"
+      }</span>
+    </div>
+    <div class="flex items-center">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
+        <circle cx="12" cy="12" r="10"></circle>
+        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+        <path d="M2 12h20"></path>
+      </svg>
+      <span class="text-base">www.example.com</span>
+    </div>
+  </div>
+</div>
       </body>
     </html>
   `;
 
   // Clean up /tmp to avoid ETXTBSY
   try {
-    const tmpDir = '/tmp';
+    const tmpDir = "/tmp";
     if (fs.existsSync(tmpDir)) {
       const files = fs.readdirSync(tmpDir);
       for (const file of files) {
-        if (file.startsWith('chromium') || file.includes('puppeteer')) {
+        if (file.startsWith("chromium") || file.includes("puppeteer")) {
           fs.unlinkSync(path.join(tmpDir, file));
         }
       }
     }
   } catch (cleanupError) {
-    console.warn('Failed to clean /tmp:', cleanupError);
+    console.warn("Failed to clean /tmp:", cleanupError);
   }
 
   // Generate PDF
@@ -308,40 +328,44 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
     const launchOptions = {
       args: [
         ...chromium.args,
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--single-process',
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--single-process",
       ],
-      executablePath: await chromium.executablePath('https://github.com/Sparticuz/chromium/releases/download/v133.0.0/chromium-v133.0.0-pack.tar'),
-      headless: 'new',
+      executablePath: await chromium.executablePath(
+        "https://github.com/Sparticuz/chromium/releases/download/v133.0.0/chromium-v133.0.0-pack.tar"
+      ),
+      headless: "new",
       defaultViewport: chromium.defaultViewport,
       ignoreHTTPSErrors: true,
     };
 
-    console.log('Chromium executable path:', launchOptions.executablePath); // Debug log
+    console.log("Chromium executable path:", launchOptions.executablePath); // Debug log
 
-    browser = await puppeteerCore.launch(launchOptions  as any);
+    browser = await puppeteerCore.launch(launchOptions as any);
     const page = await browser.newPage();
 
     await page.setContent(htmlTemplate, {
-      waitUntil: 'domcontentloaded',
+      waitUntil: "domcontentloaded",
       timeout: 30000,
     });
 
     const pdfBuffer: any = await page.pdf({
-      format: 'A4',
+      format: "A4",
       printBackground: true,
-      margin: { top: '50px', right: '50px', bottom: '50px', left: '50px' },
+      margin: { top: "50px", right: "50px", bottom: "50px", left: "50px" },
     });
 
     return pdfBuffer;
-  } catch (error:any) {
-    console.error('Error generating PDF:', {
+  } catch (error: any) {
+    console.error("Error generating PDF:", {
       message: error.message,
       stack: error.stack,
       env: process.env.NODE_ENV,
-      executablePath: await chromium.executablePath('https://github.com/Sparticuz/chromium/releases/download/v133.0.0/chromium-v133.0.0-pack.tar'),
+      executablePath: await chromium.executablePath(
+        "https://github.com/Sparticuz/chromium/releases/download/v133.0.0/chromium-v133.0.0-pack.tar"
+      ),
     });
     throw error;
   } finally {
