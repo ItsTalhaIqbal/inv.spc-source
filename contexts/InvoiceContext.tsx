@@ -175,7 +175,7 @@ export const InvoiceContextProvider = ({
     }
   }, [invoicePdf, getValues]);
 
- const generatePdf = useCallback(
+const generatePdf = useCallback(
   async (data: InvoiceType) => {
     if (!data) {
       return;
@@ -227,11 +227,11 @@ export const InvoiceContextProvider = ({
           setInvoicePdf(result);
           pdfGenerationSuccess();
 
-          // Call downloadPdf and wait briefly to ensure the download is initiated
+          // Call downloadPdf and wait to ensure the download is initiated
           await new Promise<void>((resolve) => {
             downloadPdf();
-            // Small delay to allow the browser to initiate the download
-            setTimeout(resolve, 500); // Adjust delay as needed (500ms is usually sufficient)
+            // Increased delay to ensure download initiation
+            setTimeout(resolve, 1000); // Increased to 1000ms for reliability
           });
 
           // Save the invoice to the server
@@ -259,7 +259,10 @@ export const InvoiceContextProvider = ({
             console.error("Error saving invoice to server:", error);
           }
 
-          // Now call newInvoice after the download has been initiated
+          // Set loading to false after download initiation
+          setInvoicePdfLoading(false);
+
+          // Call newInvoice after download and loading state update
           newInvoice();
         }
         break;
@@ -267,12 +270,10 @@ export const InvoiceContextProvider = ({
         attempts++;
         if (attempts === maxAttempts) {
           console.error("Max attempts reached for generating PDF");
+          setInvoicePdfLoading(false); // Ensure loading is false on failure
           break;
         }
         await new Promise((resolve) => setTimeout(resolve, 1000 * attempts));
-      } finally {
-        // Only set loading to false after the download is initiated
-        setInvoicePdfLoading(false);
       }
     }
   },
