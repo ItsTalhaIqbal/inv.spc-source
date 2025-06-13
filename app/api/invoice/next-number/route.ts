@@ -16,7 +16,7 @@ export async function GET() {
       invoiceNumber: { $regex: `${year}${month}`, $options: 'i' },
     });
     const sequenceNumber = invoiceCount + 1;
-    const invoiceNumber = `QUOT${year}${month}${String(sequenceNumber).padStart(2, '0')}`;
+    const invoiceNumber = `QUT${year}${month}${String(sequenceNumber).padStart(2, '0')}`;
 
     return NextResponse.json({ invoiceNumber });
   } catch (error: any) {

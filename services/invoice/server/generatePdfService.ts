@@ -254,7 +254,6 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
         </div>
 
         <div class="summary">
-          <p class="text-base text-gray-800">Received above items in good condition</p>
           <div class="text-right">
             ${taxHtml}
             ${discountHtml}

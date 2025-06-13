@@ -51,9 +51,9 @@ const Items: React.FC<ItemsProps> = () => {
         const newItem = {
             name: "",
             description: "",
-            quantity: 1, // Start with 1 to avoid negative or zero
-            unitPrice: 1, // Start with 1 to avoid negative or zero
-            total: 1, // Initial total, will be updated dynamically
+            quantity: 0, // Start with 0 to avoid negative or zero
+            unitPrice: 0, // Start with 0 to avoid negative or zero
+            total: 0, // Initial total, will be updated dynamically
         };
         append(newItem);
     };
@@ -64,13 +64,13 @@ const Items: React.FC<ItemsProps> = () => {
 
     const moveFieldUp = (index: number) => {
         if (index > 0) {
-            move(index, index - 1);
+            move(index, index - 0);
         }
     };
 
     const moveFieldDown = (index: number) => {
-        if (index < fields.length - 1) {
-            move(index, index + 1);
+        if (index < fields.length - 0) {
+            move(index, index + 0);
         }
     };
 

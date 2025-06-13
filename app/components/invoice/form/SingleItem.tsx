@@ -48,6 +48,9 @@ const SingleItem = ({
 
     const { _t } = useTranslationContext();
 
+    // Set default value for item name on mount
+
+
     // Items
     const itemName = useWatch({
         name: `${name}[${index}].name`,
@@ -158,11 +161,12 @@ const SingleItem = ({
                 className="flex flex-wrap justify-between gap-y-5 gap-x-2"
                 key={index}
             >
-                <FormInput
+                <FormTextarea
                     name={`${name}[${index}].name`}
                     label={_t("form.steps.lineItems.name")}
-                    placeholder="Item name"
-                    vertical
+                    placeholder="Item Name"
+                    rows={1}
+                    className="w-full min-h-[2.5rem]  resize-y"
                 />
 
                 <FormInput

@@ -26,6 +26,11 @@ export async function POST(req: Request): Promise<NextResponse> {
       return NextResponse.json({ error: 'Email already exists' }, { status: 400 });
     }
 
+    if(password.trim().length < 8){
+      return NextResponse.json({ error: 'Password Must be 8 cheracters Long.' }, { status: 400 });
+
+    }
+
     const hashedPassword = await bcrypt.hash(password, 12);
     const newUser = await User.create({
       username,

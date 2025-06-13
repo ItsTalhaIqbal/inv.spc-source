@@ -94,7 +94,7 @@ export default async function LocaleLayout({
 
                         <div className="flex flex-col">{children}</div>
 
-                        <BaseFooter />
+                        {/* <BaseFooter /> */}
 
                         {/* Toast component */}
                         <Toaster />

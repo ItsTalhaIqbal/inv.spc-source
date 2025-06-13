@@ -9,9 +9,9 @@ import { useFormContext, useWatch } from "react-hook-form";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
+  CardDescription,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
@@ -33,7 +33,7 @@ import {
 
 // Contexts
 import { useTranslationContext } from "@/contexts/TranslationContext";
-import { FileInput, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useInvoiceContext } from "@/contexts/InvoiceContext";
 
 const InvoiceForm = () => {
@@ -50,7 +50,6 @@ const InvoiceForm = () => {
   // Auto-download PDF when generation is complete
   useEffect(() => {
     if (!invoicePdfLoading && invoicePdfLoading !== undefined) {
-      // This will trigger when invoicePdfLoading changes from true to false
       downloadPdf();
     }
   }, [invoicePdfLoading, downloadPdf]);
@@ -87,17 +86,6 @@ const InvoiceForm = () => {
                     {_t("actions.newInvoice")}
                   </BaseButton>
                 </NewInvoiceAlert>
-
-                {/* Generate pdf button */}
-                <BaseButton
-                  type="submit"
-                  tooltipLabel="Generate your invoice"
-                  loading={invoicePdfLoading}
-                  loadingText="Generating your invoice"
-                >
-                  <FileInput />
-                  {_t("actions.generatePdf")}
-                </BaseButton>
               </div>
             </div>
             <CardDescription>{_t("form.description")}</CardDescription>
@@ -111,19 +99,10 @@ const InvoiceForm = () => {
                   {/* <BillFromSection /> */}
                   <BillToSection />
                 </div>
-              </WizardStep>
-              <WizardStep>
                 <div className="flex flex-wrap gap-y-10">
                   <InvoiceDetails />
                 </div>
-              </WizardStep>
-              <WizardStep>
                 <Items />
-              </WizardStep>
-              {/* <WizardStep>
-                                <PaymentInformation />
-                            </WizardStep> */}
-              <WizardStep>
                 <InvoiceSummary />
               </WizardStep>
             </Wizard>

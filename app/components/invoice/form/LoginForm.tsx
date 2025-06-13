@@ -39,14 +39,16 @@ const LoginForm = () => {
     }
 
     try {
-      
-      const data = { username, password, action: "login" };
+      const trimedUsername= username.trim()
+      const data = { username:trimedUsername, password, action: "login" };
 
-      const res = await axios.post<LoginResponse>("/api/invoice/auth/login", data);
+      const res = await axios.post<LoginResponse>(
+        "/api/invoice/auth/login",
+        data
+      );
       const token = res.data.token;
-
       await setAuthentication(token);
-        router.replace("/");
+      router.replace("/");
 
       // const user = await isLogin();
       // setUserData(user); // Store user data
@@ -58,9 +60,10 @@ const LoginForm = () => {
       //   router.replace("/");
       // }, 2000); // Delay redirect to inspect logs
     } catch (error: any) {
+      console.log(error)
       if (error instanceof AxiosError && error.response) {
         setErrorMsg(
-          error.response.data?.error || "Invalid username or password."
+          error.response.data?.error
         );
       } else {
         setErrorMsg("An unexpected error occurred. Please try again.");
@@ -127,7 +130,6 @@ const LoginForm = () => {
           </div>
         )}
 
-
         <Button
           type="submit"
           disabled={loading || redirecting}
@@ -135,8 +137,6 @@ const LoginForm = () => {
         >
           {loading ? "Processing..." : "Login"}
         </Button>
-
-
       </form>
     </div>
   );

@@ -9,24 +9,14 @@ import React, {
   useState,
 } from "react";
 import { useRouter } from "next/navigation";
-
-// RHF
 import { useFormContext } from "react-hook-form";
-
-// Hooks
 import useToasts from "@/hooks/useToasts";
-
-// Services
 import { exportInvoice } from "@/services/invoice/client/exportInvoice";
-
-// Variables
 import {
   FORM_DEFAULT_VALUES,
   SEND_PDF_API,
   SHORT_DATE_OPTIONS,
 } from "@/lib/variables";
-
-// Types
 import { ExportTypes, InvoiceType } from "@/types";
 
 const defaultInvoiceContext = {
@@ -36,6 +26,7 @@ const defaultInvoiceContext = {
   pdfUrl: null as string | null,
   onFormSubmit: (values: InvoiceType) => {},
   newInvoice: () => {},
+  newInvoiceTrigger: 0,
   generatePdf: async (data: InvoiceType) => {},
   removeFinalPdf: () => {},
   downloadPdf: () => {},
@@ -46,6 +37,9 @@ const defaultInvoiceContext = {
   sendPdfToMail: async (email: string): Promise<void> => Promise.resolve(),
   exportInvoiceAs: (exportAs: ExportTypes) => {},
   importInvoice: (file: File) => {},
+  currentWizardStep: 0,
+  setCurrentWizardStep: (step: number) => {},
+  resetWizard: () => {},
 };
 
 export const InvoiceContext = createContext(defaultInvoiceContext);
@@ -66,8 +60,7 @@ export const InvoiceContextProvider = ({
   children,
 }: InvoiceContextProviderProps) => {
   const router = useRouter();
-
-  // Toasts
+  const { getValues, reset } = useFormContext<InvoiceType>();
   const {
     newInvoiceSuccess,
     pdfGenerationSuccess,
@@ -77,21 +70,17 @@ export const InvoiceContextProvider = ({
     importInvoiceError,
   } = useToasts();
 
-  // Get form values and methods from form context
-  const { getValues, reset } = useFormContext<InvoiceType>();
-
-  // Variables
   const [invoicePdf, setInvoicePdf] = useState<Blob>(new Blob());
   const [invoicePdfLoading, setInvoicePdfLoading] = useState<boolean>(false);
   const [savedInvoices, setSavedInvoices] = useState<InvoiceType[]>([]);
+  const [newInvoiceTrigger, setNewInvoiceTrigger] = useState<number>(0);
+  const [currentWizardStep, setCurrentWizardStep] = useState<number>(0);
 
-  // Helper function to extract numeric part of invoiceNumber
   const getNumericInvoiceNumber = (invoiceNumber: string | undefined): string => {
     if (!invoiceNumber) return "";
-    return invoiceNumber.replace(/\D/g, ""); // Remove all non-digits
+    return invoiceNumber.replace(/\D/g, "");
   };
 
-  // Load saved invoices from local storage
   useEffect(() => {
     try {
       if (typeof window !== "undefined") {
@@ -110,7 +99,6 @@ export const InvoiceContextProvider = ({
     }
   }, []);
 
-  // Generate PDF URL
   const pdfUrl = useMemo(() => {
     if (invoicePdf instanceof Blob && invoicePdf.size > 0) {
       try {
@@ -123,19 +111,16 @@ export const InvoiceContextProvider = ({
     return null;
   }, [invoicePdf]);
 
-  // Cleanup PDF URL on component unmount
   useEffect(() => {
     return () => {
       if (pdfUrl) {
         try {
           window.URL.revokeObjectURL(pdfUrl);
-        } catch (error) {
-        }
+        } catch (error) {}
       }
     };
   }, [pdfUrl]);
 
-  // Default form values
   const updatedDefaultValues = useMemo(
     () => ({
       ...FORM_DEFAULT_VALUES,
@@ -147,15 +132,137 @@ export const InvoiceContextProvider = ({
     []
   );
 
-  // Reset form with default values
   useEffect(() => {
     try {
       reset(updatedDefaultValues);
-    } catch (error) {
-    }
+    } catch (error) {}
   }, [reset, updatedDefaultValues]);
 
-  // Save invoice
+  const resetWizard = useCallback(() => {
+    try {
+      setCurrentWizardStep(0);
+    } catch (error) {
+      console.error("Error resetting wizard:", error);
+    }
+  }, []);
+
+  const newInvoice = useCallback(() => {
+    try {
+      reset(FORM_DEFAULT_VALUES);
+      setInvoicePdf(new Blob());
+      resetWizard();
+      router.refresh();
+      setNewInvoiceTrigger((prev) => prev + 1);
+      newInvoiceSuccess();
+    } catch (error) {
+      console.error("Error creating new invoice:", error);
+    }
+  }, [reset, router, newInvoiceSuccess, resetWizard]);
+
+  const downloadPdf = useCallback(() => {
+    if (invoicePdf instanceof Blob && invoicePdf.size > 0) {
+      try {
+        const url = window.URL.createObjectURL(invoicePdf);
+        const a = document.createElement("a");
+        const originalInvoiceNumber = getValues().details.invoiceNumber || "unknown";
+        a.href = url;
+        a.download = `invoice_${originalInvoiceNumber}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      } catch (error) {}
+    }
+  }, [invoicePdf, getValues]);
+
+  const generatePdf = useCallback(
+    async (data: InvoiceType) => {
+      if (!data) {
+        return;
+      }
+      setInvoicePdfLoading(true);
+      const numericInvoiceNumber = getNumericInvoiceNumber(data.details.invoiceNumber);
+      const payload = {
+        invoiceNumber: data.details.invoiceNumber || "",
+        sender: data.sender,
+        receiver: data.receiver || { name: "", address: "", state: "", country: "UAE" },
+        details: {
+          ...data.details,
+          invoiceNumber: data.details.invoiceNumber || "",
+          currency: "AED",
+          items: (data.details.items || []).map((item) => ({
+            ...item,
+            description: item.description || "No description provided",
+            unitPrice: Number(item.unitPrice) || 0,
+            quantity: Number(item.quantity) || 0,
+          })),
+          taxDetails: {
+            ...data.details.taxDetails,
+            amount: Number(data.details.taxDetails?.amount) || 0,
+            amountType: data.details.taxDetails?.amountType === "amount" ? "fixed" : data.details.taxDetails?.amountType || "percentage",
+          },
+        },
+      };
+
+      let attempts = 0;
+      const maxAttempts = 3;
+      while (attempts < maxAttempts) {
+        try {
+          const response = await fetch("/api/invoice/generate", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-Custom-Request": "invoice-pdf",
+            },
+            body: JSON.stringify(payload),
+            signal: AbortSignal.timeout(10000),
+          });
+
+          if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status} - ${await response.text()}`);
+          }
+
+          const result = await response.blob();
+          if (result.size > 0) {
+            setInvoicePdf(result);
+            pdfGenerationSuccess();
+            downloadPdf();
+            newInvoice();
+            try {
+              const savePayload = {
+                ...payload,
+                invoiceNumber: numericInvoiceNumber,
+                details: {
+                  ...payload.details,
+                  invoiceNumber: numericInvoiceNumber,
+                },
+              };
+              const saveResponse = await fetch("/api/invoice/new_invoice", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify(savePayload),
+                signal: AbortSignal.timeout(10000),
+              });
+              if (!saveResponse.ok) {}
+            } catch (error: any) {}
+          }
+          break;
+        } catch (error: any) {
+          attempts++;
+          if (attempts === maxAttempts) {
+            break;
+          }
+          await new Promise((resolve) => setTimeout(resolve, 1000 * attempts));
+        } finally {
+          setInvoicePdfLoading(false);
+        }
+      }
+    },
+    [pdfGenerationSuccess, downloadPdf, newInvoice]
+  );
+
   const saveInvoice = useCallback(() => {
     try {
       if (invoicePdf instanceof Blob && invoicePdf.size > 0) {
@@ -191,105 +298,11 @@ export const InvoiceContextProvider = ({
         setSavedInvoices(updatedInvoices);
         try {
           localStorage.setItem("savedInvoices", JSON.stringify(updatedInvoices));
-        } catch (error) {
-        }
-      } else {
+        } catch (error) {}
       }
-    } catch (error) {
-    }
+    } catch (error) {}
   }, [getValues, savedInvoices, modifiedInvoiceSuccess, saveInvoiceSuccess]);
 
-  // Generate PDF with retry logic
-  const generatePdf = useCallback(async (data: InvoiceType) => {
-    if (!data) {
-      return;
-    }
-    setInvoicePdfLoading(true);
-    const numericInvoiceNumber = getNumericInvoiceNumber(data.details.invoiceNumber);
-    const payload = {
-      invoiceNumber: data.details.invoiceNumber || "", // Keep original for PDF
-      sender: data.sender,
-      receiver: data.receiver || { name: "", address: "", state: "", country: "UAE" },
-      details: {
-        ...data.details,
-        invoiceNumber: data.details.invoiceNumber || "", // Keep original for PDF
-        currency: "AED",
-        items: (data.details.items || []).map((item) => ({
-          ...item,
-          description: item.description || "No description provided",
-          unitPrice: Number(item.unitPrice) || 0,
-          quantity: Number(item.quantity) || 0,
-        })),
-        taxDetails: {
-          ...data.details.taxDetails,
-          amount: Number(data.details.taxDetails?.amount) || 0,
-          amountType: data.details.taxDetails?.amountType === "amount" ? "fixed" : data.details.taxDetails?.amountType || "percentage",
-        },
-      },
-    };
-
-    let attempts = 0;
-    const maxAttempts = 3;
-    while (attempts < maxAttempts) {
-      try {
-        const response = await fetch("/api/invoice/generate", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Custom-Request": "invoice-pdf",
-          },
-          body: JSON.stringify(payload),
-          signal: AbortSignal.timeout(10000),
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status} - ${await response.text()}`);
-        }
-
-        const result = await response.blob();
-        if (result.size > 0) {
-          setInvoicePdf(result);
-          pdfGenerationSuccess();
-
-          // Save to database
-          try {
-            const savePayload = {
-              ...payload,
-              invoiceNumber: numericInvoiceNumber, // Numeric for DB
-              details: {
-                ...payload.details,
-                invoiceNumber: numericInvoiceNumber, // Numeric for DB
-              },
-            };
-            const saveResponse = await fetch("/api/invoice/new_invoice", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify(savePayload),
-              signal: AbortSignal.timeout(10000),
-            });
-            if (!saveResponse.ok) {
-            } else {
-            }
-          } catch (error: any) {
-          }
-        } else {
-        }
-        break;
-      } catch (error: any) {
-        attempts++;
-        if (attempts === maxAttempts) {
-          break;
-        }
-        await new Promise((resolve) => setTimeout(resolve, 1000 * attempts));
-      } finally {
-        setInvoicePdfLoading(false);
-      }
-    }
-  }, [pdfGenerationSuccess]);
-
-  // Form submission handler
   const onFormSubmit = useCallback(
     (data: InvoiceType) => {
       if (!data?.details?.invoiceNumber) {
@@ -304,51 +317,25 @@ export const InvoiceContextProvider = ({
     [generatePdf, saveInvoice]
   );
 
-  // Remove final PDF
   const removeFinalPdf = useCallback(() => {
     try {
       setInvoicePdf(new Blob());
       if (pdfUrl) {
         window.URL.revokeObjectURL(pdfUrl);
       }
-    } catch (error) {
-    }
+    } catch (error) {}
   }, [pdfUrl]);
 
-  // Preview PDF in new tab
   const previewPdfInTab = useCallback(() => {
     if (invoicePdf instanceof Blob && invoicePdf.size > 0) {
       try {
         const url = window.URL.createObjectURL(invoicePdf);
         const newWindow = window.open(url, "_blank");
-        if (!newWindow) {
-        }
-      } catch (error) {
-      }
-    } else {
+        if (!newWindow) {}
+      } catch (error) {}
     }
   }, [invoicePdf]);
 
-  // Download PDF
-  const downloadPdf = useCallback(() => {
-    if (invoicePdf instanceof Blob && invoicePdf.size > 0) {
-      try {
-        const url = window.URL.createObjectURL(invoicePdf);
-        const a = document.createElement("a");
-        const originalInvoiceNumber = getValues().details.invoiceNumber || "unknown";
-        a.href = url;
-        a.download = `invoice_${originalInvoiceNumber}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
-      } catch (error) {
-      }
-    } else {
-    }
-  }, [invoicePdf, getValues]);
-
-  // Print PDF
   const printPdf = useCallback(() => {
     if (invoicePdf instanceof Blob && invoicePdf.size > 0) {
       try {
@@ -358,18 +345,13 @@ export const InvoiceContextProvider = ({
           printWindow.onload = () => {
             try {
               printWindow.print();
-            } catch (error) {
-            }
+            } catch (error) {}
           };
-        } else {
         }
-      } catch (error) {
-      }
-    } else {
+      } catch (error) {}
     }
   }, [invoicePdf]);
 
-  // Delete invoice
   const deleteInvoice = useCallback(
     (index: number) => {
       try {
@@ -379,17 +361,13 @@ export const InvoiceContextProvider = ({
           setSavedInvoices(updatedInvoices);
           try {
             localStorage.setItem("savedInvoices", JSON.stringify(updatedInvoices));
-          } catch (error) {
-          }
-        } else {
+          } catch (error) {}
         }
-      } catch (error) {
-      }
+      } catch (error) {}
     },
     [savedInvoices]
   );
 
-  // Send PDF to email
   const sendPdfToMail = useCallback(
     async (email: string): Promise<void> => {
       if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -435,7 +413,6 @@ export const InvoiceContextProvider = ({
     [invoicePdf, getValues, sendPdfError]
   );
 
-  // Export invoice
   const exportInvoiceAs = useCallback(
     (exportAs: ExportTypes) => {
       try {
@@ -452,13 +429,11 @@ export const InvoiceContextProvider = ({
           },
         };
         exportInvoice(exportAs, updatedFormValues);
-      } catch (error) {
-      }
+      } catch (error) {}
     },
     [getValues]
   );
 
-  // Import invoice
   const importInvoice = useCallback(
     (file: File) => {
       if (!file || file.type !== "application/json") {
@@ -478,7 +453,6 @@ export const InvoiceContextProvider = ({
             throw new Error("Invalid invoice data: Missing details");
           }
 
-          // Sanitize imported data
           const sanitizedData: any = {
             ...importedData,
             details: {
@@ -513,17 +487,6 @@ export const InvoiceContextProvider = ({
     [reset, importInvoiceError]
   );
 
-  // Create new invoice
-  const newInvoice = useCallback(() => {
-    try {
-      reset(FORM_DEFAULT_VALUES);
-      setInvoicePdf(new Blob());
-      router.refresh();
-      newInvoiceSuccess();
-    } catch (error) {
-    }
-  }, [reset, router, newInvoiceSuccess]);
-
   return (
     <InvoiceContext.Provider
       value={{
@@ -533,6 +496,7 @@ export const InvoiceContextProvider = ({
         pdfUrl,
         onFormSubmit,
         newInvoice,
+        newInvoiceTrigger,
         generatePdf,
         removeFinalPdf,
         downloadPdf,
@@ -543,6 +507,9 @@ export const InvoiceContextProvider = ({
         sendPdfToMail,
         exportInvoiceAs,
         importInvoice,
+        currentWizardStep,
+        setCurrentWizardStep,
+        resetWizard,
       }}
     >
       {children}

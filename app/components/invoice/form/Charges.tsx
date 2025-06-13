@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect } from "react";
+
 // RHF
 import { useFormContext } from "react-hook-form";
 
@@ -23,6 +25,7 @@ import { InvoiceType } from "@/types";
 const Charges = () => {
     const {
         formState: { errors },
+        setValue,
     } = useFormContext<InvoiceType>();
 
     const { _t } = useTranslationContext();
@@ -47,16 +50,28 @@ const Charges = () => {
         totalAmount,
     } = useChargesContext();
 
+    // Hardcode tax to 5% and set type to percentage when tax is enabled
+    useEffect(() => {
+        if (taxSwitch) {
+            setValue("details.taxDetails.amount", 5);
+            setTaxType("percentage"); // Set default tax type to percentage
+        } else {
+            setValue("details.taxDetails.amount", 0);
+            setTaxType("percentage"); // Ensure tax type remains percentage even when disabled
+        }
+    }, [taxSwitch, setValue, setTaxType]);
+
     const switchAmountType = (
         type: string,
         setType: (type: string) => void
     ) => {
-        if (type == "amount") {
+        if (type === "amount") {
             setType("percentage");
         } else {
             setType("amount");
         }
     };
+
     return (
         <>
             {/* Charges */}

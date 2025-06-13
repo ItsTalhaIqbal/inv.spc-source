@@ -28,6 +28,7 @@ import {
 import { EyeIcon, Loader2, MoreHorizontal, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { isLogin } from "@/lib/Auth";
+import { INVVariable, QUTVariable } from "@/lib/variables";
 
 interface Invoice {
   _id?: string;
@@ -49,6 +50,7 @@ interface Invoice {
     phone: string;
   };
   details: {
+    isInvoice:boolean;
     invoiceLogo?: string;
     invoiceNumber: string;
     invoiceDate: Date | string;
@@ -222,7 +224,7 @@ const Page: React.FC = () => {
           <TableBody>
             {filteredInvoices.map((invoice) => (
               <TableRow key={invoice._id} className={theme === "dark" ? "hover:bg-gray-700" : "hover:bg-gray-50"}>
-                <TableCell>{invoice.invoiceNumber}</TableCell>
+                <TableCell>{invoice.details?.isInvoice  ==true ? INVVariable : QUTVariable}{invoice.invoiceNumber}</TableCell>
                 <TableCell>{invoice.receiver.name}</TableCell>
                 <TableCell>
                   {invoice.details.totalAmount} {invoice.details.currency}

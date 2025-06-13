@@ -82,6 +82,12 @@ export const SIGNATURE_COLORS: SignatureColor[] = [
     },
 ];
 
+//Global PDF Type Variables
+
+export const INVVariable : string = "INV-";
+export const QUTVariable : string = "QUT-"
+
+
 export const SIGNATURE_FONTS: SignatureFont[] = [
     {
         name: "Dancing Script",

@@ -18,12 +18,12 @@ export async function POST(req: Request): Promise<NextResponse> {
 
     const user = await User.findOne({ username });
     if (!user) {
-      return NextResponse.json({ error: 'Invalid username or password' }, { status: 400 });
+      return NextResponse.json({ error: 'Invalid username ' }, { status: 400 });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return NextResponse.json({ error: 'Invalid username or password' }, { status: 400 });
+      return NextResponse.json({ error: 'Incorrect  password' }, { status: 400 });
     }
 
     const token = jwt.sign(
