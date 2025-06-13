@@ -271,6 +271,7 @@ export const InvoiceContextProvider = ({
         }
         await new Promise((resolve) => setTimeout(resolve, 1000 * attempts));
       } finally {
+        // Only set loading to false after the download is initiated
         setInvoicePdfLoading(false);
       }
     }
