@@ -64,20 +64,12 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
         const total = quantity * unitPrice;
 
         return `
-        <tr style="border: 1px solid #000;">
-          <td style="padding: 12px 16px; width: 5%; border: 1px solid #000; color: #000; font-size: 14px; font-weight: bold;">${
-            index + 1
-          }</td>
-          <td style="padding: 12px 16px; width: 50%; border: 1px solid #000; color: #000; font-size: 14px;">${
-            item.name || ""
-          }</td>
-          <td style="padding: 12px 16px; width: 15%; border: 1px solid #000; color: #000; font-size: 14px;">${quantity}</td>
-          <td style="padding: 12px 16px; width: 15%; border: 1px solid #000; color: #000; font-size: 14px;">${
-            unitPrice ? `${unitPrice} ` : ""
-          }</td>
-          <td style="padding: 12px 16px; width: 15%; text-align: right; border: 1px solid #000; color: #000; font-size: 14px;">${
-            total ? `${total} ` : ""
-          }</td>
+        <tr class="border">
+          <td class="p-3 w-1/20 font-bold text-black text-base border">${index + 1}</td>
+          <td class="p-3 w-1/2 text-black text-base border">${item.name || ""}</td>
+          <td class="p-3 w-1/6 text-black text-base border">${quantity}</td>
+          <td class="p-3 w-1/6 text-black text-base border">${unitPrice ? `${unitPrice} ` : ""}</td>
+          <td class="p-3 w-1/6 text-right text-black text-base border">${total ? `${total} ` : ""}</td>
         </tr>
       `;
       }
@@ -180,9 +172,8 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
         position: relative;
       }
       .container {
-        max-width: 595px;
-        margin: 0 auto;
-        padding: 20px;
+        width: w-full;
+        padding: 0;
       }
       .header {
         display: flex;
@@ -202,8 +193,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
         text-align: right;
       }
       .invoice-number {
-              background-color: #d3d3d3;
-
+        background-color: #d3d3d3;
         padding: 5px 10px;
         border-radius: 4px;
         display: inline-block;
@@ -308,11 +298,11 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
         <table class="invoice-table">
           <thead>
             <tr>
-              <th style="width: 5%;">Sr.</th>
-              <th style="width: 50%;">Item</th>
-              <th style="width: 15%;">Qty</th>
-              <th style="width: 15%;">Unit Price</th>
-              <th style="width: 15%;">Amount (AED)</th>
+              <th class="w-1/20">Sr.</th>
+              <th class="w-1/2">Item</th>
+              <th class="w-1/6">Qty</th>
+              <th class="w-1/6">Unit Price</th>
+              <th class="w-1/6">Amount (AED)</th>
             </tr>
           </thead>
           <tbody>
@@ -320,18 +310,16 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
           </tbody>
         </table>
         <div class="summary">
-        <div>
-         <div>
-         <h2>Additional Notes</h2>
-         <p>${receiver.additionalNotes || "N/A"}</p>
-         </div>
-         <div>
-         <h2>Payment Terms</h2>
-         <p>${receiver.paymentTerms || "N/A"}</p>
-         </div>     
-        </div>
-          
-          
+          <div>
+            <div>
+              <h2>Additional Notes</h2>
+              <p>${receiver.additionalNotes || "N/A"}</p>
+            </div>
+            <div>
+              <h2>Payment Terms</h2>
+              <p>${receiver.paymentTerms || "N/A"}</p>
+            </div>     
+          </div>
           ${taxHtml ? `<p>${taxHtml}</p>` : ""}
           ${shippingHtml ? `<p>${shippingHtml}</p>` : ""}
           ${discountHtml ? `<p>${discountHtml}</p>` : ""}
@@ -417,7 +405,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
     const pdfBuffer: any = await page.pdf({
       format: "A4",
       printBackground: true,
-      margin: { top: "50px", right: "50px", bottom: "50px", left: "50px" },
+      margin: { top: "0", right: "0", bottom: "0", left: "0" },
     });
 
     return pdfBuffer;
