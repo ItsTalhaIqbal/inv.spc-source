@@ -51,15 +51,9 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
     throw new Error("Invoice number is missing");
   }
 
-  const senderData = body.sender || {
-    name: "Green Grass And Carpet LLC",
-    address: "Shop No. 201, Najmiya Ajman",
-    phone: "+971 56 879 8791",
-    email: "shop.greengrassandcarpet@gmail.com",
-    trn: "TRN-100287600003",
-  };
-  const receiver = body.receiver || { name: "Mohammed Iqbal", phone: "+971543729292" };
-  const details = body.details || {};
+  const senderData :any= body.sender ;
+  const receiver:any = body.receiver 
+  const details:any = body.details ;
 
   const DATE_OPTIONS = {
     year: "numeric",
