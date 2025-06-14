@@ -75,6 +75,7 @@ export const InvoiceContextProvider = ({
   const [savedInvoices, setSavedInvoices] = useState<InvoiceType[]>([]);
   const [newInvoiceTrigger, setNewInvoiceTrigger] = useState<number>(0);
   const [currentWizardStep, setCurrentWizardStep] = useState<number>(0);
+  const [downloadComplete, setDownloadComplete] = useState<boolean>(false);
 
   const getNumericInvoiceNumber = (invoiceNumber: string | undefined): string => {
     if (!invoiceNumber) return "";
@@ -171,112 +172,107 @@ export const InvoiceContextProvider = ({
         a.click();
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
+        setDownloadComplete(true); // Mark download as complete
       } catch (error) {}
     }
   }, [invoicePdf, getValues]);
 
- const generatePdf = useCallback(
-  async (data: InvoiceType) => {
-    if (!data) {
-      return;
-    }
-    setInvoicePdfLoading(true);
-    const numericInvoiceNumber = getNumericInvoiceNumber(data.details.invoiceNumber);
-    const payload = {
-      invoiceNumber: data.details.invoiceNumber || "",
-      sender: data.sender,
-      receiver: data.receiver || { name: "", address: "", state: "", country: "UAE" },
-      details: {
-        ...data.details,
+  const generatePdf = useCallback(
+    async (data: InvoiceType) => {
+      if (!data) {
+        return;
+      }
+      setInvoicePdfLoading(true);
+      const numericInvoiceNumber = getNumericInvoiceNumber(data.details.invoiceNumber);
+      const payload = {
         invoiceNumber: data.details.invoiceNumber || "",
-        currency: "AED",
-        items: (data.details.items || []).map((item) => ({
-          ...item,
-          description: item.description || "No description provided",
-          unitPrice: Number(item.unitPrice) || 0,
-          quantity: Number(item.quantity) || 0,
-        })),
-        taxDetails: {
-          ...data.details.taxDetails,
-          amount: Number(data.details.taxDetails?.amount) || 0,
-          amountType: data.details.taxDetails?.amountType === "amount" ? "fixed" : data.details.taxDetails?.amountType || "percentage",
-        },
-      },
-    };
-
-    let attempts = 0;
-    const maxAttempts = 3;
-    while (attempts < maxAttempts) {
-      try {
-        const response = await fetch("/api/invoice/generate", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Custom-Request": "invoice-pdf",
+        sender: data.sender,
+        receiver: data.receiver || { name: "", address: "", state: "", country: "UAE" },
+        details: {
+          ...data.details,
+          invoiceNumber: data.details.invoiceNumber || "",
+          currency: "AED",
+          items: (data.details.items || []).map((item) => ({
+            ...item,
+            description: item.description || "No description provided",
+            unitPrice: Number(item.unitPrice) || 0,
+            quantity: Number(item.quantity) || 0,
+          })),
+          taxDetails: {
+            ...data.details.taxDetails,
+            amount: Number(data.details.taxDetails?.amount) || 0,
+            amountType: data.details.taxDetails?.amountType === "amount" ? "fixed" : data.details.taxDetails?.amountType || "percentage",
           },
-          body: JSON.stringify(payload),
-          signal: AbortSignal.timeout(10000),
-        });
+        },
+      };
 
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status} - ${await response.text()}`);
-        }
-
-        const result = await response.blob();
-        if (result.size > 0) {
-          setInvoicePdf(result);
-          pdfGenerationSuccess();
-
-          // Call downloadPdf and wait briefly to ensure the download is initiated
-          await new Promise<void>((resolve) => {
-            downloadPdf();
-            // Small delay to allow the browser to initiate the download
-            setTimeout(resolve, 500); // Adjust delay as needed (500ms is usually sufficient)
+      let attempts = 0;
+      const maxAttempts = 3;
+      while (attempts < maxAttempts) {
+        try {
+          const response = await fetch("/api/invoice/generate", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-Custom-Request": "invoice-pdf",
+            },
+            body: JSON.stringify(payload),
+            signal: AbortSignal.timeout(10000),
           });
 
-          // Save the invoice to the server
-          try {
-            const savePayload = {
-              ...payload,
-              invoiceNumber: numericInvoiceNumber,
-              details: {
-                ...payload.details,
-                invoiceNumber: numericInvoiceNumber,
-              },
-            };
-            const saveResponse = await fetch("/api/invoice/new_invoice", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify(savePayload),
-              signal: AbortSignal.timeout(10000),
-            });
-            if (!saveResponse.ok) {
-              console.error("Failed to save invoice to server");
-            }
-          } catch (error: any) {
-            console.error("Error saving invoice to server:", error);
+          if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status} - ${await response.text()}`);
           }
 
-          // Now call newInvoice after the download has been initiated
-          newInvoice();
-        }
-        break;
-      } catch (error: any) {
-        attempts++;
-        if (attempts === maxAttempts) {
-          console.error("Max attempts reached for generating PDF");
+          const result = await response.blob();
+          if (result.size > 0) {
+            setInvoicePdf(result);
+            pdfGenerationSuccess();
+
+            // Initiate download
+            downloadPdf();
+
+            // Save the invoice to the server (optional, based on your needs)
+            try {
+              const savePayload = {
+                ...payload,
+                invoiceNumber: numericInvoiceNumber,
+                details: {
+                  ...payload.details,
+                  invoiceNumber: numericInvoiceNumber,
+                },
+              };
+              const saveResponse = await fetch("/api/invoice/new_invoice", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify(savePayload),
+                signal: AbortSignal.timeout(10000),
+              });
+              if (!saveResponse.ok) {
+                console.error("Failed to save invoice to server");
+              }
+            } catch (error: any) {
+              console.error("Error saving invoice to server:", error);
+            }
+          }
           break;
+        } catch (error: any) {
+          attempts++;
+          if (attempts === maxAttempts) {
+            console.error("Max attempts reached for generating PDF");
+            break;
+          }
+          await new Promise((resolve) => setTimeout(resolve, 1000 * attempts));
+        } finally {
+          setInvoicePdfLoading(false);
         }
-        await new Promise((resolve) => setTimeout(resolve, 1000 * attempts));
-      } finally {
-        setInvoicePdfLoading(false);
       }
-    }
-  },
-  [pdfGenerationSuccess, downloadPdf, newInvoice]
-);
+    },
+    [pdfGenerationSuccess, downloadPdf]
+  );
+
   const saveInvoice = useCallback(() => {
     try {
       if (invoicePdf instanceof Blob && invoicePdf.size > 0) {
@@ -500,6 +496,17 @@ export const InvoiceContextProvider = ({
     },
     [reset, importInvoiceError]
   );
+
+  // Optional: Automatically trigger new invoice after download (with delay)
+  useEffect(() => {
+    if (downloadComplete) {
+      const timer = setTimeout(() => {
+        newInvoice();
+        setDownloadComplete(false); // Reset after triggering
+      }, 2000); // 2-second delay to ensure download starts
+      return () => clearTimeout(timer);
+    }
+  }, [downloadComplete, newInvoice]);
 
   return (
     <InvoiceContext.Provider
