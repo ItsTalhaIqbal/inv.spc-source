@@ -20,7 +20,14 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
   }
 
   // Prepare data
-  const senderData = body.sender || {};
+  const senderData = body.sender || {
+    name: "SPC Source Technical Services LLC",
+    country: "UAE",
+    state: "Dubai",
+    email: "contact@spcsource.com",
+    address: "Iris Bay, Office D-43, Business Bay, Dubai, UAE.",
+    phone: "+971 54 500 4520",
+  };
   const receiver = body.receiver || {};
   const details = body.details || {};
 
@@ -257,8 +264,8 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
           <img src="${logoBase64}" alt="SPC Source Logo" />
         </div>
         <div class="invoice-details">
-          <p class="text-sm">Iris Bay, Office D-43, Business Bay, Dubai</p>
-          <p class="text-sm">+971 54 500 4520</p>
+          <p class="text-sm">${senderData.address}</p>
+          <p class="text-sm">${senderData.phone}</p>
           <h2 class="text-xl">
             <span class="invoice-number">
               ${details.invoiceNumber.includes("INV") ? "INVOICE# " : "QUOT# "}
@@ -275,7 +282,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
       </div>
 
       <div class="mt-4">
-        <h3>Quotation</h3>
+        <h3>${details.invoiceNumber.includes("INV") ? "INVOICE" : "QUOTATION"}</h3>
         <table class="invoice-table">
           <thead>
             <tr>
