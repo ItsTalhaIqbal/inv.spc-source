@@ -19,8 +19,8 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
     );
   }
 
-  // Prepare data
-  const senderData = body.sender || {
+  // Prepare data with default values and cast to any
+  const senderData: any = body.sender || {
     name: "SPC Source Technical Services LLC",
     country: "UAE",
     state: "Dubai",
@@ -28,8 +28,17 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
     address: "Iris Bay, Office D-43, Business Bay, Dubai, UAE.",
     phone: "+971 54 500 4520",
   };
-  const receiver = body.receiver || {};
-  const details = body.details || {};
+  const receiver: any = body.receiver || {
+    name: "",
+    address: "",
+    state: "",
+    country: "",
+    email: "",
+    phone: "",
+    additionalNotes: "",
+    paymentTerms: "",
+  };
+  const details: any = body.details || {};
 
   // Date formatting options
   const DATE_OPTIONS = {
@@ -40,30 +49,32 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
   } as const;
 
   // Helper functions
-  const formatNumberWithCommas = (num: number) =>
+  const formatNumberWithCommas = (num: number): string =>
     num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 
-  // Generate items HTML
-  const itemsHtml = (body.details?.items || [])
-    .map((item: any, index: number) => {
+  // Generate items HTML with proper typing
+  const itemsHtml = (details.items || [])
+    .map((item: { name?: string; quantity?: number; unitPrice?: number }, index: number) => {
+      const quantity = item.quantity || 0;
+      const unitPrice = item.unitPrice || 0;
+      const total = quantity * unitPrice;
+
       return `
         <tr style="border: 1px solid #000;">
-          <td style="padding: 8px 12px; width: 5%; border: 1px solid #000; color: #000; font-size: 14px; font-weight: bold;">${
+          <td style="padding: 12px 16px; width: 5%; border: 1px solid #000; color: #000; font-size: 14px; font-weight: bold;">${
             index + 1
           }</td>
-          <td style="padding: 8px 12px; width: 50%; border: 1px solid #000; color: #000; font-size: 14px;">${
+          <td style="padding: 12px 16px; width: 50%; border: 1px solid #000; color: #000; font-size: 14px;">${
             item.name || ""
           }</td>
-          <td style="padding: 8px 12px; width: 15%; border: 1px solid #000; color: #000; font-size: 14px;">${
-            item.quantity || ""
+          <td style="padding: 12px 16px; width: 15%; border: 1px solid #000; color: #000; font-size: 14px;">${
+            quantity
           }</td>
-          <td style="padding: 8px 12px; width: 15%; border: 1px solid #000; color: #000; font-size: 14px;">${
-            item.unitPrice ? `${item.unitPrice} ` : ""
+          <td style="padding: 12px 16px; width: 15%; border: 1px solid #000; color: #000; font-size: 14px;">${
+            unitPrice ? `${unitPrice} ` : ""
           }</td>
-          <td style="padding: 8px 12px; width: 15%; text-align: right; border: 1px solid #000; color: #000; font-size: 14px;">${
-            item.quantity && item.unitPrice
-              ? `${item.quantity * item.unitPrice} `
-              : ""
+          <td style="padding: 12px 16px; width: 15%; text-align: right; border: 1px solid #000; color: #000; font-size: 14px;">${
+            total ? `${total} ` : ""
           }</td>
         </tr>
       `;
@@ -80,12 +91,9 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
     console.warn("Could not load logo:", error);
   }
 
-  // Load Tailwind CSS (prefer local file, fallback to CDN)
+  // Load Tailwind CSS
   let tailwindCss = "";
-  const localTailwindPath = path.resolve(
-    process.cwd(),
-    "public/tailwind.min.css"
-  );
+  const localTailwindPath = path.resolve(process.cwd(), "public/tailwind.min.css");
   try {
     if (fs.existsSync(localTailwindPath)) {
       tailwindCss = fs.readFileSync(localTailwindPath, "utf8");
@@ -99,14 +107,8 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
 
   // Prepare tax, discount, and shipping details
   const taxDetails = details.taxDetails || { amount: 0, amountType: "amount" };
-  const discountDetails = details.discountDetails || {
-    amount: 0,
-    amountType: "amount",
-  };
-  const shippingDetails = details.shippingDetails || {
-    cost: 0,
-    costType: "amount",
-  };
+  const discountDetails = details.discountDetails || { amount: 0, amountType: "amount" };
+  const shippingDetails = details.shippingDetails || { cost: 0, costType: "amount" };
 
   const hasTax = taxDetails.amount && taxDetails.amount > 0;
   const hasDiscount = discountDetails.amount && discountDetails.amount > 0;
@@ -114,34 +116,22 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
 
   const taxHtml = hasTax
     ? `
-      <p class="text-base font-bold text-gray-800">Tax (${
-        taxDetails.amountType === "amount" ? "AED" : "%"
-      })</p>
-      <p class="text-base text-gray-800">${formatNumberWithCommas(
-        Number(taxDetails.amount)
-      )} ${taxDetails.amountType === "amount" ? "AED" : ""}</p>
+      <p class="text-base font-bold text-gray-800">Tax (${taxDetails.amountType === "amount" ? "AED" : "%"})</p>
+      <p class="text-base text-gray-800">${formatNumberWithCommas(Number(taxDetails.amount))} ${taxDetails.amountType === "amount" ? "AED" : ""}</p>
     `
     : "";
 
   const discountHtml = hasDiscount
     ? `
-      <p class="text-base font-bold text-gray-800">Discount (${
-        discountDetails.amountType === "amount" ? "AED" : "%"
-      })</p>
-      <p class="text-base text-gray-800">${formatNumberWithCommas(
-        Number(discountDetails.amount)
-      )} ${discountDetails.amountType === "amount" ? "AED" : ""}</p>
+      <p class="text-base font-bold text-gray-800">Discount (${discountDetails.amountType === "amount" ? "AED" : "%"})</p>
+      <p class="text-base text-gray-800">${formatNumberWithCommas(Number(discountDetails.amount))} ${discountDetails.amountType === "amount" ? "AED" : ""}</p>
     `
     : "";
 
   const shippingHtml = hasShipping
     ? `
-      <p class="text-base font-bold text-gray-800">Shipping (${
-        shippingDetails.costType === "amount" ? "AED" : "%"
-      })</p>
-      <p class="text-base text-gray-800">${formatNumberWithCommas(
-        Number(shippingDetails.cost)
-      )} ${shippingDetails.costType === "amount" ? "AED" : ""}</p>
+      <p class="text-base font-bold text-gray-800">Shipping (${shippingDetails.costType === "amount" ? "AED" : "%"})</p>
+      <p class="text-base text-gray-800">${formatNumberWithCommas(Number(shippingDetails.cost))} ${shippingDetails.costType === "amount" ? "AED" : ""}</p>
     `
     : "";
 
@@ -161,12 +151,12 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
         background-color: #ffffff;
         color: #000000;
         height: 842px;
-        width: 595px;
+        width: 100%;
         box-sizing: border-box;
         position: relative;
       }
       .container {
-        width: 595px;
+        max-width: 595px;
         margin: 0 auto;
         padding: 20px;
       }
@@ -174,7 +164,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
         display: flex;
         justify-content: space-between;
         align-items: flex-start;
-        margin-bottom: 10px;
+        margin-bottom: 20px;
       }
       .logo {
         margin: 0;
@@ -197,13 +187,13 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
       .invoice-table {
         width: 100%;
         border-collapse: collapse;
-        margin-top: 10px;
+        margin-top: 20px;
       }
       .invoice-table thead tr {
         background-color: #d3d3d3;
       }
       .invoice-table th {
-        padding: 8px 12px;
+        padding: 12px 16px;
         font-size: 14px;
         font-weight: bold;
         text-transform: uppercase;
@@ -215,7 +205,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
         text-align: right;
       }
       .invoice-table td {
-        padding: 8px 12px;
+        padding: 12px 16px;
         font-size: 14px;
         border: 1px solid #000;
       }
@@ -223,16 +213,14 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
         text-align: right;
       }
       .summary {
-        margin-top: 10px;
+        margin-top: 20px;
         text-align: right;
         font-weight: bold;
       }
       .footer {
         position: absolute;
-        bottom: 20px;
-        width: 555px; /* 595px - 20px left/right padding */
-        left: 20px;
-        right: 20px;
+        bottom: 40px;
+        width: 100%;
         border-top: 1px solid #000;
         padding-top: 10px;
       }
@@ -256,9 +244,6 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
       h3 {
         font-weight: bold;
       }
-      .customer-info, .quotation-section {
-        display: ${receiver.name ? "block" : "none"};
-      }
     </style>
   </head>
   <body>
@@ -268,30 +253,38 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
           <img src="${logoBase64}" alt="SPC Source Logo" />
         </div>
         <div class="invoice-details">
-          <p class="text-sm">${senderData.address}</p>
-          <p class="text-sm">${senderData.phone}</p>
+          <p class="text-sm">+971 54 500 4520</p>
+          <p class="text-sm">Iris Bay, Office D-43, Business Bay, Dubai</p>
           <h2 class="text-xl">
             <span class="invoice-number">
-              ${details.invoiceNumber.includes("INV") ? "INVOICE# " : "QUOT# "}
+              ${
+                details.invoiceNumber.includes("INV")
+                  ? "INVOICE# "
+                  : "QUOTATION# "
+              }
               ${details.invoiceNumber || ""}
             </span>
           </h2>
-          <p class="text-sm">${new Date(details.invoiceDate || new Date()).toLocaleDateString("en-US", DATE_OPTIONS)}</p>
+          <p class="text-sm">${new Date(
+            details.invoiceDate || new Date()
+          ).toLocaleDateString("en-US", DATE_OPTIONS)}</p>
         </div>
       </div>
 
-      <div class="customer-info mt-4">
+      <div class="mt-6">
         <h3>CUSTOMER INFO</h3>
         <p class="text-lg">${receiver.name || ""}</p>
       </div>
 
-      <div class="quotation-section mt-4">
-        <h3>${details.invoiceNumber.includes("INV") ? "INVOICE" : "QUOTATION"}</h3>
+      <div class="mt-4">
+        <h3>${
+          details.invoiceNumber.includes("INV") ? "INVOICE" : "QUOTATION"
+        }</h3>
         <table class="invoice-table">
           <thead>
             <tr>
               <th style="width: 5%;">Sr.</th>
-              <th style="width: 50%;">Description</th>
+              <th style="width: 50%;">Item</th>
               <th style="width: 15%;">Qty</th>
               <th style="width: 15%;">Unit Price</th>
               <th style="width: 15%;">Amount (AED)</th>
@@ -302,8 +295,11 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
           </tbody>
         </table>
         <div class="summary">
-          <p>Received above items in good condition</p>
-          <p>good condition</p>
+          <p>${receiver.additionalNotes || ""}</p>
+          <p>${receiver.paymentTerms || ""}</p>
+          ${taxHtml ? `<p>${taxHtml}</p>` : ""}
+          ${shippingHtml ? `<p>${shippingHtml}</p>` : ""}
+          ${discountHtml ? `<p>${discountHtml}</p>` : ""}
           <p>Total ${formatNumberWithCommas(Number(details.totalAmount || 0))} AED</p>
         </div>
       </div>
@@ -384,7 +380,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
     const pdfBuffer: any = await page.pdf({
       format: "A4",
       printBackground: true,
-      margin: { top: "0", right: "0", bottom: "0", left: "0" },
+      margin: { top: "50px", right: "50px", bottom: "50px", left: "50px" },
     });
 
     return pdfBuffer;
