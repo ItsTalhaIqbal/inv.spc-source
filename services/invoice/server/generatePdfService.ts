@@ -231,6 +231,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
         margin-top: 20px;
         text-align: right;
         font-weight: bold;
+        w-full;
       }
       .footer {
         position: absolute;
