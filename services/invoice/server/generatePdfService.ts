@@ -41,7 +41,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
     .map((item: any, index: number) => {
       return `
         <tr style="border: 1px solid #000;">
-          <td style="padding: 12px 16px; width: 5%; border: 1px solid #000; color: #000; font-size: 14px;">${
+          <td style="padding: 12px 16px; width: 5%; border: 1px solid #000; color: #000; font-size: 14px; font-weight: bold;">${
             index + 1
           }</td>
           <td style="padding: 12px 16px; width: 50%; border: 1px solid #000; color: #000; font-size: 14px;">${
@@ -145,9 +145,10 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
+      @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
       ${tailwindCss}
       body {
-        font-family: Arial, sans-serif;
+        font-family: 'Roboto', sans-serif;
         margin: 0;
         padding: 40px;
         background-color: #ffffff;
@@ -177,6 +178,13 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
       }
       .invoice-details {
         text-align: right;
+      }
+      .invoice-number {
+        background-color: #f4a261;
+        padding: 5px 10px;
+        border-radius: 4px;
+        display: inline-block;
+        font-weight: bold;
       }
       .invoice-table {
         width: 100%;
@@ -209,6 +217,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
       .summary {
         margin-top: 20px;
         text-align: right;
+        font-weight: bold;
       }
       .footer {
         position: absolute;
@@ -236,6 +245,9 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
       .footer-bar svg {
         margin-right: 8px;
       }
+      h3 {
+        font-weight: bold;
+      }
     </style>
   </head>
   <body>
@@ -245,46 +257,49 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
           <img src="${logoBase64}" alt="SPC Source Logo" />
         </div>
         <div class="invoice-details">
-          <p class="text-sm text-gray-800">Iris Bay, Office D-43, Business Bay, Dubai</p>
-          <h2 class="text-xl font-bold text-gray-800">
-            ${details.invoiceNumber.includes("INV") ? "INVOICE# " : "QUOTATION# "}
-            <span class="text-lg font-normal">${details.invoiceNumber || ""}</span>
+          <p class="text-sm">Iris Bay, Office D-43, Business Bay, Dubai</p>
+          <p class="text-sm">+971 54 500 4520</p>
+          <h2 class="text-xl">
+            <span class="invoice-number">
+              ${details.invoiceNumber.includes("INV") ? "INVOICE# " : "QUOT# "}
+              ${details.invoiceNumber || ""}
+            </span>
           </h2>
-          <p class="text-sm text-gray-800">${new Date(details.invoiceDate || new Date()).toLocaleDateString("en-US", DATE_OPTIONS)}</p>
+          <p class="text-sm">${new Date(details.invoiceDate || new Date()).toLocaleDateString("en-US", DATE_OPTIONS)}</p>
         </div>
       </div>
 
       <div class="mt-6">
-        <h3 class="text-sm font-bold text-gray-800 uppercase">Customer Info</h3>
-        <h3 class="text-lg text-gray-800">${receiver.name || ""}</h3>
+        <h3>CUSTOMER INFO</h3>
+        <p class="text-lg">${receiver.name || ""}</p>
       </div>
 
-      <table class="invoice-table">
-        <thead>
-          <tr>
-            <th style="width: 5%;">Sr.</th>
-            <th style="width: 50%;">Description</th>
-            <th style="width: 15%;">Qty</th>
-            <th style="width: 15%;">Unit Price</th>
-            <th style="width: 15%;">Amount (AED)</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${itemsHtml}
-        </tbody>
-      </table>
-
-      <div class="summary">
-        ${taxHtml}
-        ${discountHtml}
-        ${shippingHtml}
-        <p class="text-base font-bold text-gray-800">Total ${formatNumberWithCommas(Number(details.totalAmount || 0))} AED</p>
+      <div class="mt-4">
+        <h3>Quotation</h3>
+        <table class="invoice-table">
+          <thead>
+            <tr>
+              <th style="width: 5%;">Sr.</th>
+              <th style="width: 50%;">Description</th>
+              <th style="width: 15%;">Qty</th>
+              <th style="width: 15%;">Unit Price</th>
+              <th style="width: 15%;">Amount (AED)</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${itemsHtml}
+          </tbody>
+        </table>
+        <div class="summary">
+          <p>Received above items in good condition</p>
+          <p>Total ${formatNumberWithCommas(Number(details.totalAmount || 0))} AED</p>
+        </div>
       </div>
 
       <div class="footer">
         <div class="footer-signatures">
-          <p class="text-sm font-bold text-gray-800">Receiver's Sign _________________</p>
-          <p class="text-sm font-bold text-gray-800">for ${senderData.name || "SPC SOURCE TECHNICAL SERVICES LLC"}</p>
+          <p>Receiver's Sign _____________</p>
+          <p>for ${senderData.name || "SPC SOURCE TECHNICAL SERVICES LLC"}</p>
         </div>
         <div class="footer-bar">
           <div class="flex items-center">
@@ -292,7 +307,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
               <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
               <polyline points="22,6 12,13 2,6"></polyline>
             </svg>
-            <span class="text-sm">${senderData.email || "contact@spcsource.com"}</span>
+            <span>${senderData.email || "contact@spcsource.com"}</span>
           </div>
           <div class="flex items-center">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -300,7 +315,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
               <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
               <path d="M2 12h20"></path>
             </svg>
-            <span class="text-sm">www.spcsource.com</span>
+            <span>www.spcsource.com</span>
           </div>
         </div>
       </div>
