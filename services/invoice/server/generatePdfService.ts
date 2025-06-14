@@ -171,14 +171,13 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
         padding: 0;
       }
       .logo img {
-        width: 140px;
+        width: 180px;
         height: 100px;
       }
       .invoice-details {
         text-align: right;
       }
       .invoice-number {
-        background-color: gray;
         padding: 5px 10px;
         border-radius: 4px;
         display: inline-block;
@@ -252,11 +251,11 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
         <div class="logo">
           <img src="${logoBase64}" alt="SPC Source Logo" />
         </div>
-        <div class="invoice-details">
+        <div class="invoice-details mt-4">
           <p class="text-sm">+971 54 500 4520</p>
           <p class="text-sm">Iris Bay, Office D-43, Business Bay, Dubai</p>
-          <h2 class="text-xl">
-            <span class="invoice-number">
+          <h2 class="text-xl mt-5">
+            <span class="invoice-number bg-gray-500">
               ${
                 details.invoiceNumber.includes("INV")
                   ? "INVOICE# "
@@ -265,7 +264,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
               ${details.invoiceNumber || ""}
             </span>
           </h2>
-          <p class="text-sm">${new Date(
+          <p class="text-md">${new Date(
             details.invoiceDate || new Date()
           ).toLocaleDateString("en-US", DATE_OPTIONS)}</p>
         </div>
