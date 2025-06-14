@@ -54,12 +54,16 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
 
   // Generate items HTML with proper typing
   const itemsHtml = (details.items || [])
-    .map((item: { name?: string; quantity?: number; unitPrice?: number }, index: number) => {
-      const quantity = item.quantity || 0;
-      const unitPrice = item.unitPrice || 0;
-      const total = quantity * unitPrice;
+    .map(
+      (
+        item: { name?: string; quantity?: number; unitPrice?: number },
+        index: number
+      ) => {
+        const quantity = item.quantity || 0;
+        const unitPrice = item.unitPrice || 0;
+        const total = quantity * unitPrice;
 
-      return `
+        return `
         <tr style="border: 1px solid #000;">
           <td style="padding: 12px 16px; width: 5%; border: 1px solid #000; color: #000; font-size: 14px; font-weight: bold;">${
             index + 1
@@ -67,9 +71,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
           <td style="padding: 12px 16px; width: 50%; border: 1px solid #000; color: #000; font-size: 14px;">${
             item.name || ""
           }</td>
-          <td style="padding: 12px 16px; width: 15%; border: 1px solid #000; color: #000; font-size: 14px;">${
-            quantity
-          }</td>
+          <td style="padding: 12px 16px; width: 15%; border: 1px solid #000; color: #000; font-size: 14px;">${quantity}</td>
           <td style="padding: 12px 16px; width: 15%; border: 1px solid #000; color: #000; font-size: 14px;">${
             unitPrice ? `${unitPrice} ` : ""
           }</td>
@@ -78,7 +80,8 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
           }</td>
         </tr>
       `;
-    })
+      }
+    )
     .join("");
 
   // Load logo
@@ -93,7 +96,10 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
 
   // Load Tailwind CSS
   let tailwindCss = "";
-  const localTailwindPath = path.resolve(process.cwd(), "public/tailwind.min.css");
+  const localTailwindPath = path.resolve(
+    process.cwd(),
+    "public/tailwind.min.css"
+  );
   try {
     if (fs.existsSync(localTailwindPath)) {
       tailwindCss = fs.readFileSync(localTailwindPath, "utf8");
@@ -107,8 +113,14 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
 
   // Prepare tax, discount, and shipping details
   const taxDetails = details.taxDetails || { amount: 0, amountType: "amount" };
-  const discountDetails = details.discountDetails || { amount: 0, amountType: "amount" };
-  const shippingDetails = details.shippingDetails || { cost: 0, costType: "amount" };
+  const discountDetails = details.discountDetails || {
+    amount: 0,
+    amountType: "amount",
+  };
+  const shippingDetails = details.shippingDetails || {
+    cost: 0,
+    costType: "amount",
+  };
 
   const hasTax = taxDetails.amount && taxDetails.amount > 0;
   const hasDiscount = discountDetails.amount && discountDetails.amount > 0;
@@ -116,22 +128,34 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
 
   const taxHtml = hasTax
     ? `
-      <p class="text-base font-bold text-gray-800">Tax (${taxDetails.amountType === "amount" ? "AED" : "%"})</p>
-      <p class="text-base text-gray-800">${formatNumberWithCommas(Number(taxDetails.amount))} ${taxDetails.amountType === "amount" ? "AED" : ""}</p>
+      <p class="text-base font-bold text-gray-800">Tax (${
+        taxDetails.amountType === "amount" ? "AED" : "%"
+      })</p>
+      <p class="text-base text-gray-800">${formatNumberWithCommas(
+        Number(taxDetails.amount)
+      )} ${taxDetails.amountType === "amount" ? "AED" : ""}</p>
     `
     : "";
 
   const discountHtml = hasDiscount
     ? `
-      <p class="text-base font-bold text-gray-800">Discount (${discountDetails.amountType === "amount" ? "AED" : "%"})</p>
-      <p class="text-base text-gray-800">${formatNumberWithCommas(Number(discountDetails.amount))} ${discountDetails.amountType === "amount" ? "AED" : ""}</p>
+      <p class="text-base font-bold text-gray-800">Discount (${
+        discountDetails.amountType === "amount" ? "AED" : "%"
+      })</p>
+      <p class="text-base text-gray-800">${formatNumberWithCommas(
+        Number(discountDetails.amount)
+      )} ${discountDetails.amountType === "amount" ? "AED" : ""}</p>
     `
     : "";
 
   const shippingHtml = hasShipping
     ? `
-      <p class="text-base font-bold text-gray-800">Shipping (${shippingDetails.costType === "amount" ? "AED" : "%"})</p>
-      <p class="text-base text-gray-800">${formatNumberWithCommas(Number(shippingDetails.cost))} ${shippingDetails.costType === "amount" ? "AED" : ""}</p>
+      <p class="text-base font-bold text-gray-800">Shipping (${
+        shippingDetails.costType === "amount" ? "AED" : "%"
+      })</p>
+      <p class="text-base text-gray-800">${formatNumberWithCommas(
+        Number(shippingDetails.cost)
+      )} ${shippingDetails.costType === "amount" ? "AED" : ""}</p>
     `
     : "";
 
@@ -296,16 +320,28 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
           </tbody>
         </table>
         <div class="summary">
-          <p>${receiver.additionalNotes || ""}</p>
-          <p>${receiver.paymentTerms || ""}</p>
+        <div>
+         <div>
+         <h2>Additional Notes</h2>
+         <p>${receiver.additionalNotes || "N/A"}</p>
+         </div>
+         <div>
+         <h2>Payment Terms</h2>
+         <p>${receiver.paymentTerms || "N/A"}</p>
+         </div>     
+        </div>
+          
+          
           ${taxHtml ? `<p>${taxHtml}</p>` : ""}
           ${shippingHtml ? `<p>${shippingHtml}</p>` : ""}
           ${discountHtml ? `<p>${discountHtml}</p>` : ""}
-          <p>Total ${formatNumberWithCommas(Number(details.totalAmount || 0))} AED</p>
+          <p>Total ${formatNumberWithCommas(
+            Number(details.totalAmount || 0)
+          )} AED</p>
         </div>
       </div>
 
-      <div class="footer">
+      <div class="w-full">
         <div class="footer-signatures">
           <p>Receiver's Sign _____________</p>
           <p>for ${senderData.name || "SPC SOURCE TECHNICAL SERVICES LLC"}</p>
