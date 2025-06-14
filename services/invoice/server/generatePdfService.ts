@@ -178,6 +178,8 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
         text-align: right;
       }
       .invoice-number {
+              background-color: #d3d3d3;
+
         padding: 5px 10px;
         border-radius: 4px;
         display: inline-block;
@@ -255,7 +257,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
           <p class="text-sm">+971 54 500 4520</p>
           <p class="text-sm">Iris Bay, Office D-43, Business Bay, Dubai</p>
           <h2 class="text-xl mt-5">
-            <span class="invoice-number bg-gray-500">
+            <span class="invoice-number ">
               ${
                 details.invoiceNumber.includes("INV")
                   ? "INVOICE# "
