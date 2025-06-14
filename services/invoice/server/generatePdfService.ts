@@ -1,5 +1,5 @@
-import chromium from '@sparticuz/chromium-min';
-import puppeteerCore from 'puppeteer-core';
+import chromium from "@sparticuz/chromium-min";
+import puppeteerCore from "puppeteer-core";
 import { InvoiceType } from "@/types";
 import { TAILWIND_CDN } from "@/lib/variables";
 import { connectToDatabase } from "@/lib/mongoose";
@@ -75,7 +75,10 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
 
   // Load Tailwind CSS (prefer local file, fallback to CDN)
   let tailwindCss = "";
-  const localTailwindPath = path.resolve(process.cwd(), "public/tailwind.min.css");
+  const localTailwindPath = path.resolve(
+    process.cwd(),
+    "public/tailwind.min.css"
+  );
   try {
     if (fs.existsSync(localTailwindPath)) {
       tailwindCss = fs.readFileSync(localTailwindPath, "utf8");
@@ -89,8 +92,14 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
 
   // Prepare tax, discount, and shipping details
   const taxDetails = details.taxDetails || { amount: 0, amountType: "amount" };
-  const discountDetails = details.discountDetails || { amount: 0, amountType: "amount" };
-  const shippingDetails = details.shippingDetails || { cost: 0, costType: "amount" };
+  const discountDetails = details.discountDetails || {
+    amount: 0,
+    amountType: "amount",
+  };
+  const shippingDetails = details.shippingDetails || {
+    cost: 0,
+    costType: "amount",
+  };
 
   const hasTax = taxDetails.amount && taxDetails.amount > 0;
   const hasDiscount = discountDetails.amount && discountDetails.amount > 0;
@@ -131,174 +140,188 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
 
   // Generate HTML template
   const htmlTemplate = `
-    <html>
-      <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <style>
-          ${tailwindCss}
-          body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-            height: 100vh;
-            box-sizing: border-box;
-            position: relative;
-            min-height: 842px;
-          }
-          .text-right { text-align: right; }
-          .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-top: -10px;
-          }
-          .logo {
-            margin: 0;
-            padding: 0;
-            line-height: 0;
-          }
-          .invoice-details {
-            margin: 0;
-            padding: 0;
-            text-align: right;
-            margin-top: 20px;
-          }
-          .invoice-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-          }
-          .invoice-table thead tr {
-            background-color: #d3d3d3;
-          }
-          .invoice-table th {
-            padding: 12px 16px;
-            font-size: 14px;
-            font-weight: bold;
-            text-transform: uppercase;
-            color: #000;
-            text-align: left;
-            border: 1px solid #000;
-          }
-          .invoice-table th:last-child {
-            text-align: right;
-          }
-          .invoice-table td {
-            padding: 12px 16px;
-            color: #000;
-            font-size: 14px;
-          }
-          .summary {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 20px;
-          }
-          .footer {
-            position: absolute;
-            bottom: 40px;
-            width: calc(100% - 40px);
-            border-top: 1px solid #000;
-            padding-top: 10px;
-          }
-          .footer-bar {
-            background-color: #fb923c;
-            color: black;
-            padding: 10px;
-            display: flex;
-            justify-content:蔽
-            align-items: center;
-            margin-top: 10px;
-          }
-        </style>
-      </head>
-      <body>
-        <div class="header">
-          <div class="logo">
-            <img src="${logoBase64}" width="140" height="100" alt="Logo" style="vertical-align: top;" />
-          </div>
-          <div class="invoice-details">
-            <p class="text-base text-gray-800">${senderData.phone || ""}</p>
-            <p class="text-base text-gray-800">${senderData.address || ""}</p>
-            <h2 class="text-xl font-bold text-gray-800 mt-2">${details.invoiceNumber.includes("INV") ? "INVOICE# " : "QUOATION# "} <span class="text-lg text-gray-600 font-thin">${
-              details.invoiceNumber || ""
-            }</span> </h2>
-            <p class="text-base text-gray-800">${new Date(
-              details.invoiceDate || new Date()
-            ).toLocaleDateString("en-US", DATE_OPTIONS)}</p>
-          </div>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+      ${tailwindCss}
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 40px;
+        background-color: #ffffff;
+        color: #000000;
+        height: 842px;
+        width: 595px;
+        box-sizing: border-box;
+        position: relative;
+      }
+      .container {
+        max-width: 595px;
+        margin: 0 auto;
+      }
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 20px;
+      }
+      .logo {
+        margin: 0;
+        padding: 0;
+      }
+      .logo img {
+        width: 140px;
+        height: 100px;
+      }
+      .invoice-details {
+        text-align: right;
+      }
+      .invoice-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+      }
+      .invoice-table thead tr {
+        background-color: #d3d3d3;
+      }
+      .invoice-table th {
+        padding: 12px 16px;
+        font-size: 14px;
+        font-weight: bold;
+        text-transform: uppercase;
+        color: #000;
+        text-align: left;
+        border: 1px solid #000;
+      }
+      .invoice-table th:last-child {
+        text-align: right;
+      }
+      .invoice-table td {
+        padding: 12px 16px;
+        font-size: 14px;
+        border: 1px solid #000;
+      }
+      .invoice-table td:last-child {
+        text-align: right;
+      }
+      .summary {
+        margin-top: 20px;
+        text-align: right;
+      }
+      .footer {
+        position: absolute;
+        bottom: 40px;
+        width: 100%;
+        left: 40px;
+        right: 40px;
+        border-top: 1px solid #000;
+        padding-top: 10px;
+      }
+      .footer-signatures {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 10px;
+      }
+      .footer-bar {
+        background-color: #f4a261;
+        color: #000;
+        padding: 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+      }
+      .footer-bar svg {
+        margin-right: 8px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <div class="logo">
+          <img src="${logoBase64}" alt="SPC Source Logo" />
         </div>
+        <div class="invoice-details">
+          <p class="text-sm text-gray-800">Iris Bay, Office D-43, Business Bay, Dubai</p>
+          <h2 class="text-xl font-bold text-gray-800">
+            ${details.invoiceNumber.includes("INV") ? "INVOICE# " : "QUOTATION# "}
+            <span class="text-lg font-normal">${details.invoiceNumber || ""}</span>
+          </h2>
+          <p class="text-sm text-gray-800">${new Date(details.invoiceDate || new Date()).toLocaleDateString("en-US", DATE_OPTIONS)}</p>
+        </div>
+      </div>
 
-        <div class="mt-6">
-          <h3 class="text-base font-bold text-gray-800">CUSTOMER INFO</h3>
-          <h3 class="text-xl text-gray-800">${receiver.name || ""}</h3>
-          <h3 class="text-lg text-gray-800">${receiver.address || ""}</h3>
-        </div>
+      <div class="mt-6">
+        <h3 class="text-sm font-bold text-gray-800 uppercase">Customer Info</h3>
+        <h3 class="text-lg text-gray-800">${receiver.name || ""}</h3>
+      </div>
 
-        <div class="mt-4">
-          <h3 class="text-base font-bold text-gray-800">ITEMS</h3>
-          <table class="invoice-table">
-            <thead>
-              <tr>
-                <th style="width: 5%;">Sr.</th>
-                <th style="width: 50%;">Product</th>
-                <th style="width: 15%;">Qty</th>
-                <th style="width: 15%;">Unit Price</th>
-                <th style="width: 15%;">Amount (AED)</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${itemsHtml}
-            </tbody>
-          </table>
-        </div>
+      <table class="invoice-table">
+        <thead>
+          <tr>
+            <th style="width: 5%;">Sr.</th>
+            <th style="width: 50%;">Description</th>
+            <th style="width: 15%;">Qty</th>
+            <th style="width: 15%;">Unit Price</th>
+            <th style="width: 15%;">Amount (AED)</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${itemsHtml}
+        </tbody>
+      </table>
 
-        <div class="summary">
-          <div class="text-right">
-            ${taxHtml}
-            ${discountHtml}
-            ${shippingHtml}
-            <p class="text-base font-bold text-gray-800">Total ${formatNumberWithCommas(
-              Number(details.totalAmount || 0)
-            )} AED</p>
+      <div class="summary">
+        ${taxHtml}
+        ${discountHtml}
+        ${shippingHtml}
+        <p class="text-base font-bold text-gray-800">Total ${formatNumberWithCommas(Number(details.totalAmount || 0))} AED</p>
+      </div>
+
+      <div class="footer">
+        <div class="footer-signatures">
+          <p class="text-sm font-bold text-gray-800">Receiver's Sign _________________</p>
+          <p class="text-sm font-bold text-gray-800">for ${senderData.name || "SPC SOURCE TECHNICAL SERVICES LLC"}</p>
+        </div>
+        <div class="footer-bar">
+          <div class="flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+              <polyline points="22,6 12,13 2,6"></polyline>
+            </svg>
+            <span class="text-sm">${senderData.email || "contact@spcsource.com"}</span>
+          </div>
+          <div class="flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+              <path d="M2 12h20"></path>
+            </svg>
+            <span class="text-sm">www.spcsource.com</span>
           </div>
         </div>
-
-        <div class="footer">
-          <div class="flex justify-between">
-            <p class="text-base font-bold text-gray-800">Receiver's Sign _________________</p>
-            <p class="text-base font-bold text-gray-800">for ${
-              senderData.name || ""
-            }</p>
-          </div>
-          <div class="footer-bar">
-            <div class="flex items-center">
-              <span class="mr-2 text-base">📧</span>
-              <span class="text-base">${senderData.email || ""}</span>
-            </div>
-            <div class="flex items-center">
-              <span class="mr-2 text-base">🌐</span>
-              <span class="text-base">www.example.com</span>
-            </div>
-          </div>
-        </div>
-      </body>
-    </html>
+      </div>
+    </div>
+  </body>
+</html>
   `;
 
   // Clean up /tmp to avoid ETXTBSY
   try {
-    const tmpDir = '/tmp';
+    const tmpDir = "/tmp";
     if (fs.existsSync(tmpDir)) {
       const files = fs.readdirSync(tmpDir);
       for (const file of files) {
-        if (file.startsWith('chromium') || file.includes('puppeteer')) {
+        if (file.startsWith("chromium") || file.includes("puppeteer")) {
           fs.unlinkSync(path.join(tmpDir, file));
         }
       }
     }
   } catch (cleanupError) {
-    console.warn('Failed to clean /tmp:', cleanupError);
+    console.warn("Failed to clean /tmp:", cleanupError);
   }
 
   // Generate PDF
@@ -308,40 +331,44 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
     const launchOptions = {
       args: [
         ...chromium.args,
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--single-process',
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--single-process",
       ],
-      executablePath: await chromium.executablePath('https://github.com/Sparticuz/chromium/releases/download/v133.0.0/chromium-v133.0.0-pack.tar'),
-      headless: 'new',
+      executablePath: await chromium.executablePath(
+        "https://github.com/Sparticuz/chromium/releases/download/v133.0.0/chromium-v133.0.0-pack.tar"
+      ),
+      headless: "new",
       defaultViewport: chromium.defaultViewport,
       ignoreHTTPSErrors: true,
     };
 
-    console.log('Chromium executable path:', launchOptions.executablePath); // Debug log
+    console.log("Chromium executable path:", launchOptions.executablePath); // Debug log
 
-    browser = await puppeteerCore.launch(launchOptions  as any);
+    browser = await puppeteerCore.launch(launchOptions as any);
     const page = await browser.newPage();
 
     await page.setContent(htmlTemplate, {
-      waitUntil: 'domcontentloaded',
+      waitUntil: "domcontentloaded",
       timeout: 30000,
     });
 
     const pdfBuffer: any = await page.pdf({
-      format: 'A4',
+      format: "A4",
       printBackground: true,
-      margin: { top: '50px', right: '50px', bottom: '50px', left: '50px' },
+      margin: { top: "50px", right: "50px", bottom: "50px", left: "50px" },
     });
 
     return pdfBuffer;
-  } catch (error:any) {
-    console.error('Error generating PDF:', {
+  } catch (error: any) {
+    console.error("Error generating PDF:", {
       message: error.message,
       stack: error.stack,
       env: process.env.NODE_ENV,
-      executablePath: await chromium.executablePath('https://github.com/Sparticuz/chromium/releases/download/v133.0.0/chromium-v133.0.0-pack.tar'),
+      executablePath: await chromium.executablePath(
+        "https://github.com/Sparticuz/chromium/releases/download/v133.0.0/chromium-v133.0.0-pack.tar"
+      ),
     });
     throw error;
   } finally {
