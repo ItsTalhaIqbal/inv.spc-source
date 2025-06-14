@@ -246,7 +246,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
 
   let browser = null;
   try {
-    const launchOptions:any = {
+    const launchOptions: any = {
       args: [
         ...chromium.args,
         "--no-sandbox",
@@ -272,7 +272,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
       timeout: 30000,
     });
 
-    const pdfBuffer :any= await page.pdf({
+    const pdfBuffer: any = await page.pdf({
       format: "A4",
       printBackground: true,
       margin: { top: "0", right: "0", bottom: "0", left: "0" },
