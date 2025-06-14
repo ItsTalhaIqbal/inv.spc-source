@@ -128,17 +128,21 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
         padding: 20px;
       }
       .header {
-        background-color: #4CAF50;
-        color: white;
-        text-align: center;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
         padding: 10px;
         margin-bottom: 20px;
       }
-      .header img {
+      .header .logo {
         max-height: 50px;
       }
-      .header p {
+      .header .sender-data p {
         margin: 5px 0;
+      }
+      .header .invoice-title {
+        font-size: 1.5em;
+        font-weight: bold;
       }
       .invoice-details {
         text-align: center;
@@ -174,14 +178,20 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
   <body>
     <div class="container">
       <div class="header">
-        <img src="${details.invoiceLogo || "/public/assets/img/image.jpg"}" alt="${senderData.name} Logo" />
-        <p>${senderData.name}</p>
-        <p>${senderData.address}</p>
-        <p>${senderData.phone} | ${senderData.email}</p>
-        <p>TRN: ${senderData.trn || ""}</p>
+        <div class="logo">
+          <img src="${details.invoiceLogo || "/public/assets/img/image.jpg"}" alt="${senderData.name} Logo" />
+        </div>
+        <div class="sender-data">
+          <p>${senderData.name}</p>
+          <p>${senderData.address}</p>
+          <p>${senderData.phone} | ${senderData.email}</p>
+          <p>TRN: ${senderData.trn || ""}</p>
+        </div>
+        <div class="invoice-title">
+          TAX INVOICE
+        </div>
       </div>
       <div class="invoice-details">
-        <h2>TAX INVOICE</h2>
         <p>Invoice #: ${details.invoiceNumber || "INV-27419"}</p>
         <p>Invoice Date: ${new Date(details.invoiceDate || "06/14/2025").toLocaleDateString("en-US", DATE_OPTIONS)}</p>
         <p>Billed To: ${receiver.name}</p>
@@ -289,3 +299,4 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
     }
   }
 }
+
