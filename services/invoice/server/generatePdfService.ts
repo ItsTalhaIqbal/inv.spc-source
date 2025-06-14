@@ -5,7 +5,6 @@ import { connectToDatabase } from "@/lib/mongoose";
 import fs from "fs";
 import path from "path";
 
-// Define TypeScript interfaces
 interface Receiver {
   name: string;
   phone?: string;
@@ -51,9 +50,9 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
     throw new Error("Invoice number is missing");
   }
 
-  const senderData :any= body.sender ;
-  const receiver:any = body.receiver 
-  const details:any = body.details ;
+  const senderData: any = body.sender;
+  const receiver: any = body.receiver;
+  const details: any = body.details;
 
   const DATE_OPTIONS = {
     year: "numeric",
@@ -86,7 +85,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
     })
     .join("");
 
-  const logoPath = path.resolve(process.cwd(), "public/assets/img/your-logo.jpg");
+  const logoPath = path.resolve(process.cwd(), "public/assets/img/image.jpg");
   let logoBase64 = "";
   try {
     const logoBuffer = fs.readFileSync(logoPath);
@@ -175,16 +174,16 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
   <body>
     <div class="container">
       <div class="header">
-        <img src="${details.invoiceLogo}" alt="${senderData.name} Logo" />
+        <img src="${details.invoiceLogo || "/public/assets/img/image.jpg"}" alt="${senderData.name} Logo" />
         <p>${senderData.name}</p>
         <p>${senderData.address}</p>
         <p>${senderData.phone} | ${senderData.email}</p>
-        <p>TRN: ${senderData.trn}</p>
+        <p>TRN: ${senderData.trn || ""}</p>
       </div>
       <div class="invoice-details">
         <h2>TAX INVOICE</h2>
         <p>Invoice #: ${details.invoiceNumber || "INV-27419"}</p>
-        <p>Invoice Date: ${new Date(details.invoiceDate || "29-08-2024").toLocaleDateString("en-US", DATE_OPTIONS)}</p>
+        <p>Invoice Date: ${new Date(details.invoiceDate || "06/14/2025").toLocaleDateString("en-US", DATE_OPTIONS)}</p>
         <p>Billed To: ${receiver.name}</p>
         <p>Phone: ${receiver.phone || ""}</p>
       </div>
@@ -212,8 +211,9 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
       </div>
       <div class="footer">
         <p>Payment Instructions</p>
-        <p>Raqeeq Bank and Carpet LLC</p>
-        <p>Account Number: 0000000000000001</p>
+        <p>${details.paymentInformation?.bankName || "Bank Inc."}</p>
+        <p>Account Name: ${details.paymentInformation?.accountName || "John Doe"}</p>
+        <p>Account Number: ${details.paymentInformation?.accountNumber || "445566998877"}</p>
         <p>Terms & Condition</p>
         <p>100% Advance Payment</p>
         <p>For, ${senderData.name}</p>
