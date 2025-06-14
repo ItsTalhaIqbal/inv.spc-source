@@ -157,7 +157,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
       body {
         font-family: 'Roboto', sans-serif;
         margin: 0;
-        padding: 20px;
+        padding: 0;
         background-color: #ffffff;
         color: #000000;
         height: 842px;
@@ -166,8 +166,9 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
         position: relative;
       }
       .container {
-        max-width: 595px;
+        width: 595px;
         margin: 0 auto;
+        padding: 20px;
       }
       .header {
         display: flex;
@@ -229,7 +230,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
       .footer {
         position: absolute;
         bottom: 20px;
-        width: 100%;
+        width: 555px; /* 595px - 20px left/right padding */
         left: 20px;
         right: 20px;
         border-top: 1px solid #000;
@@ -255,6 +256,9 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
       h3 {
         font-weight: bold;
       }
+      .customer-info, .quotation-section {
+        display: ${receiver.name ? "block" : "none"};
+      }
     </style>
   </head>
   <body>
@@ -276,12 +280,12 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
         </div>
       </div>
 
-      <div class="mt-4">
+      <div class="customer-info mt-4">
         <h3>CUSTOMER INFO</h3>
         <p class="text-lg">${receiver.name || ""}</p>
       </div>
 
-      <div class="mt-4">
+      <div class="quotation-section mt-4">
         <h3>${details.invoiceNumber.includes("INV") ? "INVOICE" : "QUOTATION"}</h3>
         <table class="invoice-table">
           <thead>
@@ -299,6 +303,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
         </table>
         <div class="summary">
           <p>Received above items in good condition</p>
+          <p>good condition</p>
           <p>Total ${formatNumberWithCommas(Number(details.totalAmount || 0))} AED</p>
         </div>
       </div>
@@ -379,7 +384,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
     const pdfBuffer: any = await page.pdf({
       format: "A4",
       printBackground: true,
-      margin: { top: "20px", right: "20px", bottom: "20px", left: "20px" },
+      margin: { top: "0", right: "0", bottom: "0", left: "0" },
     });
 
     return pdfBuffer;
