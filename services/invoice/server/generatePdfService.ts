@@ -181,7 +181,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
   <body>
     <div class="container">
       <div class="header">
-        <img src="${logoBase64}" alt="${senderData.name} Logo" />
+        <img src="${details.invoiceLogo}" alt="${senderData.name} Logo" />
         <p>${senderData.name}</p>
         <p>${senderData.address}</p>
         <p>${senderData.phone} | ${senderData.email}</p>
