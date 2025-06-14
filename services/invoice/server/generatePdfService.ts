@@ -209,10 +209,14 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
         width: 100%;
         box-sizing: border-box;
         position: relative;
+        min-height: 100vh; /* Ensure body takes full height */
       }
       .container {
-        width: w-full;
+        width: 100%;
         padding: 0;
+      }
+      .main-content {
+        padding: 20px; /* Add padding to main content */
       }
       .header {
         display: flex;
@@ -270,11 +274,11 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
         margin-top: 20px;
         text-align: right;
         font-weight: bold;
-        w-full;
+        width: 100%;
       }
       .footer {
         position: absolute;
-        bottom: 40px;
+        bottom: 0; /* Keep footer at the bottom */
         width: 100%;
         border-top: 1px solid #000;
         padding-top: 10px;
@@ -303,73 +307,75 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
   </head>
   <body>
     <div class="container">
-      <div class="header">
-        <div class="logo">
-          <img src="${logoBase64}" alt="SPC Source Logo" />
-        </div>
-        <div class="invoice-details mt-4">
-          <p class="text-sm">+971 54 500 4520</p>
-          <p class="text-sm">Iris Bay, Office D-43, Business Bay, Dubai</p>
-          <h2 class="text-xl mt-5">
-            <span class="invoice-number">
-              ${
-                details.invoiceNumber.includes("INV")
-                  ? "INVOICE# "
-                  : "QUOTATION# "
-              }
-              ${details.invoiceNumber || ""}
-            </span>
-          </h2>
-          <p class="text-md">${new Date(
-            details.invoiceDate || new Date()
-          ).toLocaleDateString("en-US", DATE_OPTIONS)}</p>
-        </div>
-      </div>
-
-      <div class="mt-6">
-        <h3>CUSTOMER INFO</h3>
-        <p class="text-lg">${receiver.name || ""}</p>
-      </div>
-
-      <div class="mt-4">
-        <h3>${
-          details.invoiceNumber.includes("INV") ? "INVOICE" : "QUOTATION"
-        }</h3>
-        <table class="invoice-table">
-          <thead>
-            <tr>
-              <th class="w-1/20">Sr.</th>
-              <th class="w-1/2">Item</th>
-              <th class="w-1/6">Qty</th>
-              <th class="w-1/6">Unit Price</th>
-              <th class="w-1/6">Amount (AED)</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${itemsHtml}
-          </tbody>
-        </table>
-        <div class="summary">
-          <div>
-            <div>
-              <h2>Additional Notes</h2>
-              <p>${receiver.additionalNotes ?? "N/A"}</p>
-            </div>
-            <div>
-              <h2>Payment Terms</h2>
-              <p>${receiver.paymentTerms ?? "N/A"}</p>
-            </div>     
+      <div class="main-content"> <!-- New div for main content with padding -->
+        <div class="header">
+          <div class="logo">
+            <img src="${logoBase64}" alt="SPC Source Logo" />
           </div>
-          ${taxHtml ? `<p>${taxHtml}</p>` : ""}
-          ${shippingHtml ? `<p>${shippingHtml}</p>` : ""}
-          ${discountHtml ? `<p>${discountHtml}</p>` : ""}
-          <p>Total ${formatNumberWithCommas(
-            Number(details.totalAmount || 0)
-          )} AED</p>
+          <div class="invoice-details mt-4">
+            <p class="text-sm">+971 54 500 4520</p>
+            <p class="text-sm">Iris Bay, Office D-43, Business Bay, Dubai</p>
+            <h2 class="text-xl mt-5">
+              <span class="invoice-number">
+                ${
+                  details.invoiceNumber.includes("INV")
+                    ? "INVOICE# "
+                    : "QUOTATION# "
+                }
+                ${details.invoiceNumber || ""}
+              </span>
+            </h2>
+            <p class="text-md">${new Date(
+              details.invoiceDate || new Date()
+            ).toLocaleDateString("en-US", DATE_OPTIONS)}</p>
+          </div>
         </div>
-      </div>
 
-      <div class="w-full">
+        <div class="mt-6">
+          <h3>CUSTOMER INFO</h3>
+          <p class="text-lg">${receiver.name || ""}</p>
+        </div>
+
+        <div class="mt-4">
+          <h3>${
+            details.invoiceNumber.includes("INV") ? "INVOICE" : "QUOTATION"
+          }</h3>
+          <table class="invoice-table">
+            <thead>
+              <tr>
+                <th class="w-1/20">Sr.</th>
+                <th class="w-1/2">Item</th>
+                <th class="w-1/6">Qty</th>
+                <th class="w-1/6">Unit Price</th>
+                <th class="w-1/6">Amount (AED)</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${itemsHtml}
+            </tbody>
+          </table>
+          <div class="summary">
+            <div>
+              <div>
+                <h2>Additional Notes</h2>
+                <p>${receiver.additionalNotes ?? "N/A"}</p>
+              </div>
+              <div>
+                <h2>Payment Terms</h2>
+                <p>${receiver.paymentTerms ?? "N/A"}</p>
+              </div>     
+            </div>
+            ${taxHtml ? `<p>${taxHtml}</p>` : ""}
+            ${shippingHtml ? `<p>${shippingHtml}</p>` : ""}
+            ${discountHtml ? `<p>${discountHtml}</p>` : ""}
+            <p>Total ${formatNumberWithCommas(
+              Number(details.totalAmount || 0)
+            )} AED</p>
+          </div>
+        </div>
+      </div> <!-- End of main-content div -->
+      
+      <div class="footer"> <!-- Footer remains unchanged -->
         <div class="footer-signatures">
           <p>Receiver's Sign _____________</p>
           <p>for ${senderData.name || "SPC SOURCE TECHNICAL SERVICES LLC"}</p>
@@ -395,7 +401,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
     </div>
   </body>
 </html>
-  `;
+`;
 
   // Clean up /tmp to avoid ETXTBSY
   try {
