@@ -1,13 +1,57 @@
 import chromium from "@sparticuz/chromium-min";
 import puppeteerCore from "puppeteer-core";
-import { InvoiceType } from "@/types";
 import { TAILWIND_CDN } from "@/lib/variables";
 import { connectToDatabase } from "@/lib/mongoose";
 import fs from "fs";
 import path from "path";
 
+// Define TypeScript interfaces for better type safety
+interface Receiver {
+  name: string;
+  address: string;
+  state: string;
+  country: string;
+  email: string;
+  phone: string;
+  additionalNotes?: string;
+  paymentTerms?: string;
+}
+
+interface Item {
+  name?: string;
+  quantity?: number;
+  unitPrice?: number;
+}
+
+interface Details {
+  invoiceNumber: string;
+  invoiceDate?: string;
+  items?: Item[];
+  taxDetails?: { amount: number; amountType: string };
+  discountDetails?: { amount: number; amountType: string };
+  shippingDetails?: { cost: number; costType: string };
+  totalAmount?: number;
+  pdfTemplate?: number;
+}
+
+interface InvoiceType {
+  sender?: {
+    name: string;
+    country: string;
+    state: string;
+    email: string;
+    address: string;
+    phone: string;
+  };
+  receiver?: Receiver;
+  details?: Details;
+}
+
 export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
   await connectToDatabase();
+
+  // Debug log to inspect input data
+  console.log("Input body:", JSON.stringify(body, null, 2));
 
   if (!body.details?.invoiceNumber) {
     throw new Error("Invoice number is missing");
@@ -19,8 +63,8 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
     );
   }
 
-  // Prepare data with default values and cast to any
-  const senderData: any = body.sender || {
+  // Prepare data with default values
+  const senderData = body.sender || {
     name: "SPC Source Technical Services LLC",
     country: "UAE",
     state: "Dubai",
@@ -28,7 +72,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
     address: "Iris Bay, Office D-43, Business Bay, Dubai, UAE.",
     phone: "+971 54 500 4520",
   };
-  const receiver: any = body.receiver || {
+  const receiver = body.receiver || {
     name: "",
     address: "",
     state: "",
@@ -38,7 +82,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
     additionalNotes: "",
     paymentTerms: "",
   };
-  const details: any = body.details || {};
+  const details = body.details || {};
 
   // Date formatting options
   const DATE_OPTIONS = {
@@ -52,18 +96,14 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
   const formatNumberWithCommas = (num: number): string =>
     num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 
-  // Generate items HTML with proper typing
+  // Generate items HTML
   const itemsHtml = (details.items || [])
-    .map(
-      (
-        item: { name?: string; quantity?: number; unitPrice?: number },
-        index: number
-      ) => {
-        const quantity = item.quantity || 0;
-        const unitPrice = item.unitPrice || 0;
-        const total = quantity * unitPrice;
+    .map((item: Item, index: number) => {
+      const quantity = item.quantity || 0;
+      const unitPrice = item.unitPrice || 0;
+      const total = quantity * unitPrice;
 
-        return `
+      return `
         <tr class="border">
           <td class="p-3 w-1/20 font-bold text-black text-base border">${index + 1}</td>
           <td class="p-3 w-1/2 text-black text-base border">${item.name || ""}</td>
@@ -72,8 +112,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
           <td class="p-3 w-1/6 text-right text-black text-base border">${total ? `${total} ` : ""}</td>
         </tr>
       `;
-      }
-    )
+    })
     .join("");
 
   // Load logo
@@ -272,7 +311,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
           <p class="text-sm">+971 54 500 4520</p>
           <p class="text-sm">Iris Bay, Office D-43, Business Bay, Dubai</p>
           <h2 class="text-xl mt-5">
-            <span class="invoice-number ">
+            <span class="invoice-number">
               ${
                 details.invoiceNumber.includes("INV")
                   ? "INVOICE# "
@@ -314,11 +353,11 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
           <div>
             <div>
               <h2>Additional Notes</h2>
-              <p>${receiver.additionalNotes || "N/A"}</p>
+              <p>${receiver.additionalNotes ?? "N/A"}</p>
             </div>
             <div>
               <h2>Payment Terms</h2>
-              <p>${receiver.paymentTerms || "N/A"}</p>
+              <p>${receiver.paymentTerms ?? "N/A"}</p>
             </div>     
           </div>
           ${taxHtml ? `<p>${taxHtml}</p>` : ""}
@@ -395,7 +434,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
 
     console.log("Chromium executable path:", launchOptions.executablePath); // Debug log
 
-    browser = await puppeteerCore.launch(launchOptions as any);
+    browser = await puppeteerCore.launch(launchOptions);
     const page = await browser.newPage();
 
     await page.setContent(htmlTemplate, {
@@ -403,7 +442,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
       timeout: 30000,
     });
 
-    const pdfBuffer: any = await page.pdf({
+    const pdfBuffer = await page.pdf({
       format: "A4",
       printBackground: true,
       margin: { top: "0", right: "0", bottom: "0", left: "0" },
