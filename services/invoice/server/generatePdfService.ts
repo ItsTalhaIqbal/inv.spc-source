@@ -16,20 +16,24 @@ interface Item {
   quantity?: number;
   unitPrice?: number;
   taxable?: number;
+  taxPercent?: number;
+  total?: number;
 }
 
 interface Details {
   invoiceNumber: string;
   invoiceDate?: string;
   items?: Item[];
-  totalAmount?: number;
-  taxAmount?: number;
   subTotal?: number;
+  taxableAmount?: number;
+  taxAmount?: number;
+  totalAmount?: number;
 }
 
 interface InvoiceType {
   sender?: {
     name: string;
+    address?: string;
     phone?: string;
     email?: string;
     trn?: string;
@@ -49,6 +53,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
 
   const senderData = body.sender || {
     name: "Green Grass And Carpet LLC",
+    address: "Shop No. 201, Najmiya Ajman",
     phone: "+971 56 879 8791",
     email: "shop.greengrassandcarpet@gmail.com",
     trn: "TRN-100287600003",
@@ -69,8 +74,9 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
     .map((item: Item, index: number) => {
       const quantity = item.quantity || 0;
       const unitPrice = item.unitPrice || 0;
-      const total = quantity * unitPrice;
       const taxable = item.taxable || 0;
+      const taxPercent = item.taxPercent || 0;
+      const total = item.total || (quantity * unitPrice);
 
       return `
         <tr>
@@ -78,7 +84,8 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
           <td class="p-2 text-center">${item.name || ""}</td>
           <td class="p-2 text-center">${quantity}</td>
           <td class="p-2 text-center">${unitPrice ? `${formatNumberWithCommas(unitPrice)} AED` : "0 AED"}</td>
-          <td class="p-2 text-center">${taxable ? `${taxable}%` : "0%"}</td>
+          <td class="p-2 text-center">${taxable ? `${formatNumberWithCommas(taxable)} AED` : "0 AED"}</td>
+          <td class="p-2 text-center">${taxPercent ? `${taxPercent}%` : "0%"}</td>
           <td class="p-2 text-center">${total ? `${formatNumberWithCommas(total)} AED` : "0 AED"}</td>
         </tr>
       `;
@@ -176,14 +183,14 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
       <div class="header">
         <img src="${logoBase64}" alt="${senderData.name} Logo" />
         <p>${senderData.name}</p>
+        <p>${senderData.address}</p>
+        <p>${senderData.phone} | ${senderData.email}</p>
         <p>TRN: ${senderData.trn}</p>
-        <p>${senderData.phone}</p>
-        <p>${senderData.email}</p>
       </div>
       <div class="invoice-details">
-        <h2>INVOICE</h2>
-        <p>Invoice #: INV-27419</p>
-        <p>Invoice Date: ${new Date(details.invoiceDate || new Date()).toLocaleDateString("en-US", DATE_OPTIONS)}</p>
+        <h2>TAX INVOICE</h2>
+        <p>Invoice #: ${details.invoiceNumber || "INV-27419"}</p>
+        <p>Invoice Date: ${new Date(details.invoiceDate || "29-08-2024").toLocaleDateString("en-US", DATE_OPTIONS)}</p>
         <p>Billed To: ${receiver.name}</p>
         <p>Phone: ${receiver.phone || ""}</p>
       </div>
@@ -195,7 +202,8 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
             <th>Qty</th>
             <th>Price</th>
             <th>Taxable</th>
-            <th>Amount</th>
+            <th>Tax %</th>
+            <th>Total</th>
           </tr>
         </thead>
         <tbody>
@@ -204,15 +212,17 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
       </table>
       <div class="summary">
         <p>Sub Total: ${formatNumberWithCommas(Number(details.subTotal || 0))} AED</p>
-        <p>Tax Amount: ${formatNumberWithCommas(Number(details.taxAmount || 0))} AED</p>
+        <p>Taxable Amount: ${formatNumberWithCommas(Number(details.taxableAmount || 0))} AED</p>
+        <p>Tax %: ${formatNumberWithCommas(Number(details.taxAmount || 0))} AED</p>
         <p>Grand Total: ${formatNumberWithCommas(Number(details.totalAmount || 0))} AED</p>
       </div>
       <div class="footer">
-        <p>Payment Instructions: Bank Name</p>
+        <p>Payment Instructions</p>
         <p>Raqeeq Bank and Carpet LLC</p>
         <p>Account Number: 0000000000000001</p>
-        <p>Advance Payment</p>
-        <p>For, GREENGRASS AND CARPET LLC</p>
+        <p>Terms & Condition</p>
+        <p>100% Advance Payment</p>
+        <p>For, ${senderData.name}</p>
         <p>AUTHORIZED SIGNATURE: _________________</p>
       </div>
     </div>
@@ -236,7 +246,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
 
   let browser = null;
   try {
-    const launchOptions = {
+    const launchOptions:any = {
       args: [
         ...chromium.args,
         "--no-sandbox",
@@ -254,7 +264,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
 
     console.log("Chromium executable path:", launchOptions.executablePath);
 
-    browser = await puppeteerCore.launch(launchOptions as any);
+    browser = await puppeteerCore.launch(launchOptions);
     const page = await browser.newPage();
 
     await page.setContent(htmlTemplate, {
@@ -262,7 +272,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
       timeout: 30000,
     });
 
-    const pdfBuffer:any = await page.pdf({
+    const pdfBuffer :any= await page.pdf({
       format: "A4",
       printBackground: true,
       margin: { top: "0", right: "0", bottom: "0", left: "0" },
