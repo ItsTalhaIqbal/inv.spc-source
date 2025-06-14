@@ -41,19 +41,19 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
     .map((item: any, index: number) => {
       return `
         <tr style="border: 1px solid #000;">
-          <td style="padding: 12px 16px; width: 5%; border: 1px solid #000; color: #000; font-size: 14px; font-weight: bold;">${
+          <td style="padding: 8px 12px; width: 5%; border: 1px solid #000; color: #000; font-size: 14px; font-weight: bold;">${
             index + 1
           }</td>
-          <td style="padding: 12px 16px; width: 50%; border: 1px solid #000; color: #000; font-size: 14px;">${
+          <td style="padding: 8px 12px; width: 50%; border: 1px solid #000; color: #000; font-size: 14px;">${
             item.name || ""
           }</td>
-          <td style="padding: 12px 16px; width: 15%; border: 1px solid #000; color: #000; font-size: 14px;">${
+          <td style="padding: 8px 12px; width: 15%; border: 1px solid #000; color: #000; font-size: 14px;">${
             item.quantity || ""
           }</td>
-          <td style="padding: 12px 16px; width: 15%; border: 1px solid #000; color: #000; font-size: 14px;">${
+          <td style="padding: 8px 12px; width: 15%; border: 1px solid #000; color: #000; font-size: 14px;">${
             item.unitPrice ? `${item.unitPrice} ` : ""
           }</td>
-          <td style="padding: 12px 16px; width: 15%; text-align: right; border: 1px solid #000; color: #000; font-size: 14px;">${
+          <td style="padding: 8px 12px; width: 15%; text-align: right; border: 1px solid #000; color: #000; font-size: 14px;">${
             item.quantity && item.unitPrice
               ? `${item.quantity * item.unitPrice} `
               : ""
@@ -150,7 +150,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
       body {
         font-family: 'Roboto', sans-serif;
         margin: 0;
-        padding: 40px;
+        padding: 20px;
         background-color: #ffffff;
         color: #000000;
         height: 842px;
@@ -166,7 +166,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
         display: flex;
         justify-content: space-between;
         align-items: flex-start;
-        margin-bottom: 20px;
+        margin-bottom: 10px;
       }
       .logo {
         margin: 0;
@@ -189,13 +189,13 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
       .invoice-table {
         width: 100%;
         border-collapse: collapse;
-        margin-top: 20px;
+        margin-top: 10px;
       }
       .invoice-table thead tr {
         background-color: #d3d3d3;
       }
       .invoice-table th {
-        padding: 12px 16px;
+        padding: 8px 12px;
         font-size: 14px;
         font-weight: bold;
         text-transform: uppercase;
@@ -207,7 +207,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
         text-align: right;
       }
       .invoice-table td {
-        padding: 12px 16px;
+        padding: 8px 12px;
         font-size: 14px;
         border: 1px solid #000;
       }
@@ -215,16 +215,16 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
         text-align: right;
       }
       .summary {
-        margin-top: 20px;
+        margin-top: 10px;
         text-align: right;
         font-weight: bold;
       }
       .footer {
         position: absolute;
-        bottom: 40px;
+        bottom: 20px;
         width: 100%;
-        left: 40px;
-        right: 40px;
+        left: 20px;
+        right: 20px;
         border-top: 1px solid #000;
         padding-top: 10px;
       }
@@ -269,7 +269,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
         </div>
       </div>
 
-      <div class="mt-6">
+      <div class="mt-4">
         <h3>CUSTOMER INFO</h3>
         <p class="text-lg">${receiver.name || ""}</p>
       </div>
@@ -372,7 +372,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
     const pdfBuffer: any = await page.pdf({
       format: "A4",
       printBackground: true,
-      margin: { top: "50px", right: "50px", bottom: "50px", left: "50px" },
+      margin: { top: "20px", right: "20px", bottom: "20px", left: "20px" },
     });
 
     return pdfBuffer;
