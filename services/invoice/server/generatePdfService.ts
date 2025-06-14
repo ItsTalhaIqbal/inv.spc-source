@@ -150,7 +150,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
         padding: 0;
         background-color: #ffffff;
         color: #000000;
-        height: 842px;
+        height: 100%;
         width: 100%;
         box-sizing: border-box;
         position: relative;
@@ -178,7 +178,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
         text-align: right;
       }
       .invoice-number {
-        background-color: #f4a261;
+        background-color: gray;
         padding: 5px 10px;
         border-radius: 4px;
         display: inline-block;
