@@ -20,7 +20,14 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
   }
 
   // Prepare data
-  const senderData = body.sender || {};
+  const senderData = body.sender || {
+    name: "SPC Source Technical Services LLC",
+    country: "UAE",
+    state: "Dubai",
+    email: "contact@spcsource.com",
+    address: "Iris Bay, Office D-43, Business Bay, Dubai, UAE.",
+    phone: "+971 54 500 4520",
+  };
   const receiver = body.receiver || {};
   const details = body.details || {};
 
@@ -41,19 +48,19 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
     .map((item: any, index: number) => {
       return `
         <tr style="border: 1px solid #000;">
-          <td style="padding: 12px 16px; width: 5%; border: 1px solid #000; color: #000; font-size: 14px; font-weight: bold;">${
+          <td style="padding: 8px 12px; width: 5%; border: 1px solid #000; color: #000; font-size: 14px; font-weight: bold;">${
             index + 1
           }</td>
-          <td style="padding: 12px 16px; width: 50%; border: 1px solid #000; color: #000; font-size: 14px;">${
+          <td style="padding: 8px 12px; width: 50%; border: 1px solid #000; color: #000; font-size: 14px;">${
             item.name || ""
           }</td>
-          <td style="padding: 12px 16px; width: 15%; border: 1px solid #000; color: #000; font-size: 14px;">${
+          <td style="padding: 8px 12px; width: 15%; border: 1px solid #000; color: #000; font-size: 14px;">${
             item.quantity || ""
           }</td>
-          <td style="padding: 12px 16px; width: 15%; border: 1px solid #000; color: #000; font-size: 14px;">${
+          <td style="padding: 8px 12px; width: 15%; border: 1px solid #000; color: #000; font-size: 14px;">${
             item.unitPrice ? `${item.unitPrice} ` : ""
           }</td>
-          <td style="padding: 12px 16px; width: 15%; text-align: right; border: 1px solid #000; color: #000; font-size: 14px;">${
+          <td style="padding: 8px 12px; width: 15%; text-align: right; border: 1px solid #000; color: #000; font-size: 14px;">${
             item.quantity && item.unitPrice
               ? `${item.quantity * item.unitPrice} `
               : ""
@@ -150,7 +157,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
       body {
         font-family: 'Roboto', sans-serif;
         margin: 0;
-        padding: 40px;
+        padding: 0;
         background-color: #ffffff;
         color: #000000;
         height: 842px;
@@ -159,14 +166,15 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
         position: relative;
       }
       .container {
-        max-width: 595px;
+        width: 595px;
         margin: 0 auto;
+        padding: 20px;
       }
       .header {
         display: flex;
         justify-content: space-between;
         align-items: flex-start;
-        margin-bottom: 20px;
+        margin-bottom: 10px;
       }
       .logo {
         margin: 0;
@@ -189,13 +197,13 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
       .invoice-table {
         width: 100%;
         border-collapse: collapse;
-        margin-top: 20px;
+        margin-top: 10px;
       }
       .invoice-table thead tr {
         background-color: #d3d3d3;
       }
       .invoice-table th {
-        padding: 12px 16px;
+        padding: 8px 12px;
         font-size: 14px;
         font-weight: bold;
         text-transform: uppercase;
@@ -207,7 +215,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
         text-align: right;
       }
       .invoice-table td {
-        padding: 12px 16px;
+        padding: 8px 12px;
         font-size: 14px;
         border: 1px solid #000;
       }
@@ -215,16 +223,16 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
         text-align: right;
       }
       .summary {
-        margin-top: 20px;
+        margin-top: 10px;
         text-align: right;
         font-weight: bold;
       }
       .footer {
         position: absolute;
-        bottom: 40px;
-        width: 100%;
-        left: 40px;
-        right: 40px;
+        bottom: 20px;
+        width: 555px; /* 595px - 20px left/right padding */
+        left: 20px;
+        right: 20px;
         border-top: 1px solid #000;
         padding-top: 10px;
       }
@@ -248,6 +256,9 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
       h3 {
         font-weight: bold;
       }
+      .customer-info, .quotation-section {
+        display: ${receiver.name ? "block" : "none"};
+      }
     </style>
   </head>
   <body>
@@ -257,8 +268,8 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
           <img src="${logoBase64}" alt="SPC Source Logo" />
         </div>
         <div class="invoice-details">
-          <p class="text-sm">Iris Bay, Office D-43, Business Bay, Dubai</p>
-          <p class="text-sm">+971 54 500 4520</p>
+          <p class="text-sm">${senderData.address}</p>
+          <p class="text-sm">${senderData.phone}</p>
           <h2 class="text-xl">
             <span class="invoice-number">
               ${details.invoiceNumber.includes("INV") ? "INVOICE# " : "QUOT# "}
@@ -269,18 +280,18 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
         </div>
       </div>
 
-      <div class="mt-6">
+      <div class="customer-info mt-4">
         <h3>CUSTOMER INFO</h3>
         <p class="text-lg">${receiver.name || ""}</p>
       </div>
 
-      <div class="mt-4">
-        <h3> ${details.invoiceNumber.includes("INV") ? "INVOICE" : "QUOATION "}</h3>
+      <div class="quotation-section mt-4">
+        <h3>${details.invoiceNumber.includes("INV") ? "INVOICE" : "QUOTATION"}</h3>
         <table class="invoice-table">
           <thead>
             <tr>
               <th style="width: 5%;">Sr.</th>
-              <th style="width: 50%;">Item</th>
+              <th style="width: 50%;">Description</th>
               <th style="width: 15%;">Qty</th>
               <th style="width: 15%;">Unit Price</th>
               <th style="width: 15%;">Amount (AED)</th>
@@ -292,6 +303,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
         </table>
         <div class="summary">
           <p>Received above items in good condition</p>
+          <p>good condition</p>
           <p>Total ${formatNumberWithCommas(Number(details.totalAmount || 0))} AED</p>
         </div>
       </div>
@@ -372,7 +384,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
     const pdfBuffer: any = await page.pdf({
       format: "A4",
       printBackground: true,
-      margin: { top: "50px", right: "50px", bottom: "50px", left: "50px" },
+      margin: { top: "0", right: "0", bottom: "0", left: "0" },
     });
 
     return pdfBuffer;
