@@ -1,13 +1,57 @@
 import chromium from "@sparticuz/chromium-min";
 import puppeteerCore from "puppeteer-core";
-import { InvoiceType } from "@/types";
 import { TAILWIND_CDN } from "@/lib/variables";
 import { connectToDatabase } from "@/lib/mongoose";
 import fs from "fs";
 import path from "path";
 
+// Define TypeScript interfaces for better type safety
+interface Receiver {
+  name: string;
+  address: string;
+  state: string;
+  country: string;
+  email: string;
+  phone: string;
+  additionalNotes?: string;
+  paymentTerms?: string;
+}
+
+interface Item {
+  name?: string;
+  quantity?: number;
+  unitPrice?: number;
+}
+
+interface Details {
+  invoiceNumber: string;
+  invoiceDate?: string;
+  items?: Item[];
+  taxDetails?: { amount: number; amountType: string };
+  discountDetails?: { amount: number; amountType: string };
+  shippingDetails?: { cost: number; costType: string };
+  totalAmount?: number;
+  pdfTemplate?: number;
+}
+
+interface InvoiceType {
+  sender?: {
+    name: string;
+    country: string;
+    state: string;
+    email: string;
+    address: string;
+    phone: string;
+  };
+  receiver?: Receiver;
+  details?: Details;
+}
+
 export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
   await connectToDatabase();
+
+  // Debug log to inspect input data
+  console.log("Input body:", JSON.stringify(body, null, 2));
 
   if (!body.details?.invoiceNumber) {
     throw new Error("Invoice number is missing");
@@ -19,9 +63,25 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
     );
   }
 
-  // Prepare data
-  const senderData = body.sender || {};
-  const receiver = body.receiver || {};
+  // Prepare data with default values
+  const senderData = body.sender || {
+    name: "SPC Source Technical Services LLC",
+    country: "UAE",
+    state: "Dubai",
+    email: "contact@spcsource.com",
+    address: "Iris Bay, Office D-43, Business Bay, Dubai, UAE.",
+    phone: "+971 54 500 4520",
+  };
+  const receiver = body.receiver || {
+    name: "",
+    address: "",
+    state: "",
+    country: "",
+    email: "",
+    phone: "",
+    additionalNotes: "",
+    paymentTerms: "",
+  };
   const details = body.details || {};
 
   // Date formatting options
@@ -33,31 +93,23 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
   } as const;
 
   // Helper functions
-  const formatNumberWithCommas = (num: number) =>
+  const formatNumberWithCommas = (num: number): string =>
     num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 
   // Generate items HTML
-  const itemsHtml = (body.details?.items || [])
-    .map((item: any, index: number) => {
+  const itemsHtml = (details.items || [])
+    .map((item: Item, index: number) => {
+      const quantity = item.quantity || 0;
+      const unitPrice = item.unitPrice || 0;
+      const total = quantity * unitPrice;
+
       return `
-        <tr style="border: 1px solid #000;">
-          <td style="padding: 12px 16px; width: 5%; border: 1px solid #000; color: #000; font-size: 14px;">${
-            index + 1
-          }</td>
-          <td style="padding: 12px 16px; width: 50%; border: 1px solid #000; color: #000; font-size: 14px;">${
-            item.name || ""
-          }</td>
-          <td style="padding: 12px 16px; width: 15%; border: 1px solid #000; color: #000; font-size: 14px;">${
-            item.quantity || ""
-          }</td>
-          <td style="padding: 12px 16px; width: 15%; border: 1px solid #000; color: #000; font-size: 14px;">${
-            item.unitPrice ? `${item.unitPrice} ` : ""
-          }</td>
-          <td style="padding: 12px 16px; width: 15%; text-align: right; border: 1px solid #000; color: #000; font-size: 14px;">${
-            item.quantity && item.unitPrice
-              ? `${item.quantity * item.unitPrice} `
-              : ""
-          }</td>
+        <tr class="border">
+          <td class="p-3 w-1/20 font-bold text-black text-base border">${index + 1}</td>
+          <td class="p-3 w-1/2 text-black text-base border">${item.name || ""}</td>
+          <td class="p-3 w-1/6 text-black text-base border">${quantity}</td>
+          <td class="p-3 w-1/6 text-black text-base border">${unitPrice ? `${unitPrice} ` : ""}</td>
+          <td class="p-3 w-1/6 text-right text-black text-base border">${total ? `${total} ` : ""}</td>
         </tr>
       `;
     })
@@ -73,7 +125,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
     console.warn("Could not load logo:", error);
   }
 
-  // Load Tailwind CSS (prefer local file, fallback to CDN)
+  // Load Tailwind CSS
   let tailwindCss = "";
   const localTailwindPath = path.resolve(
     process.cwd(),
@@ -140,171 +192,216 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
 
   // Generate HTML template
   const htmlTemplate = `
-    <html>
-      <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <style>
-          ${tailwindCss}
-          body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-            height: 100vh;
-            box-sizing: border-box;
-            position: relative;
-            min-height: 842px;
-          }
-          .text-right { text-align: right; }
-          .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-top: -10px;
-          }
-          .logo {
-            margin: 0;
-            padding: 0;
-            line-height: 0;
-          }
-          .invoice-details {
-            margin: 0;
-            padding: 0;
-            text-align: right;
-            margin-top: 20px;
-          }
-          .invoice-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-          }
-          .invoice-table thead tr {
-            background-color: #d3d3d3;
-          }
-          .invoice-table th {
-            padding: 12px 16px;
-            font-size: 14px;
-            font-weight: bold;
-            text-transform: uppercase;
-            color: #000;
-            text-align: left;
-            border: 1px solid #000;
-          }
-          .invoice-table th:last-child {
-            text-align: right;
-          }
-          .invoice-table td {
-            padding: 12px 16px;
-            color: #000;
-            font-size: 14px;
-          }
-          .summary {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 20px;
-          }
-          .footer {
-            position: absolute;
-            bottom: 40px;
-            width: calc(100% - 40px);
-            border-top: 1px solid #000;
-            padding-top: 10px;
-          }
-          .footer-bar {
-            background-color: #fb923c;
-            color: black;
-            padding: 10px;
-            display: flex;
-            justify-content:蔽
-            align-items: center;
-            margin-top: 10px;
-          }
-        </style>
-      </head>
-      <body>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+      ${tailwindCss}
+      body {
+        font-family: 'Roboto', sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #ffffff;
+        color: #000000;
+        height: 100%;
+        width: 100%;
+        box-sizing: border-box;
+        position: relative;
+        min-height: 100vh; /* Ensure body takes full height */
+      }
+      .container {
+        width: 100%;
+        padding: 0;
+      }
+      .main-content {
+        padding: 20px; /* Add padding to main content */
+      }
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 20px;
+      }
+      .logo {
+        margin: 0;
+        padding: 0;
+      }
+      .logo img {
+        width: 180px;
+        height: 100px;
+      }
+      .invoice-details {
+        text-align: right;
+      }
+      .invoice-number {
+        background-color: #d3d3d3;
+        padding: 5px 10px;
+        border-radius: 4px;
+        display: inline-block;
+        font-weight: bold;
+      }
+      .invoice-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+      }
+      .invoice-table thead tr {
+        background-color: #d3d3d3;
+      }
+      .invoice-table th {
+        padding: 12px 16px;
+        font-size: 14px;
+        font-weight: bold;
+        text-transform: uppercase;
+        color: #000;
+        text-align: left;
+        border: 1px solid #000;
+      }
+      .invoice-table th:last-child {
+        text-align: right;
+      }
+      .invoice-table td {
+        padding: 12px 16px;
+        font-size: 14px;
+        border: 1px solid #000;
+      }
+      .invoice-table td:last-child {
+        text-align: right;
+      }
+      .summary {
+        margin-top: 20px;
+        text-align: right;
+        font-weight: bold;
+        width: 100%;
+      }
+      .footer {
+        position: absolute;
+        bottom: 0; /* Keep footer at the bottom */
+        width: 100%;
+        border-top: 1px solid #000;
+        padding-top: 10px;
+      }
+      .footer-signatures {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 10px;
+      }
+      .footer-bar {
+        background-color: #f4a261;
+        color: #000;
+        padding: 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+      }
+      .footer-bar svg {
+        margin-right: 8px;
+      }
+      h3 {
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="main-content"> <!-- New div for main content with padding -->
         <div class="header">
           <div class="logo">
-            <img src="${logoBase64}" width="140" height="100" alt="Logo" style="vertical-align: top;" />
+            <img src="${logoBase64}" alt="SPC Source Logo" />
           </div>
-          <div class="invoice-details">
-            <p class="text-base text-gray-800">${senderData.phone || ""}</p>
-            <p class="text-base text-gray-800">${senderData.address || ""}</p>
-            <h2 class="text-xl font-bold text-gray-800 mt-2">${
-              details.invoiceNumber.includes("INV") ? "INVOICE# " : "QUOATION# "
-            } <span class="text-lg text-gray-600 font-thin">${
-    details.invoiceNumber || ""
-  }</span> </h2>
-            <p class="text-base text-gray-800">${new Date(
+          <div class="invoice-details mt-4">
+            <p class="text-sm">+971 54 500 4520</p>
+            <p class="text-sm">Iris Bay, Office D-43, Business Bay, Dubai</p>
+            <h2 class="text-xl mt-5">
+              <span class="invoice-number">
+                ${
+                  details.invoiceNumber.includes("INV")
+                    ? "INVOICE# "
+                    : "QUOTATION# "
+                }
+                ${details.invoiceNumber || ""}
+              </span>
+            </h2>
+            <p class="text-md">${new Date(
               details.invoiceDate || new Date()
             ).toLocaleDateString("en-US", DATE_OPTIONS)}</p>
           </div>
         </div>
 
         <div class="mt-6">
-          <h3 class="text-base font-bold text-gray-800">CUSTOMER INFO</h3>
-          <h3 class="text-xl text-gray-800">${receiver.name || ""}</h3>
-          <h3 class="text-lg text-gray-800">${receiver.address || ""}</h3>
+          <h3>CUSTOMER INFO</h3>
+          <p class="text-lg">${receiver.name || ""}</p>
         </div>
 
         <div class="mt-4">
-          <h3 class="text-base font-bold text-gray-800">ITEMS</h3>
+          <h3>${
+            details.invoiceNumber.includes("INV") ? "INVOICE" : "QUOTATION"
+          }</h3>
           <table class="invoice-table">
             <thead>
               <tr>
-                <th style="width: 5%;">Sr.</th>
-                <th style="width: 50%;">Product</th>
-                <th style="width: 15%;">Qty</th>
-                <th style="width: 15%;">Unit Price</th>
-                <th style="width: 15%;">Amount (AED)</th>
+                <th class="w-1/20">Sr.</th>
+                <th class="w-1/2">Item</th>
+                <th class="w-1/6">Qty</th>
+                <th class="w-1/6">Unit Price</th>
+                <th class="w-1/6">Amount (AED)</th>
               </tr>
             </thead>
             <tbody>
               ${itemsHtml}
             </tbody>
           </table>
-        </div>
-
-        <div class="summary">
-          <div class="text-right">
-            ${taxHtml}
-            ${discountHtml}
-            ${shippingHtml}
-            <p class="text-base font-bold text-gray-800">Total ${formatNumberWithCommas(
+          <div class="summary">
+            <div>
+              <div>
+                <h2>Additional Notes</h2>
+                <p>${receiver.additionalNotes ?? "N/A"}</p>
+              </div>
+              <div>
+                <h2>Payment Terms</h2>
+                <p>${receiver.paymentTerms ?? "N/A"}</p>
+              </div>     
+            </div>
+            ${taxHtml ? `<p>${taxHtml}</p>` : ""}
+            ${shippingHtml ? `<p>${shippingHtml}</p>` : ""}
+            ${discountHtml ? `<p>${discountHtml}</p>` : ""}
+            <p>Total ${formatNumberWithCommas(
               Number(details.totalAmount || 0)
             )} AED</p>
           </div>
         </div>
-
-        <div class="footer">
-  <div class="flex justify-between">
-    <p class="text-base font-bold text-gray-800">Receiver's Sign _________________</p>
-    <p class="text-base font-bold text-gray-800">for ${
-      senderData.name || ""
-    }</p>
-  </div>
-  <div class="footer-bar" style="width: 100%; background-color: #fb923c; color: black; padding: 10px; display: flex; justify-content: space-between; align-items: center;">
-    <div class="flex items-center">
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
-        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
-        <polyline points="22,6 12,13 2,6"></polyline>
-      </svg>
-      <span class="text-base">${
-        senderData.email || "contact@spcsource.com"
-      }</span>
+      </div> <!-- End of main-content div -->
+      
+      <div class="footer"> <!-- Footer remains unchanged -->
+        <div class="footer-signatures">
+          <p>Receiver's Sign _____________</p>
+          <p>for ${senderData.name || "SPC SOURCE TECHNICAL SERVICES LLC"}</p>
+        </div>
+        <div class="footer-bar">
+          <div class="flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+              <polyline points="22,6 12,13 2,6"></polyline>
+            </svg>
+            <span>${senderData.email || "contact@spcsource.com"}</span>
+          </div>
+          <div class="flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+              <path d="M2 12h20"></path>
+            </svg>
+            <span>www.spcsource.com</span>
+          </div>
+        </div>
+      </div>
     </div>
-    <div class="flex items-center">
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2">
-        <circle cx="12" cy="12" r="10"></circle>
-        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
-        <path d="M2 12h20"></path>
-      </svg>
-      <span class="text-base">www.example.com</span>
-    </div>
-  </div>
-</div>
-      </body>
-    </html>
-  `;
+  </body>
+</html>
+`;
 
   // Clean up /tmp to avoid ETXTBSY
   try {
@@ -325,7 +422,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
   let browser = null;
   try {
     // Configure Puppeteer for Vercel
-    const launchOptions = {
+    const launchOptions:any = {
       args: [
         ...chromium.args,
         "--no-sandbox",
@@ -343,7 +440,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
 
     console.log("Chromium executable path:", launchOptions.executablePath); // Debug log
 
-    browser = await puppeteerCore.launch(launchOptions as any);
+    browser = await puppeteerCore.launch(launchOptions);
     const page = await browser.newPage();
 
     await page.setContent(htmlTemplate, {
@@ -351,10 +448,10 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
       timeout: 30000,
     });
 
-    const pdfBuffer: any = await page.pdf({
+    const pdfBuffer:any = await page.pdf({
       format: "A4",
       printBackground: true,
-      margin: { top: "50px", right: "50px", bottom: "50px", left: "50px" },
+      margin: { top: "0", right: "0", bottom: "0", left: "0" },
     });
 
     return pdfBuffer;
