@@ -315,7 +315,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
 }
 
 .amounts-section {
-  width: 45%;
+  width: 25%;
   text-align: right;
 }
 
