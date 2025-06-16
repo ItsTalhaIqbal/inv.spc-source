@@ -32,8 +32,8 @@ interface Details {
   shippingDetails?: { cost: number; costType: string };
   totalAmount?: number;
   pdfTemplate?: number;
-  paymentTerms?:string;
-  additionalNotes?:string
+  paymentTerms?: string;
+  additionalNotes?: string;
 }
 
 interface InvoiceType {
@@ -174,9 +174,9 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
 
   const taxHtml = hasTax
     ? `
-      <p class="text-base font-bold text-gray-800">Tax (${
-        taxDetails.amountType === "amount" ? "AED" : "%"
-      })</p>
+      <p class="text-base font-bold text-gray-800">Tax ${taxDetails.amount}${
+        taxDetails.amountType === "percentage" ? "%" : " AED"
+      }</p>
       <p class="text-base text-gray-800">${formatNumberWithCommas(
         Number(taxDetails.amount)
       )} ${taxDetails.amountType === "amount" ? "AED" : ""}</p>
@@ -185,9 +185,9 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
 
   const discountHtml = hasDiscount
     ? `
-      <p class="text-base font-bold text-gray-800">Discount (${
-        discountDetails.amountType === "amount" ? "AED" : "%"
-      })</p>
+      <p class="text-base font-bold text-gray-800">Discount ${discountDetails.amount}${
+        discountDetails.amountType === "percentage" ? "%" : " AED"
+      }</p>
       <p class="text-base text-gray-800">${formatNumberWithCommas(
         Number(discountDetails.amount)
       )} ${discountDetails.amountType === "amount" ? "AED" : ""}</p>
@@ -196,12 +196,31 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
 
   const shippingHtml = hasShipping
     ? `
-      <p class="text-base font-bold text-gray-800">Shipping (${
-        shippingDetails.costType === "amount" ? "AED" : "%"
-      })</p>
+      <p class="text-base font-bold text-gray-800">Shipping ${shippingDetails.cost}${
+        shippingDetails.costType === "percentage" ? "%" : " AED"
+      }</p>
       <p class="text-base text-gray-800">${formatNumberWithCommas(
         Number(shippingDetails.cost)
       )} ${shippingDetails.costType === "amount" ? "AED" : ""}</p>
+    `
+    : "";
+
+  // Conditionally include Payment Terms and Additional Notes
+  const paymentTermsHtml = details.paymentTerms
+    ? `
+      <div>
+        <h2 class="font-bold">Payment Terms</h2>
+        <p class="font-normal">${details.paymentTerms}</p>
+      </div>
+    `
+    : "";
+
+  const additionalNotesHtml = details.additionalNotes
+    ? `
+      <div>
+        <h2 class="font-bold">Additional Notes</h2>
+        <p class="font-normal">${details.additionalNotes}</p>
+      </div>
     `
     : "";
 
@@ -369,23 +388,16 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
           </table>
           <div class="summary flex justify-between">
             <div>
-              <div>
-                <h2>Additional Notes</h2>
-                <p>${details.additionalNotes ?? "N/A"}</p>
-              </div>
-              <div>
-                <h2>Payment Terms</h2>
-                <p>${details.paymentTerms ?? "N/A"}</p>
-              </div>     
+              ${additionalNotesHtml}
+              ${paymentTermsHtml}
             </div>
-            <div class=""text-left>
-            
-            ${taxHtml ? `<p>${taxHtml}</p>` : ""}
-            ${shippingHtml ? `<p>${shippingHtml}</p>` : ""}
-            ${discountHtml ? `<p>${discountHtml}</p>` : ""}
-            <p>Total ${formatNumberWithCommas(
-              Number(details.totalAmount || 0)
-            )} AED</p>
+            <div class="text-left">
+              ${taxHtml ? `<p>${taxHtml}</p>` : ""}
+              ${shippingHtml ? `<p>${shippingHtml}</p>` : ""}
+              ${discountHtml ? `<p>${discountHtml}</p>` : ""}
+              <p class="text-base font-bold text-gray-800">Total ${formatNumberWithCommas(
+                Number(details.totalAmount || 0)
+              )} AED</p>
             </div>
           </div>
         </div>
@@ -400,11 +412,11 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
         </div>
         <div class="footer-bar">
           <div class="flex items-center">
-            <svg class="ml-4 xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <svg class="ml-4" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
               <polyline points="22,6 12,13 2,6"></polyline>
             </svg>
-            <span ">${senderData.email || "contact@spcsource.com"}</span>
+            <span>${senderData.email || "contact@spcsource.com"}</span>
           </div>
           <div class="flex items-center">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -412,7 +424,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
               <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
               <path d="M2 12h20"></path>
             </svg>
-            <span class"mr-4">www.spcsource.com</span>
+            <span class="mr-4">www.spcsource.com</span>
           </div>
         </div>
       </div>
