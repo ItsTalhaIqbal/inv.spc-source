@@ -390,9 +390,9 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
               ${taxHtml ? `<p>${taxHtml}</p>` : ""}
               ${shippingHtml ? `<p>${shippingHtml}</p>` : ""}
               ${discountHtml ? `<p>${discountHtml}</p>` : ""}
-              <p class="text-base font-bold text-gray-800 border-t-2">Total ${formatNumberWithCommas(
+              <p class="text-base font-bold text-gray-800 border-t-2 border-t-black mt-3">Total AED${formatNumberWithCommas(
                 Number(details.totalAmount?.toFixed(2) || 0)
-              )} AED</p>
+              )}</p>
             </div>
           </div>
         </div>
