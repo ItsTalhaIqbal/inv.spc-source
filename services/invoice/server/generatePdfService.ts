@@ -32,8 +32,8 @@ interface Details {
   shippingDetails?: { cost: number; costType: string };
   totalAmount?: number;
   pdfTemplate?: number;
-  paymentTerms:string;
-  additionalNotes:string
+  paymentTerms?:string;
+  additionalNotes?:string
 }
 
 interface InvoiceType {
