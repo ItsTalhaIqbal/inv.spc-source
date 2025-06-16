@@ -302,11 +302,33 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
       .invoice-table td:last-child {
         text-align: right;
       }
-      .summary {
-        margin-top: 20px;
-        font-weight: bold;
-        width: 100%;
-      }
+.summary {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 20px;
+  width: 100%;
+}
+
+.notes-section {
+  width: 55%;
+  padding-right: 20px;
+}
+
+.amounts-section {
+  width: 45%;
+  text-align: right;
+}
+
+.amount-line {
+  margin-bottom: 8px;
+}
+
+.total-amount {
+  font-weight: bold;
+  border-top: 2px solid #000;
+  padding-top: 8px;
+  margin-top: 8px;
+}
       .footer {
         position: absolute;
         bottom: 0; /* Keep footer at the bottom */
@@ -370,31 +392,31 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
           <table class="invoice-table">
             <thead>
               <tr>
-             <th class="w-1/20">Sr.</th>
-<th class="w-1/2">Item</th>
-<th class="w-1/6">Qty</th>
-<th class="w-1/6">Unit Price</th>
-<th class="w-1/6 text-right">AMOUNT&nbsp;(AED)</th>
+              <th class="w-1/20">Sr.</th>
+                <th class="w-1/2">Item</th>
+                <th class="w-1/6">Qty</th>
+                <th class="w-1/6">Unit Price</th>
+                <th class="w-1/6 text-right">AMOUNT&nbsp;(AED)</th>
               </tr>
             </thead>
             <tbody>
               ${itemsHtml}
             </tbody>
           </table>
-          <div class="summary flex justify-between">
-            <div>
-              ${additionalNotesHtml}
-              ${paymentTermsHtml}
-            </div>
-            <div class="text-left">
-              ${taxHtml ? `<p>${taxHtml}</p>` : ""}
-              ${shippingHtml ? `<p>${shippingHtml}</p>` : ""}
-              ${discountHtml ? `<p>${discountHtml}</p>` : ""}
-              <p class="text-base font-bold text-gray-800 border-t-2 border-t-black mt-3">Total AED${formatNumberWithCommas(
-                Number(details.totalAmount?.toFixed(2) || 0)
-              )}</p>
-            </div>
-          </div>
+          <div class="summary">
+  <div class="notes-section">
+    ${additionalNotesHtml}
+    ${paymentTermsHtml}
+  </div>
+  <div class="amounts-section">
+    ${taxHtml ? `<p class="amount-line">${taxHtml}</p>` : ""}
+    ${shippingHtml ? `<p class="amount-line">${shippingHtml}</p>` : ""}
+    ${discountHtml ? `<p class="amount-line">${discountHtml}</p>` : ""}
+    <p class="total-amount">
+      Total AED${formatNumberWithCommas(Number(details.totalAmount?.toFixed(2) || 0))}
+    </p>
+  </div>
+</div>
         </div>
       </div> <!-- End of main-content div -->
       
