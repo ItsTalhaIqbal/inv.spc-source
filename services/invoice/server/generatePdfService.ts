@@ -1,498 +1,505 @@
-import chromium from "@sparticuz/chromium-min";
-import puppeteerCore from "puppeteer-core";
-import { TAILWIND_CDN } from "@/lib/variables";
-import { connectToDatabase } from "@/lib/mongoose";
-import fs from "fs";
-import path from "path";
+"use client";
 
-// Define TypeScript interfaces for better type safety
-interface Receiver {
-  name: string;
-  address: string;
-  state: string;
-  country: string;
-  email: string;
-  phone: string;
-  additionalNotes?: string;
-  paymentTerms?: string;
-}
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+import { useRouter } from "next/navigation";
+import { useFormContext } from "react-hook-form";
+import useToasts from "@/hooks/useToasts";
+import { exportInvoice } from "@/services/invoice/client/exportInvoice";
+import {
+  FORM_DEFAULT_VALUES,
+  SEND_PDF_API,
+  SHORT_DATE_OPTIONS,
+} from "@/lib/variables";
+import { ExportTypes, InvoiceType } from "@/types";
 
-interface Item {
-  name?: string;
-  quantity?: number;
-  unitPrice?: number;
-}
+const defaultInvoiceContext = {
+  invoicePdf: new Blob(),
+  invoicePdfLoading: false,
+  savedInvoices: [] as InvoiceType[],
+  pdfUrl: null as string | null,
+  onFormSubmit: (values: InvoiceType) => {},
+  newInvoice: () => {},
+  newInvoiceTrigger: 0,
+  generatePdf: async (data: InvoiceType) => {},
+  removeFinalPdf: () => {},
+    downloadPdf: async (): Promise<void> => {},
+  printPdf: () => {},
+  previewPdfInTab: () => {},
+  saveInvoice: () => {},
+  deleteInvoice: (index: number) => {},
+  sendPdfToMail: async (email: string): Promise<void> => Promise.resolve(),
+  exportInvoiceAs: (exportAs: ExportTypes) => {},
+  importInvoice: (file: File) => {},
+  currentWizardStep: 0,
+  setCurrentWizardStep: (step: number) => {},
+  resetWizard: () => {},
+};
 
-interface Details {
-  invoiceNumber: string;
-  invoiceDate?: string;
-  items?: Item[];
-  taxDetails?: { amount: number; amountType: string };
-  discountDetails?: { amount: number; amountType: string };
-  shippingDetails?: { cost: number; costType: string };
-  totalAmount?: number;
-  pdfTemplate?: number;
-  paymentTerms?: string;
-  additionalNotes?: string;
-}
+export const InvoiceContext = createContext(defaultInvoiceContext);
 
-interface InvoiceType {
-  sender?: {
-    name: string;
-    country: string;
-    state: string;
-    email: string;
-    address: string;
-    phone: string;
-  };
-  receiver?: Receiver;
-  details?: Details;
-}
-
-export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
-  await connectToDatabase();
-
-  console.log("Input body:", JSON.stringify(body, null, 2));
-  console.log("Receiver data:", JSON.stringify(body.receiver, null, 2));
-  console.log(
-    "Additional Notes:",
-    body.receiver?.additionalNotes ?? "Not provided"
-  );
-  console.log("Payment Terms:", body.receiver?.paymentTerms ?? "Not provided");
-
-  // Debug log to inspect input data
-  console.log("Input body:", JSON.stringify(body, null, 2));
-
-  if (!body.details?.invoiceNumber) {
-    throw new Error("Invoice number is missing");
+export const useInvoiceContext = () => {
+  const context = useContext(InvoiceContext);
+  if (!context) {
+    throw new Error("useInvoiceContext must be used within an InvoiceContextProvider");
   }
+  return context;
+};
 
-  if (typeof body.details?.pdfTemplate !== "number") {
-    throw new Error(
-      `PDF template must be a number, received: ${body.details.pdfTemplate}`
-    );
-  }
+type InvoiceContextProviderProps = {
+  children: React.ReactNode;
+};
 
-  // Prepare data with default values
-  const senderData = body.sender || {
-    name: "SPC Source Technical Services LLC",
-    country: "UAE",
-    state: "Dubai",
-    email: "contact@spcsource.com",
-    address: "Iris Bay, Office D-43, Business Bay, Dubai, UAE.",
-    phone: "+971 54 500 4520",
-  };
-  const receiver = body.receiver || {
-    name: "",
-    address: "",
-    state: "",
-    country: "",
-    email: "",
-    phone: "",
-    additionalNotes: "",
-    paymentTerms: "",
-  };
-  const details = body.details || {};
+export const InvoiceContextProvider = ({
+  children,
+}: InvoiceContextProviderProps) => {
+  const router = useRouter();
+  const { getValues, reset } = useFormContext<InvoiceType>();
+  const {
+    newInvoiceSuccess,
+    pdfGenerationSuccess,
+    saveInvoiceSuccess,
+    modifiedInvoiceSuccess,
+    sendPdfError,
+    importInvoiceError,
+  } = useToasts();
 
-  // Date formatting options
-  const DATE_OPTIONS = {
-    year: "numeric",
-    month: "long",
-    day: "2-digit",
-    weekday: "long",
-  } as const;
+  const [invoicePdf, setInvoicePdf] = useState<Blob>(new Blob());
+  const [invoicePdfLoading, setInvoicePdfLoading] = useState<boolean>(false);
+  const [savedInvoices, setSavedInvoices] = useState<InvoiceType[]>([]);
+  const [newInvoiceTrigger, setNewInvoiceTrigger] = useState<number>(0);
+  const [currentWizardStep, setCurrentWizardStep] = useState<number>(0);
 
-  // Helper functions
-  const formatNumberWithCommas = (num: number): string =>
-    num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-
-  // Generate items HTML
-  const itemsHtml = (details.items || [])
-    .map((item: Item, index: number) => {
-      const quantity = item.quantity || 0;
-      const unitPrice = item.unitPrice || 0;
-      const total = quantity * unitPrice;
-
-      return `
-        <tr class="border">
-          <td class="p-3 w-1/20 font-bold text-black text-base border">${
-            index + 1
-          }</td>
-          <td class="p-3 w-1/2 text-black text-base border">${
-            item.name || ""
-          }</td>
-          <td class="p-3 w-1/6 text-black text-base border">${quantity}</td>
-          <td class="p-3 w-1/6 text-black text-base border">${
-            unitPrice ? `${unitPrice} ` : ""
-          }</td>
-          <td class="p-3 w-1/6 text-right text-black text-base border">${
-            total ? `${total} ` : ""
-          }</td>
-        </tr>
-      `;
-    })
-    .join("");
-
-  // Load logo
-  const logoPath = path.resolve(process.cwd(), "public/assets/img/image.jpg");
-  let logoBase64 = "";
-  try {
-    const logoBuffer = fs.readFileSync(logoPath);
-    logoBase64 = `data:image/jpeg;base64,${logoBuffer.toString("base64")}`;
-  } catch (error) {
-    console.warn("Could not load logo:", error);
-  }
-
-  // Load Tailwind CSS
-  let tailwindCss = "";
-  const localTailwindPath = path.resolve(
-    process.cwd(),
-    "public/tailwind.min.css"
-  );
-  try {
-    if (fs.existsSync(localTailwindPath)) {
-      tailwindCss = fs.readFileSync(localTailwindPath, "utf8");
-    } else {
-      const response = await fetch(TAILWIND_CDN);
-      tailwindCss = await response.text();
-    }
-  } catch (error) {
-    console.warn("Could not load Tailwind CSS:", error);
-  }
-
-  // Prepare tax, discount, and shipping details
-  const taxDetails = details.taxDetails || { amount: 0, amountType: "amount" };
-  const discountDetails = details.discountDetails || {
-    amount: 0,
-    amountType: "amount",
-  };
-  const shippingDetails = details.shippingDetails || {
-    cost: 0,
-    costType: "amount",
+  const getNumericInvoiceNumber = (invoiceNumber: string | undefined): string => {
+    if (!invoiceNumber) return "";
+    return invoiceNumber.replace(/\D/g, "");
   };
 
-  const hasTax = taxDetails.amount && taxDetails.amount > 0;
-  const hasDiscount = discountDetails.amount && discountDetails.amount > 0;
-  const hasShipping = shippingDetails.cost && shippingDetails.cost > 0;
-
-  const taxHtml = hasTax
-    ? `
-      <p class="text-base -bold text-left text-gray-800">Tax ${
-        taxDetails.amount
-      }${taxDetails.amountType === "percentage" ? "%" : " AED"}</p>
-
-    `
-    : "";
-
-  const discountHtml = hasDiscount
-    ? `
-      <p class="text-base text-left text-gray-800">Discount ${
-        discountDetails.amount
-      }${discountDetails.amountType === "percentage" ? "%" : " AED"}</p>
-
-    `
-    : "";
-
-  const shippingHtml = hasShipping
-    ? `
-      <p class="text-base text-left text-gray-800">Shipping ${
-        shippingDetails.cost
-      }${shippingDetails.costType === "percentage" ? "%" : " AED"}</p>
-
-    `
-    : "";
-
-  // Conditionally include Payment Terms and Additional Notes
-  const paymentTermsHtml = details.paymentTerms
-    ? `
-      <div>
-        <h2 class="font-bold">Payment Terms</h2>
-        <p class="font-normal">${details.paymentTerms}</p>
-      </div>
-    `
-    : "";
-
-  const additionalNotesHtml = details.additionalNotes
-    ? `
-      <div>
-        <h2 class="font-bold">Additional Notes</h2>
-        <p class="font-normal">${details.additionalNotes}</p>
-      </div>
-    `
-    : "";
-
-  // Generate HTML template
-  const htmlTemplate = `
-<html>
-  <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-      @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
-      ${tailwindCss}
-      body {
-        font-family: 'Roboto', sans-serif;
-        margin: 0;
-        padding: 0;
-        background-color: #ffffff;
-        color: #000000;
-        height: 100%;
-        width: 100%;
-        box-sizing: border-box;
-        position: relative;
-        min-height: 100vh; /* Ensure body takes full height */
-      }
-      .container {
-        width: 100%;
-        padding: 0;
-      }
-      .main-content {
-        padding: 20px; /* Add padding to main content */
-      }
-      .header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        margin-bottom: 20px;
-      }
-      .logo {
-        margin: 0;
-        padding: 0;
-      }
-      .logo img {
-        width: 180px;
-        height: 100px;
-      }
-      .invoice-details {
-        text-align: right;
-      }
-      .invoice-number {
-        background-color: #d3d3d3;
-        padding: 5px 10px;
-        border-radius: 4px;
-        display: inline-block;
-        font-weight: bold;
-      }
-      .invoice-table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 20px;
-      }
-      .invoice-table thead tr {
-        background-color: #d3d3d3;
-      }
-     .invoice-table th {
-  padding: 12px 16px;
-  font-size: 14px;
-  font-weight: bold;
-  text-transform: uppercase;
-  color: #000;
-  text-align: left;
-  border: 1px solid #000;
-  white-space: nowrap; 
-}
-      .invoice-table th:last-child {
-        text-align: right;
-      }
-      .invoice-table td {
-        padding: 12px 16px;
-        font-size: 14px;
-        border: 1px solid #000;
-      }
-      .invoice-table td:last-child {
-        text-align: right;
-      }
-      .summary {
-        margin-top: 20px;
-        font-weight: bold;
-        width: 100%;
-      }
-      .footer {
-        position: absolute;
-        bottom: 0; /* Keep footer at the bottom */
-        width: 100%;
-        padding-top: 10px;
-      }
-      .footer-signatures {
-        display: flex;
-        justify-content: space-between;
-        margin-bottom: 10px;
-      }
-      .footer-bar {
-        background-color: #f4a261;
-        color: #000;
-        padding: 10px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        width: 100%;
-      }
-      .footer-bar svg {
-        margin-right: 8px;
-      }
-      h3 {
-        font-weight: bold;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="container">
-      <div class="main-content"> <!-- New div for main content with padding -->
-        <div class="header">
-          <div class="logo">
-            <img src="${logoBase64}" alt="SPC Source Logo" />
-          </div>
-          <div class="invoice-details mt-4">
-            <p class="text-sm">+971 54 500 4520</p>
-            <p class="text-sm">Iris Bay, Office D-43, Business Bay, Dubai</p>
-            <h2 class="text-xl mt-5">
-              <span class="invoice-number">
-                ${details.invoiceNumber || ""}
-              </span>
-            </h2>
-            <p class="text-md">${new Date(
-              details.invoiceDate || new Date()
-            ).toLocaleDateString("en-US", DATE_OPTIONS)}</p>
-          </div>
-        </div>
-
-        <div class="mt-6">
-          <h3>CUSTOMER INFO</h3>
-          <p class="text-md">${receiver.name || ""}</p>
-          <p class="text-md">${receiver.phone || ""}</p>
-
-        </div>
-
-        <div class="mt-4">
-          <h3>${
-            details.invoiceNumber.includes("INV") ? "INVOICE" : "QUOTATION"
-          }</h3>
-          <table class="invoice-table">
-            <thead>
-              <tr>
-             <th class="w-1/20">Sr.</th>
-<th class="w-1/2">Item</th>
-<th class="w-1/6">Qty</th>
-<th class="w-1/6">Unit Price</th>
-<th class="w-1/6 text-right">AMOUNT&nbsp;(AED)</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${itemsHtml}
-            </tbody>
-          </table>
-          <div class="summary flex justify-between">
-            <div>
-              ${additionalNotesHtml}
-              ${paymentTermsHtml}
-            </div>
-            <div class="text-left">
-              ${taxHtml ? `<p>${taxHtml}</p>` : ""}
-              ${shippingHtml ? `<p>${shippingHtml}</p>` : ""}
-              ${discountHtml ? `<p>${discountHtml}</p>` : ""}
-              <p class="text-base font-bold text-gray-800 border-t-2">Total ${formatNumberWithCommas(
-                Number(details.totalAmount?.toFixed(2) || 0)
-              )} AED</p>
-            </div>
-          </div>
-        </div>
-      </div> <!-- End of main-content div -->
-      
-      <div class="footer"> <!-- Footer remains unchanged -->
-        <div class="footer-signatures">
-          <p class="ml-4">Receiver's Sign _____________</p>
-          <p class="mr-4">for ${
-            senderData.name || "SPC SOURCE TECHNICAL SERVICES LLC"
-          }</p>
-        </div>
-        <div class="footer-bar">
-          <div class="flex items-center">
-            <svg class="ml-4" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
-              <polyline points="22,6 12,13 2,6"></polyline>
-            </svg>
-            <span>${senderData.email || "contact@spcsource.com"}</span>
-          </div>
-          <div class="flex items-center">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="10"></circle>
-              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
-              <path d="M2 12h20"></path>
-            </svg>
-            <span class="mr-4">www.spcsource.com</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </body>
-</html>
-`;
-
-  // Clean up /tmp to avoid ETXTBSY
-  try {
-    const tmpDir = "/tmp";
-    if (fs.existsSync(tmpDir)) {
-      const files = fs.readdirSync(tmpDir);
-      for (const file of files) {
-        if (file.startsWith("chromium") || file.includes("puppeteer")) {
-          fs.unlinkSync(path.join(tmpDir, file));
+  useEffect(() => {
+    try {
+      if (typeof window !== "undefined") {
+        const savedInvoicesJSON = window.localStorage.getItem("savedInvoices");
+        if (savedInvoicesJSON) {
+          const parsedInvoices = JSON.parse(savedInvoicesJSON);
+          if (Array.isArray(parsedInvoices)) {
+            setSavedInvoices(parsedInvoices);
+          }
         }
       }
+    } catch (error) {
+      console.error("Error loading saved invoices:", error);
     }
-  } catch (cleanupError) {
-    console.warn("Failed to clean /tmp:", cleanupError);
-  }
+  }, []);
 
-  // Generate PDF
-  let browser = null;
-  try {
-    // Configure Puppeteer for Vercel
-    const launchOptions: any = {
-      args: [
-        ...chromium.args,
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--disable-dev-shm-usage",
-        "--single-process",
-      ],
-      executablePath: await chromium.executablePath(
-        "https://github.com/Sparticuz/chromium/releases/download/v133.0.0/chromium-v133.0.0-pack.tar"
-      ),
-      headless: "new",
-      defaultViewport: chromium.defaultViewport,
-      ignoreHTTPSErrors: true,
+  const pdfUrl = useMemo(() => {
+    if (invoicePdf instanceof Blob && invoicePdf.size > 0) {
+      try {
+        return window.URL.createObjectURL(invoicePdf);
+      } catch (error) {
+        return null;
+      }
+    }
+    return null;
+  }, [invoicePdf]);
+
+  useEffect(() => {
+    return () => {
+      if (pdfUrl) {
+        window.URL.revokeObjectURL(pdfUrl);
+      }
     };
+  }, [pdfUrl]);
 
-    console.log("Chromium executable path:", launchOptions.executablePath); // Debug log
+  const updatedDefaultValues = useMemo(
+    () => ({
+      ...FORM_DEFAULT_VALUES,
+      details: {
+        ...FORM_DEFAULT_VALUES.details,
+        currency: "AED",
+      },
+    }),
+    []
+  );
 
-    browser = await puppeteerCore.launch(launchOptions);
-    const page = await browser.newPage();
+  useEffect(() => {
+    reset(updatedDefaultValues);
+  }, [reset, updatedDefaultValues]);
 
-    await page.setContent(htmlTemplate, {
-      waitUntil: "domcontentloaded",
-      timeout: 30000,
-    });
+  const resetWizard = useCallback(() => {
+    setCurrentWizardStep(0);
+  }, []);
 
-    const pdfBuffer: any = await page.pdf({
-      format: "A4",
-      printBackground: true,
-      margin: { top: "0", right: "0", bottom: "0", left: "0" },
-    });
+  const newInvoice = useCallback(() => {
+    reset(FORM_DEFAULT_VALUES);
+    setInvoicePdf(new Blob());
+    resetWizard();
+    router.refresh();
+    setNewInvoiceTrigger((prev) => prev + 1);
+    newInvoiceSuccess();
+  }, [reset, router, newInvoiceSuccess, resetWizard]);
 
-    return pdfBuffer;
-  } catch (error: any) {
-    console.error("Error generating PDF:", {
-      message: error.message,
-      stack: error.stack,
-      env: process.env.NODE_ENV,
-      executablePath: await chromium.executablePath(
-        "https://github.com/Sparticuz/chromium/releases/download/v133.0.0/chromium-v133.0.0-pack.tar"
-      ),
-    });
-    throw error;
-  } finally {
-    if (browser) {
-      await browser.close();
+  const downloadPdf = useCallback(async (): Promise<any> => {
+  return new Promise<void>((resolve, reject) => {
+    if (invoicePdf instanceof Blob && invoicePdf.size > 0) {
+      try {
+        const url = window.URL.createObjectURL(invoicePdf);
+        const a = document.createElement("a");
+        const originalInvoiceNumber = getValues().details.invoiceNumber || "unknown";
+        a.href = url;
+        a.download = `invoice_${originalInvoiceNumber}.pdf`;
+        
+        a.addEventListener('click', () => {
+          setTimeout(() => {
+            window.URL.revokeObjectURL(url);
+            resolve(undefined); // Explicitly resolve with undefined
+          }, 1000);
+        });
+        
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      } catch (error) {
+        resolve(undefined); // Explicitly resolve with undefined
+      }
+    } else {
+      resolve(undefined); // Explicitly resolve with undefined
     }
-  }
-}
+  });
+}, [invoicePdf, getValues]);
+
+  const generatePdf = useCallback(
+    async (data: InvoiceType) => {
+      if (!data) return;
+
+      setInvoicePdfLoading(true);
+      try {
+        const numericInvoiceNumber = getNumericInvoiceNumber(data.details.invoiceNumber);
+        const payload = {
+          invoiceNumber: data.details.invoiceNumber || "",
+          sender: data.sender,
+          receiver: data.receiver || { name: "", address: "", state: "", country: "UAE" },
+          details: {
+            ...data.details,
+            invoiceNumber: data.details.invoiceNumber || "",
+            currency: "AED",
+            items: (data.details.items || []).map((item) => ({
+              ...item,
+              description: item.description || "No description provided",
+              unitPrice: Number(item.unitPrice) || 0,
+              quantity: Number(item.quantity) || 0,
+            })),
+            taxDetails: {
+              ...data.details.taxDetails,
+              amount: Number(data.details.taxDetails?.amount) || 0,
+              amountType: data.details.taxDetails?.amountType === "amount" ? "fixed" : data.details.taxDetails?.amountType || "percentage",
+            },
+          },
+        };
+
+        let attempts = 0;
+        const maxAttempts = 3;
+        let success = false;
+
+        while (attempts < maxAttempts && !success) {
+          try {
+            const response = await fetch("/api/invoice/generate", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "X-Custom-Request": "invoice-pdf",
+              },
+              body: JSON.stringify(payload),
+              signal: AbortSignal.timeout(10000),
+            });
+
+            if (!response.ok) {
+              throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+
+            const result = await response.blob();
+            if (result.size > 0) {
+              setInvoicePdf(result);
+              pdfGenerationSuccess();
+              
+              await downloadPdf();
+              
+              try {
+                await fetch("/api/invoice/new_invoice", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({
+                    ...payload,
+                    invoiceNumber: numericInvoiceNumber,
+                    details: {
+                      ...payload.details,
+                      invoiceNumber: numericInvoiceNumber,
+                    },
+                  }),
+                });
+              } catch (error) {
+                console.error("Failed to save invoice to server:", error);
+              }
+
+              success = true;
+            }
+          } catch (error) {
+            attempts++;
+            if (attempts === maxAttempts) {
+              console.error("Failed to generate PDF after retries:", error);
+              throw error;
+            }
+            await new Promise((resolve) => setTimeout(resolve, 1000 * attempts));
+          }
+        }
+      } finally {
+        setInvoicePdfLoading(false);
+        setTimeout(() => {
+          newInvoice();
+        }, 500);
+      }
+    },
+    [pdfGenerationSuccess, downloadPdf, newInvoice]
+  );
+
+  const saveInvoice = useCallback(() => {
+    try {
+      if (invoicePdf instanceof Blob && invoicePdf.size > 0) {
+        const formValues = getValues();
+        if (!formValues?.details?.invoiceNumber) return;
+
+        const updatedDate = new Date().toLocaleDateString("en-US", SHORT_DATE_OPTIONS);
+        const numericInvoiceNumber = getNumericInvoiceNumber(formValues.details.invoiceNumber);
+        const updatedFormValues = {
+          ...formValues,
+          details: {
+            ...formValues.details,
+            invoiceNumber: numericInvoiceNumber,
+            updatedAt: updatedDate,
+          },
+        };
+
+        const existingInvoiceIndex = savedInvoices.findIndex(
+          (invoice) => invoice.details.invoiceNumber === numericInvoiceNumber
+        );
+
+        let updatedInvoices = [...savedInvoices];
+        if (existingInvoiceIndex !== -1) {
+          updatedInvoices[existingInvoiceIndex] = updatedFormValues;
+          modifiedInvoiceSuccess();
+        } else {
+          updatedInvoices.push(updatedFormValues);
+          saveInvoiceSuccess();
+        }
+
+        setSavedInvoices(updatedInvoices);
+        localStorage.setItem("savedInvoices", JSON.stringify(updatedInvoices));
+      }
+    } catch (error) {
+      console.error("Error saving invoice:", error);
+    }
+  }, [getValues, savedInvoices, modifiedInvoiceSuccess, saveInvoiceSuccess]);
+
+  const onFormSubmit = useCallback(
+    (data: InvoiceType) => {
+      if (!data?.details?.invoiceNumber) return;
+      if (typeof data?.details?.pdfTemplate !== "number") return;
+      
+      generatePdf(data);
+      saveInvoice();
+    },
+    [generatePdf, saveInvoice]
+  );
+
+  const removeFinalPdf = useCallback(() => {
+    setInvoicePdf(new Blob());
+    if (pdfUrl) {
+      window.URL.revokeObjectURL(pdfUrl);
+    }
+  }, [pdfUrl]);
+
+  const previewPdfInTab = useCallback(() => {
+    if (invoicePdf instanceof Blob && invoicePdf.size > 0) {
+      try {
+        const url = window.URL.createObjectURL(invoicePdf);
+        window.open(url, "_blank");
+      } catch (error) {
+        console.error("Error opening PDF preview:", error);
+      }
+    }
+  }, [invoicePdf]);
+
+  const printPdf = useCallback(() => {
+    if (invoicePdf instanceof Blob && invoicePdf.size > 0) {
+      try {
+        const pdfUrl = window.URL.createObjectURL(invoicePdf);
+        const printWindow = window.open(pdfUrl, "_blank");
+        if (printWindow) {
+          printWindow.onload = () => {
+            printWindow.print();
+          };
+        }
+      } catch (error) {
+        console.error("Error printing PDF:", error);
+      }
+    }
+  }, [invoicePdf]);
+
+  const deleteInvoice = useCallback(
+    (index: number) => {
+      if (index >= 0 && index < savedInvoices.length) {
+        const updatedInvoices = [...savedInvoices];
+        updatedInvoices.splice(index, 1);
+        setSavedInvoices(updatedInvoices);
+        localStorage.setItem("savedInvoices", JSON.stringify(updatedInvoices));
+      }
+    },
+    [savedInvoices]
+  );
+
+  const sendPdfToMail = useCallback(
+    async (email: string): Promise<void> => {
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        sendPdfError({ email, sendPdfToMail });
+        return;
+      }
+      if (!(invoicePdf instanceof Blob) || invoicePdf.size === 0) {
+        sendPdfError({ email, sendPdfToMail });
+        return;
+      }
+
+      const originalInvoiceNumber = getValues().details.invoiceNumber || "unknown";
+      const numericInvoiceNumber = getNumericInvoiceNumber(getValues().details.invoiceNumber);
+      const fd = new FormData();
+      fd.append("email", email);
+      fd.append("invoicePdf", invoicePdf, `invoice_${originalInvoiceNumber}.pdf`);
+      fd.append("invoiceNumber", numericInvoiceNumber);
+
+      let attempts = 0;
+      const maxAttempts = 3;
+      while (attempts < maxAttempts) {
+        try {
+          const response = await fetch(SEND_PDF_API, {
+            method: "POST",
+            body: fd,
+            signal: AbortSignal.timeout(10000),
+          });
+          if (response.ok) return;
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        } catch (error) {
+          attempts++;
+          if (attempts === maxAttempts) {
+            sendPdfError({ email, sendPdfToMail });
+            throw error;
+          }
+          await new Promise((resolve) => setTimeout(resolve, 1000 * attempts));
+        }
+      }
+    },
+    [invoicePdf, getValues, sendPdfError]
+  );
+
+  const exportInvoiceAs = useCallback(
+    (exportAs: ExportTypes) => {
+      try {
+        const formValues = getValues();
+        if (!formValues?.details?.invoiceNumber) return;
+
+        const numericInvoiceNumber = getNumericInvoiceNumber(formValues.details.invoiceNumber);
+        exportInvoice(exportAs, {
+          ...formValues,
+          details: {
+            ...formValues.details,
+            invoiceNumber: numericInvoiceNumber,
+          },
+        });
+      } catch (error) {
+        console.error("Error exporting invoice:", error);
+      }
+    },
+    [getValues]
+  );
+
+  const importInvoice = useCallback(
+    (file: File) => {
+      if (!file || file.type !== "application/json") {
+        importInvoiceError();
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const result = event.target?.result;
+          if (typeof result !== "string") return;
+
+          const importedData = JSON.parse(result) as InvoiceType;
+          if (!importedData?.details) return;
+
+          const sanitizedData = {
+            ...importedData,
+            details: {
+              ...importedData.details,
+              invoiceNumber: importedData.details.invoiceNumber || "UNKNOWN",
+              currency: "AED",
+              invoiceDate: importedData.details.invoiceDate
+                ? new Date(importedData.details.invoiceDate).toISOString()
+                : new Date().toISOString(),
+              items: (importedData.details.items || []).map((item) => ({
+                ...item,
+                description: item.description || "No description provided",
+                unitPrice: Number(item.unitPrice) || 0,
+                quantity: Number(item.quantity) || 0,
+              })),
+            },
+          };
+
+          reset(sanitizedData);
+        } catch (error) {
+          importInvoiceError();
+        }
+      };
+      reader.onerror = importInvoiceError;
+      reader.readAsText(file);
+    },
+    [reset, importInvoiceError]
+  );
+
+  return (
+    <InvoiceContext.Provider
+      value={{
+        invoicePdf,
+        invoicePdfLoading,
+        savedInvoices,
+        pdfUrl,
+        onFormSubmit,
+        newInvoice,
+        newInvoiceTrigger,
+        generatePdf,
+        removeFinalPdf,
+        downloadPdf,
+        printPdf,
+        previewPdfInTab,
+        saveInvoice,
+        deleteInvoice,
+        sendPdfToMail,
+        exportInvoiceAs,
+        importInvoice,
+        currentWizardStep,
+        setCurrentWizardStep,
+        resetWizard,
+      }}
+    >
+      {children}
+    </InvoiceContext.Provider>
+  );
+};
+
+export default InvoiceContextProvider;
