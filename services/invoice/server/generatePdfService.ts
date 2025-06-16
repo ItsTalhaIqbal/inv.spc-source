@@ -370,7 +370,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
                 <th class="w-1/2">Item</th>
                 <th class="w-1/6">Qty</th>
                 <th class="w-1/6">Unit Price</th>
-                <th class="w-1/6 text-right" >Amount (AED)</th>
+                <th class="w-1/6 text-left" >Amount (AED)</th>
               </tr>
             </thead>
             <tbody>
