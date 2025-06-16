@@ -51,10 +51,13 @@ interface InvoiceType {
 
 export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
   await connectToDatabase();
- 
+
   console.log("Input body:", JSON.stringify(body, null, 2));
   console.log("Receiver data:", JSON.stringify(body.receiver, null, 2));
-  console.log("Additional Notes:", body.receiver?.additionalNotes ?? "Not provided");
+  console.log(
+    "Additional Notes:",
+    body.receiver?.additionalNotes ?? "Not provided"
+  );
   console.log("Payment Terms:", body.receiver?.paymentTerms ?? "Not provided");
 
   // Debug log to inspect input data
@@ -174,27 +177,27 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
 
   const taxHtml = hasTax
     ? `
-      <p class="text-base -bold text-left text-gray-800">Tax ${taxDetails.amount}${
-        taxDetails.amountType === "percentage" ? "%" : " AED"
-      }</p>
+      <p class="text-base -bold text-left text-gray-800">Tax ${
+        taxDetails.amount
+      }${taxDetails.amountType === "percentage" ? "%" : " AED"}</p>
 
     `
     : "";
 
   const discountHtml = hasDiscount
     ? `
-      <p class="text-base text-left text-gray-800">Discount ${discountDetails.amount}${
-        discountDetails.amountType === "percentage" ? "%" : " AED"
-      }</p>
+      <p class="text-base text-left text-gray-800">Discount ${
+        discountDetails.amount
+      }${discountDetails.amountType === "percentage" ? "%" : " AED"}</p>
 
     `
     : "";
 
   const shippingHtml = hasShipping
     ? `
-      <p class="text-base text-left text-gray-800">Shipping ${shippingDetails.cost}${
-        shippingDetails.costType === "percentage" ? "%" : " AED"
-      }</p>
+      <p class="text-base text-left text-gray-800">Shipping ${
+        shippingDetails.cost
+      }${shippingDetails.costType === "percentage" ? "%" : " AED"}</p>
 
     `
     : "";
@@ -278,15 +281,16 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
       .invoice-table thead tr {
         background-color: #d3d3d3;
       }
-      .invoice-table th {
-        padding: 12px 16px;
-        font-size: 14px;
-        font-weight: bold;
-        text-transform: uppercase;
-        color: #000;
-        text-align: left;
-        border: 1px solid #000;
-      }
+     .invoice-table th {
+  padding: 12px 16px;
+  font-size: 14px;
+  font-weight: bold;
+  text-transform: uppercase;
+  color: #000;
+  text-align: left;
+  border: 1px solid #000;
+  white-space: nowrap; 
+}
       .invoice-table th:last-child {
         text-align: right;
       }
@@ -366,11 +370,11 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
           <table class="invoice-table">
             <thead>
               <tr>
-                <th class="w-1/20">Sr.</th>
-                <th class="w-1/2">Item</th>
-                <th class="w-1/6">Qty</th>
-                <th class="w-1/6">Unit Price</th>
-                <th class="w-1/6 text-left" >Amount (AED)</th>
+             <th class="w-1/20">Sr.</th>
+<th class="w-1/2">Item</th>
+<th class="w-1/6">Qty</th>
+<th class="w-1/6">Unit Price</th>
+<th class="w-1/6 text-right">AMOUNT&nbsp;(AED)</th>
               </tr>
             </thead>
             <tbody>
