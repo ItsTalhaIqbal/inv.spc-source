@@ -325,9 +325,10 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
 
 .total-amount {
   font-weight: bold;
-  border-top: 2px solid #000;
+  border-top: 1px solid #000;
   padding-top: 8px;
   margin-top: 8px;
+  text-align:left;
 }
       .footer {
         position: absolute;
