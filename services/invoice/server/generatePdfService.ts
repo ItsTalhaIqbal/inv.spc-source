@@ -324,7 +324,6 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
 }
 
 .total-amount {
-  font-weight: bold;
   border-top: 1px solid #000;
   padding-top: 8px;
   margin-top: 8px;
@@ -413,8 +412,8 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
     ${taxHtml ? `<p class="amount-line">${taxHtml}</p>` : ""}
     ${shippingHtml ? `<p class="amount-line">${shippingHtml}</p>` : ""}
     ${discountHtml ? `<p class="amount-line">${discountHtml}</p>` : ""}
-    <p class="total-amount">
-      Total AED${formatNumberWithCommas(Number(details.totalAmount?.toFixed(2) || 0))}
+    <p class="total-amount font-semibold">
+      Total  AED ${formatNumberWithCommas(Number(details.totalAmount?.toFixed(2) || 0))}
     </p>
   </div>
 </div>
