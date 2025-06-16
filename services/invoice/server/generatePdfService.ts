@@ -343,11 +343,6 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
             <p class="text-sm">Iris Bay, Office D-43, Business Bay, Dubai</p>
             <h2 class="text-xl mt-5">
               <span class="invoice-number">
-                ${
-                  details.invoiceNumber.includes("INV")
-                    ? "INVOICE# "
-                    : "QUOTATION# "
-                }
                 ${details.invoiceNumber || ""}
               </span>
             </h2>
@@ -359,7 +354,9 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
 
         <div class="mt-6">
           <h3>CUSTOMER INFO</h3>
-          <p class="text-lg">${receiver.name || ""}</p>
+          <p class="text-md">${receiver.name || ""}</p>
+          <p class="text-md">${receiver.phone || ""}</p>
+
         </div>
 
         <div class="mt-4">
