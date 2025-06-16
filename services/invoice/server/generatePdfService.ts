@@ -51,7 +51,7 @@ interface InvoiceType {
 
 export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
   await connectToDatabase();
-
+ 
   console.log("Input body:", JSON.stringify(body, null, 2));
   console.log("Receiver data:", JSON.stringify(body.receiver, null, 2));
   console.log("Additional Notes:", body.receiver?.additionalNotes ?? "Not provided");
@@ -174,9 +174,10 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
 
   const taxHtml = hasTax
     ? `
-      <p class="text-base text-left text-gray-800">Tax ${taxDetails.amount}${
+      <p class="text-base -bold text-left text-gray-800">Tax ${taxDetails.amount}${
         taxDetails.amountType === "percentage" ? "%" : " AED"
       }</p>
+
     `
     : "";
 
@@ -185,6 +186,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
       <p class="text-base text-left text-gray-800">Discount ${discountDetails.amount}${
         discountDetails.amountType === "percentage" ? "%" : " AED"
       }</p>
+
     `
     : "";
 
@@ -193,6 +195,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
       <p class="text-base text-left text-gray-800">Shipping ${shippingDetails.cost}${
         shippingDetails.costType === "percentage" ? "%" : " AED"
       }</p>
+
     `
     : "";
 
@@ -225,7 +228,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
       @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
       ${tailwindCss}
       body {
-        font-family: 'Roboto', Arial, sans-serif;
+        font-family: 'Roboto', sans-serif;
         margin: 0;
         padding: 0;
         background-color: #ffffff;
@@ -234,14 +237,14 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
         width: 100%;
         box-sizing: border-box;
         position: relative;
-        min-height: 100vh;
+        min-height: 100vh; /* Ensure body takes full height */
       }
       .container {
         width: 100%;
         padding: 0;
       }
       .main-content {
-        padding: 20px;
+        padding: 20px; /* Add padding to main content */
       }
       .header {
         display: flex;
@@ -279,10 +282,10 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
         padding: 12px 16px;
         font-size: 14px;
         font-weight: bold;
+        text-transform: uppercase;
         color: #000;
         text-align: left;
         border: 1px solid #000;
-        white-space: nowrap;
       }
       .invoice-table th:last-child {
         text-align: right;
@@ -302,7 +305,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
       }
       .footer {
         position: absolute;
-        bottom: 0;
+        bottom: 0; /* Keep footer at the bottom */
         width: 100%;
         padding-top: 10px;
       }
@@ -330,7 +333,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
   </head>
   <body>
     <div class="container">
-      <div class="main-content">
+      <div class="main-content"> <!-- New div for main content with padding -->
         <div class="header">
           <div class="logo">
             <img src="${logoBase64}" alt="SPC Source Logo" />
@@ -353,6 +356,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
           <h3>CUSTOMER INFO</h3>
           <p class="text-md">${receiver.name || ""}</p>
           <p class="text-md">${receiver.phone || ""}</p>
+
         </div>
 
         <div class="mt-4">
@@ -366,7 +370,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
                 <th class="w-1/2">Item</th>
                 <th class="w-1/6">Qty</th>
                 <th class="w-1/6">Unit Price</th>
-                <th class="w-1/6 text-right">Amount (AED)</th>
+                <th >Amount (AED)</th>
               </tr>
             </thead>
             <tbody>
@@ -388,9 +392,9 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
             </div>
           </div>
         </div>
-      </div>
+      </div> <!-- End of main-content div -->
       
-      <div class="footer">
+      <div class="footer"> <!-- Footer remains unchanged -->
         <div class="footer-signatures">
           <p class="ml-4">Receiver's Sign _____________</p>
           <p class="mr-4">for ${
@@ -419,10 +423,6 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
   </body>
 </html>
 `;
-
-  // Save HTML for debugging
-  fs.writeFileSync("debug_invoice.html", htmlTemplate);
-  console.log("HTML template saved to debug_invoice.html");
 
   // Clean up /tmp to avoid ETXTBSY
   try {
@@ -459,21 +459,20 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
       ignoreHTTPSErrors: true,
     };
 
-    console.log("Chromium executable path:", launchOptions.executablePath);
+    console.log("Chromium executable path:", launchOptions.executablePath); // Debug log
 
     browser = await puppeteerCore.launch(launchOptions);
-    const page  = await browser.newPage();
+    const page = await browser.newPage();
 
     await page.setContent(htmlTemplate, {
-      waitUntil: "networkidle0",
+      waitUntil: "domcontentloaded",
       timeout: 30000,
     });
 
     const pdfBuffer: any = await page.pdf({
       format: "A4",
       printBackground: true,
-      margin: { top: "10mm", right: "10mm", bottom: "10mm", left: "10mm" },
-      preferCSSPageSize: true,
+      margin: { top: "0", right: "0", bottom: "0", left: "0" },
     });
 
     return pdfBuffer;
