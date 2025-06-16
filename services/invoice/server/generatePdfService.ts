@@ -174,34 +174,28 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
 
   const taxHtml = hasTax
     ? `
-      <p class="text-base font-bold text-gray-800">Tax ${taxDetails.amount}${
+      <p class="text-base -bold text-left text-gray-800">Tax ${taxDetails.amount}${
         taxDetails.amountType === "percentage" ? "%" : " AED"
       }</p>
-      <p class="text-base text-gray-800">${formatNumberWithCommas(
-        Number(taxDetails.amount)
-      )} ${taxDetails.amountType === "amount" ? "AED" : ""}</p>
+
     `
     : "";
 
   const discountHtml = hasDiscount
     ? `
-      <p class="text-base font-bold text-gray-800">Discount ${discountDetails.amount}${
+      <p class="text-base text-left text-gray-800">Discount ${discountDetails.amount}${
         discountDetails.amountType === "percentage" ? "%" : " AED"
       }</p>
-      <p class="text-base text-gray-800">${formatNumberWithCommas(
-        Number(discountDetails.amount)
-      )} ${discountDetails.amountType === "amount" ? "AED" : ""}</p>
+
     `
     : "";
 
   const shippingHtml = hasShipping
     ? `
-      <p class="text-base font-bold text-gray-800">Shipping ${shippingDetails.cost}${
+      <p class="text-base text-left text-gray-800">Shipping ${shippingDetails.cost}${
         shippingDetails.costType === "percentage" ? "%" : " AED"
       }</p>
-      <p class="text-base text-gray-800">${formatNumberWithCommas(
-        Number(shippingDetails.cost)
-      )} ${shippingDetails.costType === "amount" ? "AED" : ""}</p>
+
     `
     : "";
 
@@ -395,8 +389,8 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
               ${taxHtml ? `<p>${taxHtml}</p>` : ""}
               ${shippingHtml ? `<p>${shippingHtml}</p>` : ""}
               ${discountHtml ? `<p>${discountHtml}</p>` : ""}
-              <p class="text-base font-bold text-gray-800">Total ${formatNumberWithCommas(
-                Number(details.totalAmount || 0)
+              <p class="text-base font-bold text-gray-800 border-t-2">Total ${formatNumberWithCommas(
+                Number(details.totalAmount?.toFixed(2) || 0)
               )} AED</p>
             </div>
           </div>
