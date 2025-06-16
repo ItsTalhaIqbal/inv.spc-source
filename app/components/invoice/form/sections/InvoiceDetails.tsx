@@ -58,8 +58,8 @@ const InvoiceDetails = () => {
     setValue("details.isInvoice", checked, { shouldValidate: true });
     if (invoiceNum) {
       const newInvoiceNum = checked
-        ? invoiceNum.replace(/^QUT/, "INV")
-        : invoiceNum.replace(/^INV/, "QUT");
+        ? invoiceNum.replace(/^QUT-/, "INV-")
+        : invoiceNum.replace(/^INV-/, "QUT-");
       setValue("details.invoiceNumber", newInvoiceNum, {
         shouldValidate: true,
       });

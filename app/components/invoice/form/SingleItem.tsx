@@ -1,5 +1,4 @@
-"use client";
-
+"use client"
 import { useEffect } from "react";
 
 // RHF
@@ -47,9 +46,6 @@ const SingleItem = ({
     const { control, setValue } = useFormContext();
 
     const { _t } = useTranslationContext();
-
-    // Set default value for item name on mount
-
 
     // Items
     const itemName = useWatch({
@@ -176,12 +172,12 @@ const SingleItem = ({
                     placeholder={_t("form.steps.lineItems.quantity")}
                     className="w-[8rem]"
                     vertical
-                    min={0} // Enforce minimum of 1
-                    step="0"
+                    min={0} // Allow zero
+                    step="1"
                     onChange={(e) => {
                         const value = Number(e.target.value);
-                        if (value < 1) {
-                            setValue(`${name}[${index}].quantity`, 1, { shouldValidate: true });
+                        if (value < 0) {
+                            setValue(`${name}[${index}].quantity`, 0, { shouldValidate: true });
                         } else {
                             setValue(`${name}[${index}].quantity`, value, { shouldValidate: true });
                         }
@@ -196,12 +192,12 @@ const SingleItem = ({
                     placeholder={_t("form.steps.lineItems.rate")}
                     className="w-[8rem]"
                     vertical
-                    min={0} // Enforce minimum of 0.01
-                    step="0"
+                    min={0} // Allow zero
+                    step="0.01"
                     onChange={(e) => {
                         const value = Number(e.target.value);
-                        if (value <= 0) {
-                            setValue(`${name}[${index}].unitPrice`, 1, { shouldValidate: true });
+                        if (value < 0) {
+                            setValue(`${name}[${index}].unitPrice`, 0, { shouldValidate: true });
                         } else {
                             setValue(`${name}[${index}].unitPrice`, value, { shouldValidate: true });
                         }

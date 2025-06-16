@@ -149,8 +149,8 @@ export const FORM_DEFAULT_VALUES = {
       {
         name: "",
         quantity: 0,
-        unitPrice: 0,
-        total: 0,
+        unitPrice:0 ,
+        total:0 ,
       },
     ],
     currency: "AED",
@@ -173,8 +173,8 @@ export const FORM_DEFAULT_VALUES = {
       accountName: "John Doe",
       accountNumber: "445566998877",
     },
-    additionalNotes: "",
-    paymentTerms: "",
+    additionalNotes: "Received above items in good condition.",
+    paymentTerms: "50% advance upon confirmation of the order, 50% upon delivery or completion.",
     totalAmountInWords: "",
     isInvoice: false
   },

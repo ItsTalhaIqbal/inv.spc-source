@@ -28,6 +28,9 @@ const WizardNavigation = () => {
     }
   };
 
+  // Create a submit handler that will only be called when the button is clicked
+  const handleGeneratePdf = handleSubmit(onFormSubmit);
+
   return (
     <div className="flex justify-end gap-5">
       {!isFirstStep && (
@@ -41,11 +44,14 @@ const WizardNavigation = () => {
       )}
       {isLastStep ? (
         <BaseButton
-          type="submit"
+          type="button"
           tooltipLabel="Generate your invoice"
           loading={invoicePdfLoading}
           loadingText="Generating your invoice"
-          onClick={handleSubmit(onFormSubmit)}
+          onClick={(e) => {
+            e.preventDefault(); // Prevent default form submission
+            handleGeneratePdf();
+          }}
         >
           <FileInput />
           {_t("actions.generatePdf")}

@@ -32,6 +32,8 @@ interface Details {
   shippingDetails?: { cost: number; costType: string };
   totalAmount?: number;
   pdfTemplate?: number;
+  paymentTerms:string;
+  additionalNotes:string
 }
 
 interface InvoiceType {
@@ -49,6 +51,11 @@ interface InvoiceType {
 
 export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
   await connectToDatabase();
+ 
+  console.log("Input body:", JSON.stringify(body, null, 2));
+  console.log("Receiver data:", JSON.stringify(body.receiver, null, 2));
+  console.log("Additional Notes:", body.receiver?.additionalNotes ?? "Not provided");
+  console.log("Payment Terms:", body.receiver?.paymentTerms ?? "Not provided");
 
   // Debug log to inspect input data
   console.log("Input body:", JSON.stringify(body, null, 2));
@@ -105,11 +112,19 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
 
       return `
         <tr class="border">
-          <td class="p-3 w-1/20 font-bold text-black text-base border">${index + 1}</td>
-          <td class="p-3 w-1/2 text-black text-base border">${item.name || ""}</td>
+          <td class="p-3 w-1/20 font-bold text-black text-base border">${
+            index + 1
+          }</td>
+          <td class="p-3 w-1/2 text-black text-base border">${
+            item.name || ""
+          }</td>
           <td class="p-3 w-1/6 text-black text-base border">${quantity}</td>
-          <td class="p-3 w-1/6 text-black text-base border">${unitPrice ? `${unitPrice} ` : ""}</td>
-          <td class="p-3 w-1/6 text-right text-black text-base border">${total ? `${total} ` : ""}</td>
+          <td class="p-3 w-1/6 text-black text-base border">${
+            unitPrice ? `${unitPrice} ` : ""
+          }</td>
+          <td class="p-3 w-1/6 text-right text-black text-base border">${
+            total ? `${total} ` : ""
+          }</td>
         </tr>
       `;
     })
@@ -272,7 +287,6 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
       }
       .summary {
         margin-top: 20px;
-        text-align: right;
         font-weight: bold;
         width: 100%;
       }
@@ -280,7 +294,6 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
         position: absolute;
         bottom: 0; /* Keep footer at the bottom */
         width: 100%;
-        border-top: 1px solid #000;
         padding-top: 10px;
       }
       .footer-signatures {
@@ -354,39 +367,44 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
               ${itemsHtml}
             </tbody>
           </table>
-          <div class="summary">
+          <div class="summary flex justify-between">
             <div>
               <div>
                 <h2>Additional Notes</h2>
-                <p>${receiver.additionalNotes ?? "N/A"}</p>
+                <p>${details.additionalNotes ?? "N/A"}</p>
               </div>
               <div>
                 <h2>Payment Terms</h2>
-                <p>${receiver.paymentTerms ?? "N/A"}</p>
+                <p>${details.paymentTerms ?? "N/A"}</p>
               </div>     
             </div>
+            <div class=""text-left>
+            
             ${taxHtml ? `<p>${taxHtml}</p>` : ""}
             ${shippingHtml ? `<p>${shippingHtml}</p>` : ""}
             ${discountHtml ? `<p>${discountHtml}</p>` : ""}
             <p>Total ${formatNumberWithCommas(
               Number(details.totalAmount || 0)
             )} AED</p>
+            </div>
           </div>
         </div>
       </div> <!-- End of main-content div -->
       
       <div class="footer"> <!-- Footer remains unchanged -->
         <div class="footer-signatures">
-          <p>Receiver's Sign _____________</p>
-          <p>for ${senderData.name || "SPC SOURCE TECHNICAL SERVICES LLC"}</p>
+          <p class="ml-4">Receiver's Sign _____________</p>
+          <p class="mr-4">for ${
+            senderData.name || "SPC SOURCE TECHNICAL SERVICES LLC"
+          }</p>
         </div>
         <div class="footer-bar">
           <div class="flex items-center">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <svg class="ml-4 xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
               <polyline points="22,6 12,13 2,6"></polyline>
             </svg>
-            <span>${senderData.email || "contact@spcsource.com"}</span>
+            <span ">${senderData.email || "contact@spcsource.com"}</span>
           </div>
           <div class="flex items-center">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -394,7 +412,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
               <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
               <path d="M2 12h20"></path>
             </svg>
-            <span>www.spcsource.com</span>
+            <span class"mr-4">www.spcsource.com</span>
           </div>
         </div>
       </div>
@@ -422,7 +440,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
   let browser = null;
   try {
     // Configure Puppeteer for Vercel
-    const launchOptions:any = {
+    const launchOptions: any = {
       args: [
         ...chromium.args,
         "--no-sandbox",
@@ -448,7 +466,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
       timeout: 30000,
     });
 
-    const pdfBuffer:any = await page.pdf({
+    const pdfBuffer: any = await page.pdf({
       format: "A4",
       printBackground: true,
       margin: { top: "0", right: "0", bottom: "0", left: "0" },
