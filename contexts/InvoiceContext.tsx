@@ -1,3 +1,5 @@
+"use client";
+
 import React, {
   createContext,
   useCallback,
@@ -27,7 +29,7 @@ const defaultInvoiceContext = {
   newInvoiceTrigger: 0,
   generatePdf: async (data: InvoiceType) => {},
   removeFinalPdf: () => {},
-  downloadPdf: async (): Promise<void> => {},
+    downloadPdf: async (): Promise<void> => {},
   printPdf: () => {},
   previewPdfInTab: () => {},
   saveInvoice: () => {},
@@ -142,35 +144,34 @@ export const InvoiceContextProvider = ({
     newInvoiceSuccess();
   }, [reset, router, newInvoiceSuccess, resetWizard]);
 
-  const downloadPdf = useCallback(async (): Promise<void> => {
-    return new Promise<void>((resolve, reject) => {
-      if (invoicePdf instanceof Blob && invoicePdf.size > 0) {
-        try {
-          const url = window.URL.createObjectURL(invoicePdf);
-          const a = document.createElement("a");
-          const originalInvoiceNumber = getValues().details.invoiceNumber || "unknown";
-          a.href = url;
-          a.download = `invoice_${originalInvoiceNumber}.pdf`;
-
-          a.addEventListener('click', () => {
-            setTimeout(() => {
-              window.URL.revokeObjectURL(url);
-              resolve();
-            }, 100);
-          });
-
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-        } catch (error) {
-          console.error("Error downloading PDF:", error);
-          reject(error);
-        }
-      } else {
-        reject(new Error("No valid PDF available"));
+  const downloadPdf = useCallback(async (): Promise<any> => {
+  return new Promise<void>((resolve, reject) => {
+    if (invoicePdf instanceof Blob && invoicePdf.size > 0) {
+      try {
+        const url = window.URL.createObjectURL(invoicePdf);
+        const a = document.createElement("a");
+        const originalInvoiceNumber = getValues().details.invoiceNumber || "unknown";
+        a.href = url;
+        a.download = `invoice_${originalInvoiceNumber}.pdf`;
+        
+        a.addEventListener('click', () => {
+          setTimeout(() => {
+            window.URL.revokeObjectURL(url);
+            resolve(undefined); // Explicitly resolve with undefined
+          }, 1000);
+        });
+        
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      } catch (error) {
+        resolve(undefined); // Explicitly resolve with undefined
       }
-    });
-  }, [invoicePdf, getValues]);
+    } else {
+      resolve(undefined); // Explicitly resolve with undefined
+    }
+  });
+}, [invoicePdf, getValues]);
 
   const generatePdf = useCallback(
     async (data: InvoiceType) => {
@@ -201,58 +202,71 @@ export const InvoiceContextProvider = ({
           },
         };
 
-        console.log("Sending payload to /api/invoice/generate:", JSON.stringify(payload, null, 2));
+        let attempts = 0;
+        const maxAttempts = 3;
+        let success = false;
 
-        const response = await fetch("/api/invoice/generate", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Custom-Request": "invoice-pdf",
-          },
-          body: JSON.stringify(payload),
-          signal: AbortSignal.timeout(60000),
-        });
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`HTTP error! Status: ${response.status}, Message: ${errorText}`);
-        }
-
-        const result = await response.blob();
-        if (result.size === 0) {
-          throw new Error("Empty PDF blob received");
-        }
-
-        setInvoicePdf(result);
-        pdfGenerationSuccess();
-        await downloadPdf();
-
-        try {
-          await fetch("/api/invoice/new_invoice", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              ...payload,
-              invoiceNumber: numericInvoiceNumber,
-              details: {
-                ...payload.details,
-                invoiceNumber: numericInvoiceNumber,
+        while (attempts < maxAttempts && !success) {
+          try {
+            const response = await fetch("/api/invoice/generate", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "X-Custom-Request": "invoice-pdf",
               },
-            }),
-          });
-        } catch (error) {
-          console.error("Failed to save invoice to server:", error);
+              body: JSON.stringify(payload),
+              signal: AbortSignal.timeout(10000),
+            });
+
+            if (!response.ok) {
+              throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+
+            const result = await response.blob();
+            if (result.size > 0) {
+              setInvoicePdf(result);
+              pdfGenerationSuccess();
+              
+              await downloadPdf();
+              
+              try {
+                await fetch("/api/invoice/new_invoice", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({
+                    ...payload,
+                    invoiceNumber: numericInvoiceNumber,
+                    details: {
+                      ...payload.details,
+                      invoiceNumber: numericInvoiceNumber,
+                    },
+                  }),
+                });
+              } catch (error) {
+                console.error("Failed to save invoice to server:", error);
+              }
+
+              success = true;
+            }
+          } catch (error) {
+            attempts++;
+            if (attempts === maxAttempts) {
+              console.error("Failed to generate PDF after retries:", error);
+              throw error;
+            }
+            await new Promise((resolve) => setTimeout(resolve, 1000 * attempts));
+          }
         }
-      } catch (error) {
-        console.error("PDF generation failed:", error);
-        throw error;
       } finally {
         setInvoicePdfLoading(false);
+        setTimeout(() => {
+          newInvoice();
+        }, 500);
       }
     },
-    [pdfGenerationSuccess, downloadPdf]
+    [pdfGenerationSuccess, downloadPdf, newInvoice]
   );
 
   const saveInvoice = useCallback(() => {
@@ -297,7 +311,7 @@ export const InvoiceContextProvider = ({
     (data: InvoiceType) => {
       if (!data?.details?.invoiceNumber) return;
       if (typeof data?.details?.pdfTemplate !== "number") return;
-
+      
       generatePdf(data);
       saveInvoice();
     },
@@ -438,7 +452,7 @@ export const InvoiceContextProvider = ({
               invoiceDate: importedData.details.invoiceDate
                 ? new Date(importedData.details.invoiceDate).toISOString()
                 : new Date().toISOString(),
-              items: (importedData.details.items || []).map((item:any) => ({
+              items: (importedData.details.items || []).map((item) => ({
                 ...item,
                 description: item.description || "No description provided",
                 unitPrice: Number(item.unitPrice) || 0,

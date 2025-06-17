@@ -1,4 +1,3 @@
-
 import chromium from "@sparticuz/chromium-min";
 import puppeteerCore from "puppeteer-core";
 import { TAILWIND_CDN } from "@/lib/variables";
@@ -143,19 +142,11 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
 
       return `
         <tr class="border">
-          <td class="p-3 w-1/20 font-bold text-black text-base border">${
-            index + 1
-          }</td>
-          <td class="p-3 w-1/2 text-black text-base border">${
-            item.name || ""
-          }</td>
-          <td class="p-3 w-1/6 text-black text-base border">${quantity}</td>
-          <td class="p-3 w-1/6 text-black text-base border">${
-            unitPrice ? `${unitPrice} ` : ""
-          }</td>
-          <td class="p-3 w-1/6 text-right text-black text-base border">${
-            total ? `${total} ` : ""
-          }</td>
+          <td class="w-1/20 font-bold text-black text-base border">${index + 1}</td>
+          <td class="w-1/2 text-black text-base border">${item.name || ""}</td>
+          <td class="w-1/6 text-black text-base border">${quantity}</td>
+          <td class="w-1/6 text-black text-base border">${unitPrice ? `${unitPrice} ` : ""}</td>
+          <td class="w-1/6 text-right text-black text-base border">${total ? `${total} ` : ""}</td>
         </tr>
       `;
     })
@@ -245,7 +236,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
     `
     : "";
 
-  // Generate HTML template
+  // Generate HTML template with updated header and heading logic
   const htmlTemplate = `
 <html>
   <head>
@@ -260,24 +251,17 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
         padding: 0;
         background-color: #ffffff;
         color: #000000;
-        height: 100%;
-        width: 100%;
-        box-sizing: border-box;
-        position: relative;
-        min-height: 100vh;
       }
       .container {
-        width: 100%;
-        padding: 0;
-      }
-      .main-content {
-        padding: 20px;
+        display: block;
+        min-height: 100vh;
       }
       .header {
         display: flex;
         justify-content: space-between;
         align-items: flex-start;
-        margin-bottom: 20px;
+        padding: 10px 10px; /* Reduced padding on sides */
+        border-bottom: 1px solid #000;
       }
       .logo {
         margin: 0;
@@ -287,7 +271,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
         width: 180px;
         height: 100px;
       }
-      .invoice-details {
+      .header-details {
         text-align: right;
       }
       .invoice-number {
@@ -306,7 +290,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
         background-color: #d3d3d3;
       }
       .invoice-table th {
-        padding: 12px 16px;
+        padding: 0 16px;
         font-size: 14px;
         font-weight: bold;
         text-transform: uppercase;
@@ -319,7 +303,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
         text-align: right;
       }
       .invoice-table td {
-        padding: 12px 16px;
+        padding: 0 16px;
         font-size: 14px;
         border: 1px solid #000;
       }
@@ -345,61 +329,48 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
       }
       .total-amount {
         border-top: 1px solid #000;
-        border-bottom:1px solid #000;
+        border-bottom: 1px solid #000;
         padding-top: 8px;
         margin-top: 8px;
         margin-bottom: 8px;
         text-align: left;
       }
-      .footer {
-        position: absolute;
-        bottom: 0;
-        width: 100%;
-        padding-top: 10px;
-      }
-      .footer-signatures {
-        display: flex;
-        justify-content: space-between;
-        margin-bottom: 10px;
-      }
-      .footer-bar {
-        background-color: #f4a261;
-        color: #000;
-        padding: 10px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        width: 100%;
-      }
-      .footer-bar svg {
-        margin-right: 8px;
-      }
       h3 {
         font-weight: bold;
+      }
+      @page {
+        margin: 10mm; /* Reduced margin on sides */
+        @top-right {
+          content: "Page " counter(page) " of " counter(pages);
+        }
       }
     </style>
   </head>
   <body>
     <div class="container">
-      <div class="main-content">
-        <div class="header">
-          <div class="logo">
-            <img src="${logoBase64}" alt="SPC Source Logo" />
-          </div>
-          <div class="invoice-details mt-4">
-            <p class="text-sm">+971 54 500 4520</p>
-            <p class="text-sm">Iris Bay, Office D-43, Business Bay, Dubai</p>
-            <h2 class="text-xl mt-5">
-              <span class="invoice-number">
-                ${details.invoiceNumber || ""}
-              </span>
-            </h2>
+      <div class="header">
+        <div class="logo">
+          <img src="${logoBase64}" alt="SPC Source Logo" />
+        </div>
+        <div class="header-details">
+          <p class="text-sm py-2">Phone: ${senderData.phone || "+971 54 500 4520"}</p>
+          <p class="text-sm py-2">Email: ${senderData.email || "contact@spcsource.com"}</p>
+          <p class="text-sm py-2">Website: www.spcsource.com</p>
+          <p class="text-sm py-2">Address: ${senderData.address || "Iris Bay, Office D-43, Business Bay, Dubai, UAE."}</p>
+          <p class="text-sm py-2">Tax Number: TRN-29484858585</p> 
+
+          <h2 class="text-xl mt-5">
+            <span class="invoice-number">
+              ${details.invoiceNumber || ""}
+            </span>
+          </h2>
             <p class="text-md">${new Date(
               details.invoiceDate || new Date()
             ).toLocaleDateString("en-US", DATE_OPTIONS)}</p>
-          </div>
         </div>
+      </div>
 
+      <div style="padding: 10px;"> <!-- Reduced padding on sides -->
         <div class="mt-6">
           <h3>CUSTOMER INFO</h3>
           <p class="text-md">${receiver.name || ""}</p>
@@ -408,13 +379,14 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
 
         <div class="mt-4">
           <h3>${
-            details.invoiceNumber.includes("INV") ? "INVOICE" : "QUOTATION"
-          }</h3>
+            !details.invoiceNumber.includes("INV") ? "Quotation" :
+            (taxDetails.amount && taxDetails.amount > 0) ? "TaxInvoice" : "Invoice"
+          }</h3> <!-- Conditional heading -->
           <table class="invoice-table">
             <thead>
               <tr>
                 <th class="w-1/20">#</th>
-                <th class="w-1/2">dESCRIPTION</th>
+                <th class="w-1/2">DESCRIPTION</th>
                 <th class="w-1/6">Qty</th>
                 <th class="w-1/6">Unit Price</th>
                 <th class="w-1/6 text-right">AMOUNT (AED)</th>
@@ -437,32 +409,6 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
               ${discountHtml}
               <p class="total-amount font-semibold bg-slate-400">Grand Total: AED ${formatNumberWithCommas(Number(grandTotal.toFixed(2)))}</p>
             </div>
-          </div>
-        </div>
-      </div>
-      
-      <div class="footer">
-        <div class="footer-signatures">
-          <p class="ml-4">Receiver's Sign _____________</p>
-          <p class="mr-4">for ${
-            senderData.name || "SPC SOURCE TECHNICAL SERVICES LLC"
-          }</p>
-        </div>
-        <div class="footer-bar">
-          <div class="flex items-center">
-            <svg class="ml-4" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
-              <polyline points="22,6 12,13 2,6"></polyline>
-            </svg>
-            <span>${senderData.email || "contact@spcsource.com"}</span>
-          </div>
-          <div class="flex items-center">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="10"></circle>
-              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
-              <path d="M2 12h20"></path>
-            </svg>
-            <span class="mr-4">www.spcsource.com</span>
           </div>
         </div>
       </div>
