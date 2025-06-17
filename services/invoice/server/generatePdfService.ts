@@ -1,4 +1,3 @@
-
 import chromium from "@sparticuz/chromium-min";
 import puppeteerCore from "puppeteer-core";
 import { TAILWIND_CDN } from "@/lib/variables";
@@ -260,18 +259,17 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
         padding: 0;
         background-color: #ffffff;
         color: #000000;
-        height: 100%;
-        width: 100%;
-        box-sizing: border-box;
-        position: relative;
         min-height: 100vh;
       }
       .container {
-        width: 100%;
-        padding: 0;
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
       }
       .main-content {
+        flex: 1;
         padding: 20px;
+        padding-bottom: 120px; /* Ensure space for fixed footer */
       }
       .header {
         display: flex;
@@ -345,22 +343,24 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
       }
       .total-amount {
         border-top: 1px solid #000;
-        border-bottom:1px solid #000;
+        border-bottom: 1px solid #000;
         padding-top: 8px;
         margin-top: 8px;
         margin-bottom: 8px;
         text-align: left;
       }
       .footer {
-        position: absolute;
+        position: fixed;
         bottom: 0;
+        left: 0;
         width: 100%;
-        padding-top: 10px;
+        background-color: #ffffff; /* White background to prevent content bleed */
       }
       .footer-signatures {
         display: flex;
         justify-content: space-between;
         margin-bottom: 10px;
+        padding: 0 20px; /* Add padding for alignment */
       }
       .footer-bar {
         background-color: #f4a261;
@@ -414,7 +414,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
             <thead>
               <tr>
                 <th class="w-1/20">#</th>
-                <th class="w-1/2">dESCRIPTION</th>
+                <th class="w-1/2">DESCRIPTION</th>
                 <th class="w-1/6">Qty</th>
                 <th class="w-1/6">Unit Price</th>
                 <th class="w-1/6 text-right">AMOUNT (AED)</th>

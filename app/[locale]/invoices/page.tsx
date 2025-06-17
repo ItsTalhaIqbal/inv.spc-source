@@ -133,11 +133,11 @@ const Page: React.FC = () => {
         invoiceDate:
           typeof invoice.details.invoiceDate === "string"
             ? invoice.details.invoiceDate
-            : invoice.details.invoiceDate?.toISOString() || "",
+            : invoice.details.invoiceDate?.toISOString() || new Date().toISOString(),
         dueDate:
           typeof invoice.details.dueDate === "string"
             ? invoice.details.dueDate
-            : invoice.details.dueDate?.toISOString() || "",
+            : invoice.details.dueDate?.toISOString() || new Date().toISOString(),
         items: invoice.details.items.length > 0
           ? invoice.details.items.map((item) => ({
               name: item.name || "",
@@ -184,27 +184,13 @@ const Page: React.FC = () => {
     const formData = mapInvoiceToFormData(viewInvoice);
     reset(formData);
 
-    // Check if a valid PDF already exists in context
-    if (invoicePdf instanceof Blob && invoicePdf.size > 0) {
-      try {
-        await downloadPdf();
-      } catch (error) {
-        console.error("Error downloading existing PDF:", error);
-        alert("Failed to download PDF. Trying to regenerate...");
-        await regeneratePdf(formData);
-      }
-    } else {
-      await regeneratePdf(formData);
-    }
-  };
-
-  const regeneratePdf = async (formData: InvoiceType) => {
     try {
-      console.log("Regenerating PDF with payload:", JSON.stringify(formData, null, 2));
+      // Always generate a new PDF to ensure freshness
+      console.log("Generating PDF for invoice:", formData.details.invoiceNumber);
       await generatePdf(formData);
     } catch (error) {
-      console.error("Error regenerating PDF:", error);
-      alert("Failed to generate PDF. Check console for details.");
+      console.error("Error generating PDF:", error);
+      alert(`Failed to generate PDF: ${error instanceof Error ? error.message : "Unknown error"}`);
     }
   };
 
