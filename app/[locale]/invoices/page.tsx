@@ -13,22 +13,20 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/components/ui/dialog";
-import { EyeIcon, Loader2, MoreHorizontal, Search } from "lucide-react";
+import { EyeIcon, FileInput, Loader2, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { isLogin } from "@/lib/Auth";
 import { INVVariable, QUTVariable } from "@/lib/variables";
+import { BaseButton } from "@/app/components";
+import { useInvoiceContext } from "@/contexts/InvoiceContext";
+import { useTranslationContext } from "@/contexts/TranslationContext";
+import { useFormContext } from "react-hook-form";
+import { InvoiceType } from "@/types";
 
 interface Invoice {
   _id?: string;
@@ -50,7 +48,7 @@ interface Invoice {
     phone: string;
   };
   details: {
-    isInvoice:boolean;
+    isInvoice: boolean;
     invoiceLogo?: string;
     invoiceNumber: string;
     invoiceDate: Date | string;
@@ -101,15 +99,114 @@ const Page: React.FC = () => {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [filteredInvoices, setFilteredInvoices] = useState<Invoice[]>([]);
   const [searchTerm, setSearchTerm] = useState<string>("");
-  const [editInvoice, setEditInvoice] = useState<Invoice | null>(null);
-  const [deleteInvoice, setDeleteInvoice] = useState<Invoice | null>(null);
-  const [editDialogOpen, setEditDialogOpen] = useState<boolean>(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [authChecked, setAuthChecked] = useState<boolean>(false);
   const [viewInvoiceDialog, setViewInvoiceDialog] = useState<boolean>(false);
   const [viewInvoice, setViewInvoice] = useState<Invoice | undefined>(undefined);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [authChecked, setAuthChecked] = useState<boolean>(false);
   const router = useRouter();
+  const { invoicePdf, invoicePdfLoading, generatePdf, downloadPdf } = useInvoiceContext();
+  const { _t } = useTranslationContext();
+  const { reset } = useFormContext<InvoiceType>();
+
+  const mapInvoiceToFormData = (invoice: Invoice): InvoiceType => {
+    return {
+      sender: {
+        name: invoice.sender.name || "SPC Source Technical Serivces LLC",
+        address: invoice.sender.address || "Iris Bay, Office D-43, Business Bay, Dubai, UAE.",
+        state: invoice.sender.state || "Dubai",
+        country: invoice.sender.country || "UAE",
+        email: invoice.sender.email || "contact@spcsource.com",
+        phone: invoice.sender.phone || "+971 54 500 4520",
+      },
+      receiver: {
+        name: invoice.receiver.name || "",
+        address: invoice.receiver.address || "",
+        state: invoice.receiver.state || "",
+        country: invoice.receiver.country || "",
+        email: invoice.receiver.email || "",
+        phone: invoice.receiver.phone || "",
+      },
+      details: {
+        isInvoice: invoice.details.isInvoice || false,
+        invoiceLogo: invoice.details.invoiceLogo || "/public/assets/img/image.jpg",
+        invoiceNumber: invoice.details.invoiceNumber || "",
+        invoiceDate:
+          typeof invoice.details.invoiceDate === "string"
+            ? invoice.details.invoiceDate
+            : invoice.details.invoiceDate?.toISOString() || "",
+        dueDate:
+          typeof invoice.details.dueDate === "string"
+            ? invoice.details.dueDate
+            : invoice.details.dueDate?.toISOString() || "",
+        items: invoice.details.items.length > 0
+          ? invoice.details.items.map((item) => ({
+              name: item.name || "",
+              description: item.description || "",
+              quantity: Number(item.quantity) || 0,
+              unitPrice: Number(item.unitPrice) || 0,
+              total: Number(item.total) || 0,
+            }))
+          : [{ name: "", quantity: 0, unitPrice: 0, total: 0 }],
+        currency: invoice.details.currency || "AED",
+        language: invoice.details.language || "English",
+        taxDetails: {
+          amount: Number(invoice.details.taxDetails?.amount) || 0,
+          amountType: invoice.details.taxDetails?.amountType || "amount",
+          taxID: invoice.details.taxDetails?.taxID || "",
+        },
+        discountDetails: {
+          amount: Number(invoice.details.discountDetails?.amount) || 0,
+          amountType: invoice.details.discountDetails?.amountType || "amount",
+        },
+        shippingDetails: {
+          cost: Number(invoice.details.shippingDetails?.cost) || 0,
+          costType: invoice.details.shippingDetails?.costType || "amount",
+        },
+        paymentInformation: {
+          bankName: invoice.details.paymentInformation?.bankName || "Bank Inc.",
+          accountName: invoice.details.paymentInformation?.accountName || "John Doe",
+          accountNumber: invoice.details.paymentInformation?.accountNumber || "445566998877",
+        },
+        additionalNotes: invoice.details.additionalNotes || "Received above items in good condition.",
+        paymentTerms: invoice.details.paymentTerms || "50% advance upon confirmation of the order, 50% upon delivery or completion.",
+        signature: invoice.details.signature || undefined,
+        subTotal: Number(invoice.details.subTotal) || 0,
+        totalAmount: Number(invoice.details.totalAmount) || 0,
+        totalAmountInWords: invoice.details.totalAmountInWords || "",
+        pdfTemplate: Number(invoice.details.pdfTemplate) || 2,
+      },
+    };
+  };
+
+  const onGeneratePdf = async () => {
+    if (!viewInvoice) return;
+
+    const formData = mapInvoiceToFormData(viewInvoice);
+    reset(formData);
+
+    // Check if a valid PDF already exists in context
+    if (invoicePdf instanceof Blob && invoicePdf.size > 0) {
+      try {
+        await downloadPdf();
+      } catch (error) {
+        console.error("Error downloading existing PDF:", error);
+        alert("Failed to download PDF. Trying to regenerate...");
+        await regeneratePdf(formData);
+      }
+    } else {
+      await regeneratePdf(formData);
+    }
+  };
+
+  const regeneratePdf = async (formData: InvoiceType) => {
+    try {
+      console.log("Regenerating PDF with payload:", JSON.stringify(formData, null, 2));
+      await generatePdf(formData);
+    } catch (error) {
+      console.error("Error regenerating PDF:", error);
+      alert("Failed to generate PDF. Check console for details.");
+    }
+  };
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -181,13 +278,17 @@ const Page: React.FC = () => {
   if (!authChecked) {
     return (
       <div className="flex justify-center items-center h-screen">
-        <Loader2 className={`h-8 w-8 animate-spin ${theme === "dark" ? "text-gray-300" : "text-gray-500"}`} />
+        <Loader2
+          className={`h-8 w-8 animate-spin ${theme === "dark" ? "text-gray-300" : "text-gray-500"}`}
+        />
       </div>
     );
   }
 
   return (
-    <div className={`p-6 max-w-6xl mx-auto ${theme === "dark" ? "bg-gray-900 text-white" : "bg-white text-black"} transition-colors duration-300`}>
+    <div
+      className={`p-6 max-w-6xl mx-auto ${theme === "dark" ? "bg-gray-900 text-white" : "bg-white text-black"} transition-colors duration-300`}
+    >
       <h1 className="text-2xl font-bold mb-4">Invoice Management</h1>
 
       <div className="flex items-center justify-between mb-4">
@@ -204,7 +305,9 @@ const Page: React.FC = () => {
 
       {loading ? (
         <div className="flex justify-center items-center h-64">
-          <Loader2 className={`h-8 w-8 animate-spin ${theme === "dark" ? "text-gray-300" : "text-gray-500"}`} />
+          <Loader2
+            className={`h-8 w-8 animate-spin ${theme === "dark" ? "text-gray-300" : "text-gray-500"}`}
+          />
         </div>
       ) : filteredInvoices.length === 0 ? (
         <div className={`text-center text-lg ${theme === "dark" ? "text-gray-300" : "text-gray-500"} mt-8`}>
@@ -223,8 +326,14 @@ const Page: React.FC = () => {
           </TableHeader>
           <TableBody>
             {filteredInvoices.map((invoice) => (
-              <TableRow key={invoice._id} className={theme === "dark" ? "hover:bg-gray-700" : "hover:bg-gray-50"}>
-                <TableCell>{invoice.details?.isInvoice  ==true ? INVVariable : QUTVariable}{invoice.invoiceNumber}</TableCell>
+              <TableRow
+                key={invoice._id}
+                className={theme === "dark" ? "hover:bg-gray-700" : "hover:bg-gray-50"}
+              >
+                <TableCell>
+                  {invoice.details?.isInvoice ? INVVariable : QUTVariable}
+                  {invoice.invoiceNumber}
+                </TableCell>
                 <TableCell>{invoice.receiver.name}</TableCell>
                 <TableCell>
                   {invoice.details.totalAmount} {invoice.details.currency}
@@ -238,7 +347,11 @@ const Page: React.FC = () => {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className={theme === "dark" ? "bg-gray-600 text-white hover:bg-gray-500" : "bg-gray-200 text-black hover:bg-gray-300"}
+                    className={
+                      theme === "dark"
+                        ? "bg-gray-600 text-white hover:bg-gray-500"
+                        : "bg-gray-200 text-black hover:bg-gray-300"
+                    }
                     onClick={() => {
                       setViewInvoiceDialog(true);
                       setViewInvoice(invoice);
@@ -254,21 +367,41 @@ const Page: React.FC = () => {
       )}
 
       <Dialog open={viewInvoiceDialog} onOpenChange={setViewInvoiceDialog}>
-        <DialogContent className={`${theme === "dark" ? "bg-gray-800 text-white border-gray-700" : "bg-white text-black border-gray-200"} max-w-3xl shadow-lg rounded-lg`}>
+        <DialogContent
+          className={`${theme === "dark" ? "bg-gray-800 text-white border-gray-700" : "bg-white text-black border-gray-200"} max-w-3xl shadow-lg rounded-lg`}
+        >
           <DialogHeader className="border-b pb-4">
             <DialogTitle className="text-2xl font-bold">
               Invoice #{viewInvoice?.invoiceNumber}
             </DialogTitle>
-            <p className="text-sm text-gray-500">
-              <strong>Created At:</strong>{" "}
-              {viewInvoice?.createdAt
-                ? new Date(viewInvoice.createdAt).toLocaleString()
-                : "N/A"}
-            </p>
+            <div className="flex items-center justify-between mb-4 gap-4">
+              <p className="text-sm text-gray-500">
+                <strong>Created At:</strong>{" "}
+                {viewInvoice?.createdAt
+                  ? new Date(viewInvoice.createdAt).toLocaleString()
+                  : "N/A"}
+              </p>
+              <BaseButton
+                type="button"
+                tooltipLabel="Generate your invoice"
+                loading={invoicePdfLoading}
+                loadingText="Generating your invoice"
+                onClick={onGeneratePdf}
+              >
+                <FileInput />
+                {_t("actions.generatePdf")}
+              </BaseButton>
+            </div>
           </DialogHeader>
           {viewInvoice && (
             <div className="max-h-[70vh] overflow-y-auto p-4 space-y-6">
-              <div className={theme === "dark" ? "bg-gray-700 p-4 rounded-md shadow-sm" : "bg-gray-50 p-4 rounded-md shadow-sm"}>
+              <div
+                className={
+                  theme === "dark"
+                    ? "bg-gray-700 p-4 rounded-md shadow-sm"
+                    : "bg-gray-50 p-4 rounded-md shadow-sm"
+                }
+              >
                 <h3 className="text-lg font-semibold mb-2">Invoice Details</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <p className="text-sm">
@@ -277,11 +410,15 @@ const Page: React.FC = () => {
                   </p>
                   <p className="text-sm">
                     <strong>Invoice Date:</strong>{" "}
-                    <span>{new Date(viewInvoice.details.invoiceDate).toLocaleDateString()}</span>
+                    <span>
+                      {new Date(viewInvoice.details.invoiceDate).toLocaleDateString()}
+                    </span>
                   </p>
                   <p className="text-sm">
                     <strong>Due Date:</strong>{" "}
-                    <span>{new Date(viewInvoice.details.dueDate).toLocaleDateString()}</span>
+                    <span>
+                      {new Date(viewInvoice.details.dueDate).toLocaleDateString()}
+                    </span>
                   </p>
                   <p className="text-sm">
                     <strong>Currency:</strong>{" "}
@@ -297,7 +434,13 @@ const Page: React.FC = () => {
                   </p>
                 </div>
               </div>
-              <div className={theme === "dark" ? "bg-gray-700 p-4 rounded-md shadow-sm" : "bg-gray-50 p-4 rounded-md shadow-sm"}>
+              <div
+                className={
+                  theme === "dark"
+                    ? "bg-gray-700 p-4 rounded-md shadow-sm"
+                    : "bg-gray-50 p-4 rounded-md shadow-sm"
+                }
+              >
                 <h3 className="text-lg font-semibold mb-2">Receiver Information</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <p className="text-sm">
@@ -326,25 +469,33 @@ const Page: React.FC = () => {
                   </p>
                 </div>
               </div>
-              <div className={theme === "dark" ? "bg-gray-700 p-4 rounded-md shadow-sm" : "bg-gray-50 p-4 rounded-md shadow-sm"}>
+              <div
+                className={
+                  theme === "dark"
+                    ? "bg-gray-700 p-4 rounded-md shadow-sm"
+                    : "bg-gray-50 p-4 rounded-md shadow-sm"
+                }
+              >
                 <h3 className="text-lg font-semibold mb-2">Items</h3>
                 {viewInvoice.details.items.map((item, index) => (
                   <div
                     key={item._id || index}
-                    className={theme === "dark" ? "border border-gray-600 p-3 rounded-md my-2 bg-gray-800" : "border border-gray-200 p-3 rounded-md my-2 bg-white"}
+                    className={
+                      theme === "dark"
+                        ? "border border-gray-600 p-3 rounded-md my-2 bg-gray-800"
+                        : "border border-gray-200 p-3 rounded-md my-2 bg-white"
+                    }
                   >
                     <div className="grid grid-cols-2 gap-4">
                       <p className="text-sm">
-                        <strong>Name:</strong>{" "}
-                        <span>{item.name}</span>
+                        <strong>Name:</strong> <span>{item.name}</span>
                       </p>
                       <p className="text-sm">
                         <strong>Description:</strong>{" "}
                         <span>{item.description}</span>
                       </p>
                       <p className="text-sm">
-                        <strong>Quantity:</strong>{" "}
-                        <span>{item.quantity}</span>
+                        <strong>Quantity:</strong> <span>{item.quantity}</span>
                       </p>
                       <p className="text-sm">
                         <strong>Unit Price:</strong>{" "}
@@ -358,7 +509,13 @@ const Page: React.FC = () => {
                   </div>
                 ))}
               </div>
-              <div className={theme === "dark" ? "bg-gray-700 p-4 rounded-md shadow-sm" : "bg-gray-50 p-4 rounded-md shadow-sm"}>
+              <div
+                className={
+                  theme === "dark"
+                    ? "bg-gray-700 p-4 rounded-md shadow-sm"
+                    : "bg-gray-50 p-4 rounded-md shadow-sm"
+                }
+              >
                 <h3 className="text-lg font-semibold mb-2">Tax, Discount & Shipping Details</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <p className="text-sm">
@@ -375,7 +532,13 @@ const Page: React.FC = () => {
                   </p>
                 </div>
               </div>
-              <div className={theme === "dark" ? "bg-gray-700 p-4 rounded-md shadow-sm" : "bg-gray-50 p-4 rounded-md shadow-sm"}>
+              <div
+                className={
+                  theme === "dark"
+                    ? "bg-gray-700 p-4 rounded-md shadow-sm"
+                    : "bg-gray-50 p-4 rounded-md shadow-sm"
+                }
+              >
                 <h3 className="text-lg font-semibold mb-2">Payment Information</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <p className="text-sm">
@@ -392,7 +555,13 @@ const Page: React.FC = () => {
                   </p>
                 </div>
               </div>
-              <div className={theme === "dark" ? "bg-gray-700 p-4 rounded-md shadow-sm" : "bg-gray-50 p-4 rounded-md shadow-sm"}>
+              <div
+                className={
+                  theme === "dark"
+                    ? "bg-gray-700 p-4 rounded-md shadow-sm"
+                    : "bg-gray-50 p-4 rounded-md shadow-sm"
+                }
+              >
                 <h3 className="text-lg font-semibold mb-2">Additional Information</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <p className="text-sm">

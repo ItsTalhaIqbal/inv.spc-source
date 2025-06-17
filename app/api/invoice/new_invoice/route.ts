@@ -176,17 +176,43 @@ export async function POST(req: NextRequest) {
   try {
     await connectToDatabase();
     const body: InvoiceInput = await req.json();
-    console.log("Request body:", body);
+    console.log("Request body:", JSON.stringify(body, null, 2));
+
+    // Validate required fields
+    if (!body.invoiceNumber) {
+      return NextResponse.json(
+        { error: "Invoice number is required" },
+        { status: 400 }
+      );
+    }
 
     // Check if invoiceNumber already exists
     const existingInvoice = await Invoice.findOne({ invoiceNumber: body.invoiceNumber });
     if (existingInvoice) {
+      console.log(`Invoice number ${body.invoiceNumber} already exists, skipping save.`);
       return NextResponse.json(
-        { error: "Invoice number already exists", details: `Invoice number ${body.invoiceNumber} is already in use` },
-        { status: 409 }
+        { message: "Invoice already exists, no new record created" },
+        {
+          status: 200,
+          headers: {
+            "Access-Control-Allow-Origin": "*",
+          },
+        }
       );
     }
 
+    // Coerce dates to Date objects if they are strings
+    const invoiceDate = typeof body.details.invoiceDate === 'string'
+      ? new Date(body.details.invoiceDate)
+      : body.details.invoiceDate;
+    const dueDate = typeof body.details.dueDate === 'string'
+      ? new Date(body.details.dueDate)
+      : body.details.dueDate;
+    const createdAt = typeof body.createdAt === 'string'
+      ? new Date(body.createdAt)
+      : body.createdAt || new Date();
+
+    // Create new invoice
     const invoiceDoc = await Invoice.create({
       invoiceNumber: body.invoiceNumber,
       sender: body.sender,
@@ -194,8 +220,8 @@ export async function POST(req: NextRequest) {
       details: {
         invoiceLogo: body.details.invoiceLogo,
         invoiceNumber: body.details.invoiceNumber,
-        invoiceDate: body.details.invoiceDate,
-        dueDate: body.details.dueDate,
+        invoiceDate,
+        dueDate,
         items: body.details.items,
         currency: body.details.currency,
         language: body.details.language,
@@ -212,10 +238,11 @@ export async function POST(req: NextRequest) {
         pdfTemplate: body.details.pdfTemplate,
         isInvoice: body.details.isInvoice,
       },
-      createdAt: body.createdAt || new Date(),
+      createdAt,
     });
 
     const invoiceResponse: any = {
+      _id: invoiceDoc._id.toString(),
       invoiceNumber: invoiceDoc.invoiceNumber,
       sender: invoiceDoc.sender,
       receiver: invoiceDoc.receiver,
@@ -250,7 +277,7 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (error: any) {
-    console.error("Error in POST /api/invoice/invoice:", error);
+    console.error("Error in POST /api/invoice/new_invoice:", error);
     return NextResponse.json(
       {
         error: "Internal server error",

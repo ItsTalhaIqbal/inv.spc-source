@@ -1,3 +1,4 @@
+
 import chromium from "@sparticuz/chromium-min";
 import puppeteerCore from "puppeteer-core";
 import { TAILWIND_CDN } from "@/lib/variables";
@@ -27,13 +28,14 @@ interface Details {
   invoiceNumber: string;
   invoiceDate?: string;
   items?: Item[];
-  taxDetails?: { amount: number; amountType: string };
+  taxDetails?: { amount: number; amountType: string; taxID?: string };
   discountDetails?: { amount: number; amountType: string };
   shippingDetails?: { cost: number; costType: string };
   totalAmount?: number;
   pdfTemplate?: number;
   paymentTerms?: string;
   additionalNotes?: string;
+  totalAmountInWords?: string;
 }
 
 interface InvoiceType {
@@ -106,6 +108,32 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
   const formatNumberWithCommas = (num: number): string =>
     num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 
+  // Prepare tax, discount, and shipping details
+  const taxDetails = details.taxDetails || { amount: 0, amountType: "amount", taxID: "" };
+  const discountDetails = details.discountDetails || {
+    amount: 0,
+    amountType: "amount",
+  };
+  const shippingDetails = details.shippingDetails || {
+    cost: 0,
+    costType: "amount",
+  };
+
+  // Calculate totals
+  const subtotal = (details.items || []).reduce((sum, item) => {
+    const quantity = item.quantity || 0;
+    const unitPrice = item.unitPrice || 0;
+    return sum + quantity * unitPrice;
+  }, 0);
+
+  const taxAmount = taxDetails.amount && taxDetails.amount > 0
+    ? taxDetails.amountType === "percentage"
+      ? (subtotal * taxDetails.amount) / 100
+      : taxDetails.amount
+    : 0;
+
+  const grandTotal = subtotal + taxAmount;
+
   // Generate items HTML
   const itemsHtml = (details.items || [])
     .map((item: Item, index: number) => {
@@ -160,27 +188,16 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
     console.warn("Could not load Tailwind CSS:", error);
   }
 
-  // Prepare tax, discount, and shipping details
-  const taxDetails = details.taxDetails || { amount: 0, amountType: "amount" };
-  const discountDetails = details.discountDetails || {
-    amount: 0,
-    amountType: "amount",
-  };
-  const shippingDetails = details.shippingDetails || {
-    cost: 0,
-    costType: "amount",
-  };
-
   const hasTax = taxDetails.amount && taxDetails.amount > 0;
   const hasDiscount = discountDetails.amount && discountDetails.amount > 0;
   const hasShipping = shippingDetails.cost && shippingDetails.cost > 0;
+  const hasTotalInWords = details.totalAmountInWords && details.totalAmountInWords.trim() !== "";
 
   const taxHtml = hasTax
     ? `
-      <p class="text-base -bold text-left text-gray-800">Tax ${
+      <p class="text-base text-left text-gray-800">Tax ${
         taxDetails.amount
-      }${taxDetails.amountType === "percentage" ? "%" : " AED"}</p>
-
+      }${taxDetails.amountType === "percentage" ? "%" : " AED"}: ${formatNumberWithCommas(Number(taxAmount.toFixed(2)))}</p>
     `
     : "";
 
@@ -189,7 +206,6 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
       <p class="text-base text-left text-gray-800">Discount ${
         discountDetails.amount
       }${discountDetails.amountType === "percentage" ? "%" : " AED"}</p>
-
     `
     : "";
 
@@ -198,7 +214,15 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
       <p class="text-base text-left text-gray-800">Shipping ${
         shippingDetails.cost
       }${shippingDetails.costType === "percentage" ? "%" : " AED"}</p>
+    `
+    : "";
 
+  const totalInWordsHtml = hasTotalInWords
+    ? `
+      <div>
+        <h2 class="font-bold">Total Amount in Words</h2>
+        <p class="font-normal">${details.totalAmountInWords}</p>
+      </div>
     `
     : "";
 
@@ -240,14 +264,14 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
         width: 100%;
         box-sizing: border-box;
         position: relative;
-        min-height: 100vh; /* Ensure body takes full height */
+        min-height: 100vh;
       }
       .container {
         width: 100%;
         padding: 0;
       }
       .main-content {
-        padding: 20px; /* Add padding to main content */
+        padding: 20px;
       }
       .header {
         display: flex;
@@ -281,16 +305,16 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
       .invoice-table thead tr {
         background-color: #d3d3d3;
       }
-     .invoice-table th {
-  padding: 12px 16px;
-  font-size: 14px;
-  font-weight: bold;
-  text-transform: uppercase;
-  color: #000;
-  text-align: left;
-  border: 1px solid #000;
-  white-space: nowrap; 
-}
+      .invoice-table th {
+        padding: 12px 16px;
+        font-size: 14px;
+        font-weight: bold;
+        text-transform: uppercase;
+        color: #000;
+        text-align: left;
+        border: 1px solid #000;
+        white-space: nowrap;
+      }
       .invoice-table th:last-child {
         text-align: right;
       }
@@ -302,36 +326,34 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
       .invoice-table td:last-child {
         text-align: right;
       }
-.summary {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 20px;
-  width: 100%;
-}
-
-.notes-section {
-  width: 55%;
-  padding-right: 20px;
-}
-
-.amounts-section {
-  width: 25%;
-  text-align: right;
-}
-
-.amount-line {
-  margin-bottom: 8px;
-}
-
-.total-amount {
-  border-top: 1px solid #000;
-  padding-top: 8px;
-  margin-top: 8px;
-  text-align:left;
-}
+      .summary {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 20px;
+        width: 100%;
+      }
+      .notes-section {
+        width: 55%;
+        padding-right: 20px;
+      }
+      .amounts-section {
+        width: 35%;
+        text-align: right;
+      }
+      .amount-line {
+        margin-bottom: 8px;
+      }
+      .total-amount {
+        border-top: 1px solid #000;
+        border-bottom:1px solid #000;
+        padding-top: 8px;
+        margin-top: 8px;
+        margin-bottom: 8px;
+        text-align: left;
+      }
       .footer {
         position: absolute;
-        bottom: 0; /* Keep footer at the bottom */
+        bottom: 0;
         width: 100%;
         padding-top: 10px;
       }
@@ -359,7 +381,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
   </head>
   <body>
     <div class="container">
-      <div class="main-content"> <!-- New div for main content with padding -->
+      <div class="main-content">
         <div class="header">
           <div class="logo">
             <img src="${logoBase64}" alt="SPC Source Logo" />
@@ -382,7 +404,6 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
           <h3>CUSTOMER INFO</h3>
           <p class="text-md">${receiver.name || ""}</p>
           <p class="text-md">${receiver.phone || ""}</p>
-
         </div>
 
         <div class="mt-4">
@@ -392,11 +413,11 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
           <table class="invoice-table">
             <thead>
               <tr>
-              <th class="w-1/20">Sr.</th>
-                <th class="w-1/2">Item</th>
+                <th class="w-1/20">#</th>
+                <th class="w-1/2">dESCRIPTION</th>
                 <th class="w-1/6">Qty</th>
                 <th class="w-1/6">Unit Price</th>
-                <th class="w-1/6 text-right">AMOUNT&nbsp;(AED)</th>
+                <th class="w-1/6 text-right">AMOUNT (AED)</th>
               </tr>
             </thead>
             <tbody>
@@ -404,23 +425,23 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
             </tbody>
           </table>
           <div class="summary">
-  <div class="notes-section">
-    ${additionalNotesHtml}
-    ${paymentTermsHtml}
-  </div>
-  <div class="amounts-section">
-    ${taxHtml ? `<p class="amount-line">${taxHtml}</p>` : ""}
-    ${shippingHtml ? `<p class="amount-line">${shippingHtml}</p>` : ""}
-    ${discountHtml ? `<p class="amount-line">${discountHtml}</p>` : ""}
-    <p class="total-amount font-semibold">
-      Total  AED ${formatNumberWithCommas(Number(details.totalAmount?.toFixed(2) || 0))}
-    </p>
-  </div>
-</div>
+            <div class="notes-section">
+              ${additionalNotesHtml}
+              ${paymentTermsHtml}
+              ${totalInWordsHtml}
+            </div>
+            <div class="amounts-section">
+              <p class="text-base text-left text-gray-800">Subtotal: AED ${formatNumberWithCommas(Number(subtotal.toFixed(2)))}</p>
+              ${taxHtml}
+              ${shippingHtml}
+              ${discountHtml}
+              <p class="total-amount font-semibold bg-slate-400">Grand Total: AED ${formatNumberWithCommas(Number(grandTotal.toFixed(2)))}</p>
+            </div>
+          </div>
         </div>
-      </div> <!-- End of main-content div -->
+      </div>
       
-      <div class="footer"> <!-- Footer remains unchanged -->
+      <div class="footer">
         <div class="footer-signatures">
           <p class="ml-4">Receiver's Sign _____________</p>
           <p class="mr-4">for ${
@@ -468,7 +489,6 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
   // Generate PDF
   let browser = null;
   try {
-    // Configure Puppeteer for Vercel
     const launchOptions: any = {
       args: [
         ...chromium.args,
@@ -485,7 +505,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
       ignoreHTTPSErrors: true,
     };
 
-    console.log("Chromium executable path:", launchOptions.executablePath); // Debug log
+    console.log("Chromium executable path:", launchOptions.executablePath);
 
     browser = await puppeteerCore.launch(launchOptions);
     const page = await browser.newPage();
