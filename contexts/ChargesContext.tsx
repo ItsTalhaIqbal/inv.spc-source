@@ -22,7 +22,7 @@ const defaultChargesContext = {
     setShippingType: (newValue: SetStateAction<string>) => {},
     totalInWordsSwitch: true,
     setTotalInWordsSwitch: (newValue: boolean) => {},
-    currency: "USD",
+    currency: "AED",
     subTotal: 0,
     totalAmount: 0,
     calculateTotal: () => {},
@@ -83,7 +83,7 @@ export const ChargesContextProvider = ({ children }: ChargesContextProps) => {
         setTotalInWordsSwitch(true);
         setValue("details.discountDetails.amount", 0);
         setValue("details.taxDetails.amount", 0);
-        setValue("details.shippingDetails.cost",0);
+        setValue("details.shippingDetails.cost", 0);
         setValue("details.discountDetails.amountType", "amount");
         setValue("details.taxDetails.amountType", "percentage");
         setValue("details.shippingDetails.costType", "amount");
@@ -178,7 +178,7 @@ export const ChargesContextProvider = ({ children }: ChargesContextProps) => {
                 total += taxAmount;
                 taxAmountType = "amount";
             } else {
-                total += total/100 * total * (taxAmount / 100);
+                total += total * (taxAmount / 100);
                 taxAmountType = "percentage";
             }
             setValue("details.taxDetails.amount", taxAmount);
