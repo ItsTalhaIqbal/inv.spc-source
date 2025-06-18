@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useState, useEffect } from "react";
 import { useTheme } from "next-themes";
 import { Input } from "@/components/ui/input";
@@ -22,9 +20,6 @@ import { EyeIcon, FileInput, Loader2, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { isLogin } from "@/lib/Auth";
 import { INVVariable, QUTVariable } from "@/lib/variables";
-import { BaseButton } from "@/app/components";
-import { useInvoiceContext } from "@/contexts/InvoiceContext";
-import { useTranslationContext } from "@/contexts/TranslationContext";
 import { useFormContext } from "react-hook-form";
 import { InvoiceType } from "@/types";
 
@@ -103,15 +98,14 @@ const Page: React.FC = () => {
   const [viewInvoice, setViewInvoice] = useState<Invoice | undefined>(undefined);
   const [loading, setLoading] = useState<boolean>(true);
   const [authChecked, setAuthChecked] = useState<boolean>(false);
+  const [pdfLoading, setPdfLoading] = useState<boolean>(false);
   const router = useRouter();
-  const { invoicePdf, invoicePdfLoading, generatePdf, downloadPdf } = useInvoiceContext();
-  const { _t } = useTranslationContext();
   const { reset } = useFormContext<InvoiceType>();
 
   const mapInvoiceToFormData = (invoice: Invoice): InvoiceType => {
     return {
       sender: {
-        name: invoice.sender.name || "SPC Source Technical Serivces LLC",
+        name: invoice.sender.name || "SPC Source Technical Services LLC",
         address: invoice.sender.address || "Iris Bay, Office D-43, Business Bay, Dubai, UAE.",
         state: invoice.sender.state || "Dubai",
         country: invoice.sender.country || "UAE",
@@ -185,12 +179,36 @@ const Page: React.FC = () => {
     reset(formData);
 
     try {
-      // Always generate a new PDF to ensure freshness
+      setPdfLoading(true);
       console.log("Generating PDF for invoice:", formData.details.invoiceNumber);
-      await generatePdf(formData);
+      const response = await fetch("/api/invoice/get_new_pdf", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Custom-Request": "invoice-pdf",
+        },
+        body: JSON.stringify({ action: "generate", invoiceData: formData }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+
+      const blob = await response.blob();
+      const numericInvoiceNumber = formData.details.invoiceNumber.replace(/\D/g, "");
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `invoice_${numericInvoiceNumber}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error("Error generating PDF:", error);
       alert(`Failed to generate PDF: ${error instanceof Error ? error.message : "Unknown error"}`);
+    } finally {
+      setPdfLoading(false);
     }
   };
 
@@ -367,15 +385,24 @@ const Page: React.FC = () => {
                   ? new Date(viewInvoice.createdAt).toLocaleString()
                   : "N/A"}
               </p>
-              <BaseButton
+              <Button
                 type="button"
-                loading={invoicePdfLoading}
-                loadingText="Generating your PDF"
+                disabled={pdfLoading}
                 onClick={onGeneratePdf}
+                className={theme === "dark" ? "bg-gray-600 hover:bg-gray-500" : "bg-gray-200 hover:bg-gray-300"}
               >
-                <FileInput />
-                {_t("actions.generatePdf")}
-              </BaseButton>
+                {pdfLoading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    Generating your PDF
+                  </>
+                ) : (
+                  <>
+                    <FileInput className="h-4 w-4 mr-2" />
+                    Generate PDF
+                  </>
+                )}
+              </Button>
             </div>
           </DialogHeader>
           {viewInvoice && (

@@ -1,9 +1,11 @@
+import { NextRequest, NextResponse } from "next/server";
+import { connectToDatabase } from "@/lib/mongoose";
+import { Readable } from "stream";
 import chromium from "@sparticuz/chromium-min";
 import puppeteerCore from "puppeteer-core";
-import { TAILWIND_CDN } from "@/lib/variables";
-import { connectToDatabase } from "@/lib/mongoose";
 import fs from "fs";
 import path from "path";
+import { TAILWIND_CDN } from "@/lib/variables";
 
 interface Receiver {
   name: string;
@@ -49,20 +51,18 @@ interface InvoiceType {
   details?: Details;
 }
 
-export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
-  await connectToDatabase();
-
-  if (!body.details?.invoiceNumber) {
+async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
+  if (!invoiceData.details?.invoiceNumber) {
     throw new Error("Invoice number is missing");
   }
 
-  if (typeof body.details?.pdfTemplate !== "number") {
+  if (typeof invoiceData.details?.pdfTemplate !== "number") {
     throw new Error(
-      `PDF template must be a number, received: ${body.details.pdfTemplate}`
+      `PDF template must be a number, received: ${invoiceData.details.pdfTemplate}`
     );
   }
 
-  const senderData = body.sender || {
+  const senderData = invoiceData.sender || {
     name: "SPC Source Technical Services LLC",
     country: "UAE",
     state: "Dubai",
@@ -70,7 +70,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
     address: "Iris Bay, Office D-43, Business Bay, Dubai, UAE.",
     phone: "+971 54 500 4520",
   };
-  const receiver = body.receiver || {
+  const receiver = invoiceData.receiver || {
     name: "",
     address: "",
     state: "",
@@ -80,7 +80,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
     additionalNotes: "",
     paymentTerms: "",
   };
-  const details = body.details || {};
+  const details = invoiceData.details || {};
 
   const DATE_OPTIONS = {
     year: "numeric",
@@ -210,8 +210,8 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
   const totalInWordsHtml = hasTotalInWords
     ? `
       <div class="mt-2">
-        <h2 class="font-bold text-lg">Total Amount in Words</h2>
-        <p class="font-normal text-md">${details.totalAmountInWords}</p>
+        <h2 class="font-bold text-sm">Total Amount in Words</h2>
+        <p class="font-normal text-sm">${details.totalAmountInWords}</p>
       </div>
     `
     : "";
@@ -219,8 +219,8 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
   const paymentTermsHtml = details.paymentTerms
     ? `
       <div class="mt-2">
-        <h2 class="font-bold text-lg">Payment Terms</h2>
-        <p class="font-normal text-md">${details.paymentTerms}</p>
+        <h2 class="font-bold text-sm">Payment Terms</h2>
+        <p class="font-normal text-sm">${details.paymentTerms}</p>
       </div>
     `
     : "";
@@ -228,8 +228,8 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
   const additionalNotesHtml = details.additionalNotes
     ? `
       <div class="mt-2">
-        <h2 class="font-bold text-lg">Additional Notes</h2>
-        <p class="font-normal text-md">${details.additionalNotes}</p>
+        <h2 class="font-bold text-sm">Additional Notes</h2>
+        <p class="font-normal text-sm">${details.additionalNotes}</p>
       </div>
     `
     : "";
@@ -293,7 +293,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
       }
       .invoice-table th, .invoice-table td {
         font-size: 14px;
-        border: 1px solid #808080;
+        border: 1px solid #000;
       }
       .invoice-table th {
         font-weight: bold;
@@ -328,8 +328,8 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
         margin-bottom: 4px;
       }
       .total-amount {
-        border-top: 1px solid #808080;
-        border-bottom: 1px solid #808080;
+        border-top: 1px solid #000;
+        border-bottom: 1px solid #000;
         padding: 8px 0;
         margin-top: 8px;
         font-weight: bold;
@@ -377,13 +377,9 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
           <img src="${logoBase64}" alt="SPC Source Logo" />
         </div>
         <div class="header-details mt-4">
-          <p class="text-sm pt-1">
-            <a href="https://api.whatsapp.com/send?phone=971545004520&text&type=phone_number&app_absent=0" target="_blank" rel="noopener noreferrer">
-              +971 54 500 4520
-            </a> | contact@spcsource.com
-          </p>
+          <p class="text-sm pt-1"> <span> <a href="https://api.whatsapp.com/send/?phone=971545004520&text&type=phone_number&app_absent=0" target="_blank"> +971 54 500 4520</a></span>  |  contact@spcsource.com</p>
           <p class="text-sm pt-1"></p>
-          <p class="text-sm pt-1">www.spcsource.com | TRN-29484858585</p>
+          <p class="text-sm pt-1">www.spcsource.com  |  TRN-29484858585</p>
           <p class="text-sm pt-1">${senderData.address || "Iris Bay, Office D-43, Business Bay, Dubai, UAE."}</p>
         </div>
       </div>
@@ -394,7 +390,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
           <p class="text-md">${receiver.phone || ""}</p>
         </div>
         <div class="invoice-info">
-          <h2 class="text-xl text-right">
+          <h2 class="text-xl">
             <span class="invoice-number">
               ${details.invoiceNumber || ""}
             </span>
@@ -495,5 +491,120 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
     if (browser) {
       await browser.close();
     }
+  }
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    await connectToDatabase();
+    const body = await req.json();
+    const { action, invoiceData } = body;
+
+    if (!invoiceData?.details?.invoiceNumber) {
+      return NextResponse.json(
+        { error: "Invoice number is required" },
+        { status: 400 }
+      );
+    }
+
+    if (typeof invoiceData?.details?.pdfTemplate !== "number") {
+      return NextResponse.json(
+        { error: "PDF template must be a number" },
+        { status: 400 }
+      );
+    }
+
+    const pdfBuffer = await generatePdf(invoiceData);
+
+    const numericInvoiceNumber = invoiceData.details.invoiceNumber.replace(
+      /\D/g,
+      ""
+    );
+    const fileName = `invoice_${numericInvoiceNumber}.pdf`;
+
+    const headers = new Headers({
+      "Content-Type": "application/pdf",
+      "Content-Disposition": `attachment; filename="${fileName}"`,
+      "Content-Length": pdfBuffer.length.toString(),
+    });
+
+    const stream :any= new Readable();
+    stream.push(pdfBuffer);
+    stream.push(null);
+
+    return new NextResponse(stream, {
+      status: 200,
+      headers,
+    });
+  } catch (error: any) {
+    console.error("Error in PDF generation:", error);
+    return NextResponse.json(
+      { error: error.message || "Failed to generate PDF" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function GET(req: NextRequest) {
+  try {
+    await connectToDatabase();
+    const url = new URL(req.url);
+    const invoiceNumber = url.searchParams.get("invoiceNumber");
+
+    if (!invoiceNumber) {
+      return NextResponse.json(
+        { error: "Invoice number is required" },
+        { status: 400 }
+      );
+    }
+
+    let savedInvoices: InvoiceType[] = [];
+    try {
+      const savedInvoicesJSON = fs.readFileSync(
+        path.resolve(process.cwd(), "data/savedInvoices.json"),
+        "utf8"
+      );
+      savedInvoices = JSON.parse(savedInvoicesJSON);
+    } catch (error) {
+      console.warn("Could not load saved invoices:", error);
+    }
+
+    const invoiceData = savedInvoices.find(
+      (invoice) =>
+        invoice.details?.invoiceNumber.replace(/\D/g, "") ===
+        invoiceNumber.replace(/\D/g, "")
+    );
+
+    if (!invoiceData) {
+      return NextResponse.json(
+        { error: "Invoice not found" },
+        { status: 404 }
+      );
+    }
+
+    const pdfBuffer = await generatePdf(invoiceData);
+
+    const fileName = `invoice_${invoiceNumber.replace(/\D/g, "")}.pdf`;
+
+    const headers = new Headers({
+      "Content-Type": "application/pdf",
+      "Content-Disposition": `attachment; filename="${fileName}"`,
+      "Content-Length": pdfBuffer.length.toString(),
+    });
+
+    const stream:any = new Readable();
+    stream.push(pdfBuffer);
+    stream.push(null);
+
+    return new NextResponse(stream, {
+      status: 200,
+      headers,
+    });
+  } catch (error: any) {
+    console.error("Error in PDF regeneration:", error);
+    return NextResponse.json(
+      { error: error.message || "Failed to regenerate PDF" },
+      { status: 500 }
+    );
   }
 }
