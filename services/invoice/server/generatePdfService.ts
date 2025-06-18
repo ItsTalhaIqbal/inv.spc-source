@@ -163,10 +163,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
   }
 
   let tailwindCss = "";
-  const localTailwindPath = path.resolve(
-    process.cwd(),
-    "public/tailwind.min.css"
-  );
+  const localTailwindPath = path.resolve(process.cwd(), "public/tailwind.min.css");
   try {
     if (fs.existsSync(localTailwindPath)) {
       tailwindCss = fs.readFileSync(localTailwindPath, "utf8");
@@ -181,34 +178,32 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
   const hasTax = taxDetails.amount && taxDetails.amount > 0;
   const hasDiscount = discountDetails.amount && discountDetails.amount > 0;
   const hasShipping = shippingDetails.cost && shippingDetails.cost > 0;
-  const hasTotalInWords =
-    details.totalAmountInWords && details.totalAmountInWords.trim() !== "";
+  const hasTotalInWords = details.totalAmountInWords && details.totalAmountInWords.trim() !== "";
 
   const taxHtml = hasTax
     ? `
-      <p class="text-base text-right text-gray-800">Tax ${
-        taxDetails.amountType === "percentage" ? `${taxDetails.amount}%` : "AED"
-      }: ${formatNumberWithCommas(Number(taxAmount.toFixed(2)))}</p>
+      <div class="flex justify-between amount-line">
+        <span class="text-base text-gray-800"> VAT ${taxDetails.amountType === "percentage" ? `(${taxDetails.amount}%)` : ""}</span>
+        <span class="text-base text-gray-800">AED ${formatNumberWithCommas(Number(taxAmount.toFixed(2)))}</span>
+      </div>
     `
     : "";
 
   const discountHtml = hasDiscount
     ? `
-      <p class="text-base text-right text-gray-800">Discount ${
-        discountDetails.amountType === "percentage"
-          ? `${discountDetails.amount}%`
-          : "AED"
-      }: ${formatNumberWithCommas(Number(discountAmount.toFixed(2)))}</p>
+      <div class="flex justify-between amount-line">
+        <span class="text-base text-gray-800">Discount ${discountDetails.amountType === "percentage" ? `(${discountDetails.amount}%)` : ""}</span>
+        <span class="text-base text-gray-800">AED ${formatNumberWithCommas(Number(discountAmount.toFixed(2)))}</span>
+      </div>
     `
     : "";
 
   const shippingHtml = hasShipping
     ? `
-      <p class="text-base text-right text-gray-800">Shipping ${
-        shippingDetails.costType === "percentage"
-          ? `${shippingDetails.cost}%`
-          : "AED"
-      }: ${formatNumberWithCommas(Number(shippingAmount.toFixed(2)))}</p>
+      <div class="flex justify-between amount-line">
+        <span class="text-base text-gray-800">Shipping ${shippingDetails.costType === "percentage" ? `(${shippingDetails.cost}%)` : ""}</span>
+        <span class="text-base text-gray-800">AED ${formatNumberWithCommas(Number(shippingAmount.toFixed(2)))}</span>
+      </div>
     `
     : "";
 
@@ -256,10 +251,9 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
       }
       .container {
         display: block;
-        min-height: calc(100vh - 80px); /* Adjusted for footer space */
+        min-height: calc(100vh - 80px);
         box-sizing: border-box;
         padding: 0;
-
       }
       .header {
         display: flex;
@@ -304,6 +298,8 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
       .invoice-table th {
         font-weight: bold;
         text-transform: uppercase;
+        font-size: 16px; /* Increased font size for table headings */
+        padding: 8px; /* Added padding for table headings */
       }
       .invoice-table td {
         word-wrap: break-word;
@@ -334,7 +330,6 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
       .total-amount {
         border-top: 1px solid #000;
         border-bottom: 1px solid #000;
-        text-align: right;
         padding: 8px 0;
         margin-top: 8px;
         font-weight: bold;
@@ -343,12 +338,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
         width: calc(100% - 40px);
         padding-top: 10px;
         break-inside: avoid;
-        margin-top: 20px; /* Space above footer */
-      }
-      h3 {
-        font-weight: bold;
-        margin-top: 5px;
-        margin-bottom: 5px;
+        margin-top: 20px;
       }
       @media print {
         body {
@@ -356,12 +346,11 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
           print-color-adjust: exact;
         }
         .container {
-          padding-bottom: 80px; /* Ensure space for footer on last page */
+          padding-bottom: 80px;
         }
         .footer {
-          position: static; /* Use static positioning to place footer naturally after content */
+          position: static;
           margin-top: 20px;
-
         }
       }
       @page {
@@ -388,12 +377,10 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
           <img src="${logoBase64}" alt="SPC Source Logo" />
         </div>
         <div class="header-details mt-4">
-          <p class="text-sm pt-1">+971 54 500 4520  |  contact@spcsource.com</p>
+          <p class="text-sm pt-1"> <span> <a href="https://api.whatsapp.com/send/?phone=971545004520&text&type=phone_number&app_absent=0" target="_blank"> +971 54 500 4520</a></span>  |  contact@spcsource.com</p>
+          <p class="text-sm pt-1"></p>
           <p class="text-sm pt-1">www.spcsource.com  |  TRN-29484858585</p>
-          <p class="text-sm pt-1">${
-            senderData.address ||
-            "Iris Bay, Office D-43, Business Bay, Dubai, UAE."
-          }</p>
+          <p class="text-sm pt-1">${senderData.address || "Iris Bay, Office D-43, Business Bay, Dubai, UAE."}</p>
         </div>
       </div>
       <div class="customer-invoice-container">
@@ -408,20 +395,14 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
               ${details.invoiceNumber || ""}
             </span>
           </h2>
-          <p class="text-md mt-1">${new Date(
-            details.invoiceDate || new Date()
-          ).toLocaleDateString("en-US", DATE_OPTIONS)}</p>
+          <p class="text-md mt-1">${new Date(details.invoiceDate || new Date()).toLocaleDateString("en-US", DATE_OPTIONS)}</p>
         </div>
       </div>
       <div class="mt-4">
-        <h3 class="text-lg font-bold">${
-          details.invoiceNumber.includes("INV")
-            ? `${hasTax ? "TAX " : ""}INVOICE`
-            : `QUOTATION`
-        }</h3>
+        <h3 class="text-lg font-bold">${details.invoiceNumber.includes("INV") ? `${hasTax ? "TAX " : ""}INVOICE` : `QUOTATION`}</h3>
         <table class="invoice-table">
           <thead>
-            <tr>
+            <tr class="py-8">
               <th class="w-[5%] text-center">#</th>
               <th class="w-[50%] text-center">DESCRIPTION</th>
               <th class="w-[10%] text-center">QTY</th>
@@ -440,15 +421,17 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
             ${totalInWordsHtml}
           </div>
           <div class="amounts-section">
-            <p class="text-base text-right text-gray-800">
-              Subtotal: AED ${formatNumberWithCommas(subtotal)}.00
-            </p>
+            <div class="flex justify-between amount-line">
+              <span class="text-base text-gray-800">Subtotal</span>
+              <span class="text-base text-gray-800">AED ${formatNumberWithCommas(subtotal)}.00</span>
+            </div>
             ${taxHtml}
             ${shippingHtml}
             ${discountHtml}
-            <p class="total-amount">Grand Total: AED ${formatNumberWithCommas(
-              Number(grandTotal.toFixed(2))
-            )}</p>
+            <div class="flex justify-between total-amount">
+              <span class="text-base font-bold text-gray-800">Grand Total</span>
+              <span class="text-base font-bold text-gray-800">AED ${formatNumberWithCommas(Number(grandTotal.toFixed(2)))}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -456,9 +439,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
     <div class="footer mx-auto">
       <div class="flex justify-between">
         <p class="text-base font-bold text-gray-800 ml-3">Receiver's Sign _________________</p>
-        <p class="text-base text-gray-800">for <span class=" font-bold ">${
-          senderData.name || ""
-        }</span> </p>
+        <p class="text-base text-gray-800">for <span class="font-bold">${senderData.name || ""}</span></p>
       </div>
     </div>
   </body>
@@ -494,7 +475,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
     const pdfBuffer: any = await page.pdf({
       format: "A4",
       printBackground: true,
-      margin: { top: "5mm", right: "5mm", bottom: "20mm", left: "5mm" }, // Increased bottom margin for footer
+      margin: { top: "5mm", right: "5mm", bottom: "20mm", left: "5mm" },
       preferCSSPageSize: true,
     });
 
