@@ -202,7 +202,7 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
     ? `
       <div class="flex justify-between amount-line">
         <span class="text-base text-gray-800">Shipping ${shippingDetails.costType === "percentage" ? `(${shippingDetails.cost}%)` : ""}</span>
-  <span class="text-base text-gray-800">AED ${formatNumberWithCommas(Number(shippingAmount.toFixed(2)))}</span>
+        <span class="text-base text-gray-800">AED ${formatNumberWithCommas(Number(shippingAmount.toFixed(2)))}</span>
       </div>
     `
     : "";
@@ -233,6 +233,8 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
       </div>
     `
     : "";
+
+  const invoiceNumberPrefix = hasTax ? `INV-${details.invoiceNumber}` : `QUT-${details.invoiceNumber}`;
 
   const htmlTemplate = `
 <html>
@@ -272,7 +274,8 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
       .invoice-number {
         background-color: #d3d3d3;
         padding: 5px 10px;
-        border-radius: 4 species: all;
+        border-radius: 4px;
+        text-align: right;
       }
       .customer-invoice-container {
         display: flex;
@@ -390,14 +393,14 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
         <div class="invoice-info">
           <h2 class="text-xl">
             <span class="invoice-number">
-              ${details.invoiceNumber || ""}
+              ${invoiceNumberPrefix}
             </span>
           </h2>
           <p class="text-md mt-1">${new Date(details.invoiceDate || new Date()).toLocaleDateString("en-US", DATE_OPTIONS)}</p>
         </div>
       </div>
       <div class="mt-4">
-        <h3 class="text-lg font-bold">${details.invoiceNumber.includes("INV") ? `${hasTax ? "TAX " : ""}INVOICE` : `QUOTATION`}</h3>
+        <h3 class="text-lg font-bold">${hasTax ? "TAX INVOICE" : "QUOTATION"}</h3>
         <table class="invoice-table">
           <thead>
             <tr class="py-8">
