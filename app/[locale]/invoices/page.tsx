@@ -369,9 +369,8 @@ const Page: React.FC = () => {
               </p>
               <BaseButton
                 type="button"
-                tooltipLabel="Generate your invoice"
                 loading={invoicePdfLoading}
-                loadingText="Generating your invoice"
+                loadingText="Generating your PDF"
                 onClick={onGeneratePdf}
               >
                 <FileInput />

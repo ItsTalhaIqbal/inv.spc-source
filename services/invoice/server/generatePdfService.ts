@@ -5,7 +5,6 @@ import { connectToDatabase } from "@/lib/mongoose";
 import fs from "fs";
 import path from "path";
 
-// Define TypeScript interfaces for better type safety
 interface Receiver {
   name: string;
   address: string;
@@ -53,17 +52,6 @@ interface InvoiceType {
 export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
   await connectToDatabase();
 
-  console.log("Input body:", JSON.stringify(body, null, 2));
-  console.log("Receiver data:", JSON.stringify(body.receiver, null, 2));
-  console.log(
-    "Additional Notes:",
-    body.receiver?.additionalNotes ?? "Not provided"
-  );
-  console.log("Payment Terms:", body.receiver?.paymentTerms ?? "Not provided");
-
-  // Debug log to inspect input data
-  console.log("Input body:", JSON.stringify(body, null, 2));
-
   if (!body.details?.invoiceNumber) {
     throw new Error("Invoice number is missing");
   }
@@ -74,7 +62,6 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
     );
   }
 
-  // Prepare data with default values
   const senderData = body.sender || {
     name: "SPC Source Technical Services LLC",
     country: "UAE",
@@ -95,7 +82,6 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
   };
   const details = body.details || {};
 
-  // Date formatting options
   const DATE_OPTIONS = {
     year: "numeric",
     month: "long",
@@ -103,12 +89,14 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
     weekday: "long",
   } as const;
 
-  // Helper functions
   const formatNumberWithCommas = (num: number): string =>
     num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 
-  // Prepare tax, discount, and shipping details
-  const taxDetails = details.taxDetails || { amount: 0, amountType: "amount", taxID: "" };
+  const taxDetails = details.taxDetails || {
+    amount: 0,
+    amountType: "amount",
+    taxID: "",
+  };
   const discountDetails = details.discountDetails || {
     amount: 0,
     amountType: "amount",
@@ -118,22 +106,35 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
     costType: "amount",
   };
 
-  // Calculate totals
   const subtotal = (details.items || []).reduce((sum, item) => {
     const quantity = item.quantity || 0;
     const unitPrice = item.unitPrice || 0;
     return sum + quantity * unitPrice;
   }, 0);
 
-  const taxAmount = taxDetails.amount && taxDetails.amount > 0
-    ? taxDetails.amountType === "percentage"
-      ? (subtotal * taxDetails.amount) / 100
-      : taxDetails.amount
-    : 0;
+  const taxAmount =
+    taxDetails.amount && taxDetails.amount > 0
+      ? taxDetails.amountType === "percentage"
+        ? (subtotal * taxDetails.amount) / 100
+        : taxDetails.amount
+      : 0;
 
-  const grandTotal = subtotal + taxAmount;
+  const discountAmount =
+    discountDetails.amount && discountDetails.amount > 0
+      ? discountDetails.amountType === "percentage"
+        ? (subtotal * discountDetails.amount) / 100
+        : discountDetails.amount
+      : 0;
 
-  // Generate items HTML
+  const shippingAmount =
+    shippingDetails.cost && shippingDetails.cost > 0
+      ? shippingDetails.costType === "percentage"
+        ? (subtotal * shippingDetails.cost) / 100
+        : shippingDetails.cost
+      : 0;
+
+  const grandTotal = subtotal + taxAmount + shippingAmount - discountAmount;
+
   const itemsHtml = (details.items || [])
     .map((item: Item, index: number) => {
       const quantity = item.quantity || 0;
@@ -142,17 +143,16 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
 
       return `
         <tr class="border">
-          <td class="w-1/20 font-bold text-black text-base border">${index + 1}</td>
-          <td class="w-1/2 text-black text-base border">${item.name || ""}</td>
-          <td class="w-1/6 text-black text-base border">${quantity}</td>
-          <td class="w-1/6 text-black text-base border">${unitPrice ? `${unitPrice} ` : ""}</td>
-          <td class="w-1/6 text-right text-black text-base border">${total ? `${total} ` : ""}</td>
+          <td class="w-[5%] text-center font-bold text-black text-base border">${index + 1}</td>
+          <td class="w-[50%] text-center text-black text-base border px-2 py-1" style="word-wrap: break-word; white-space: normal;">${item.name}</td>
+          <td class="w-[10%] text-center text-black text-base border">${quantity}</td>
+          <td class="w-[17%] text-center text-black text-base border">${unitPrice ? `${formatNumberWithCommas(unitPrice)}` : ""}</td>
+          <td class="w-[18%] text-center text-black text-base border">${total ? `${formatNumberWithCommas(total)}` : ""}</td>
         </tr>
       `;
     })
     .join("");
 
-  // Load logo
   const logoPath = path.resolve(process.cwd(), "public/assets/img/image.jpg");
   let logoBase64 = "";
   try {
@@ -162,7 +162,6 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
     console.warn("Could not load logo:", error);
   }
 
-  // Load Tailwind CSS
   let tailwindCss = "";
   const localTailwindPath = path.resolve(
     process.cwd(),
@@ -182,61 +181,64 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
   const hasTax = taxDetails.amount && taxDetails.amount > 0;
   const hasDiscount = discountDetails.amount && discountDetails.amount > 0;
   const hasShipping = shippingDetails.cost && shippingDetails.cost > 0;
-  const hasTotalInWords = details.totalAmountInWords && details.totalAmountInWords.trim() !== "";
+  const hasTotalInWords =
+    details.totalAmountInWords && details.totalAmountInWords.trim() !== "";
 
   const taxHtml = hasTax
     ? `
-      <p class="text-base text-left text-gray-800">Tax ${
-        taxDetails.amount
-      }${taxDetails.amountType === "percentage" ? "%" : " AED"}: ${formatNumberWithCommas(Number(taxAmount.toFixed(2)))}</p>
+      <p class="text-base text-right text-gray-800">Tax ${
+        taxDetails.amountType === "percentage" ? `${taxDetails.amount}%` : "AED"
+      }: ${formatNumberWithCommas(Number(taxAmount.toFixed(2)))}</p>
     `
     : "";
 
   const discountHtml = hasDiscount
     ? `
-      <p class="text-base text-left text-gray-800">Discount ${
-        discountDetails.amount
-      }${discountDetails.amountType === "percentage" ? "%" : " AED"}</p>
+      <p class="text-base text-right text-gray-800">Discount ${
+        discountDetails.amountType === "percentage"
+          ? `${discountDetails.amount}%`
+          : "AED"
+      }: ${formatNumberWithCommas(Number(discountAmount.toFixed(2)))}</p>
     `
     : "";
 
   const shippingHtml = hasShipping
     ? `
-      <p class="text-base text-left text-gray-800">Shipping ${
-        shippingDetails.cost
-      }${shippingDetails.costType === "percentage" ? "%" : " AED"}</p>
+      <p class="text-base text-right text-gray-800">Shipping ${
+        shippingDetails.costType === "percentage"
+          ? `${shippingDetails.cost}%`
+          : "AED"
+      }: ${formatNumberWithCommas(Number(shippingAmount.toFixed(2)))}</p>
     `
     : "";
 
   const totalInWordsHtml = hasTotalInWords
     ? `
-      <div>
-        <h2 class="font-bold">Total Amount in Words</h2>
-        <p class="font-normal">${details.totalAmountInWords}</p>
+      <div class="mt-2">
+        <h2 class="font-bold text-sm">Total Amount in Words</h2>
+        <p class="font-normal text-sm">${details.totalAmountInWords}</p>
       </div>
     `
     : "";
 
-  // Conditionally include Payment Terms and Additional Notes
   const paymentTermsHtml = details.paymentTerms
     ? `
-      <div>
-        <h2 class="font-bold">Payment Terms</h2>
-        <p class="font-normal">${details.paymentTerms}</p>
+      <div class="mt-2">
+        <h2 class="font-bold text-sm">Payment Terms</h2>
+        <p class="font-normal text-sm">${details.paymentTerms}</p>
       </div>
     `
     : "";
 
   const additionalNotesHtml = details.additionalNotes
     ? `
-      <div>
-        <h2 class="font-bold">Additional Notes</h2>
-        <p class="font-normal">${details.additionalNotes}</p>
+      <div class="mt-2">
+        <h2 class="font-bold text-sm">Additional Notes</h2>
+        <p class="font-normal text-sm">${details.additionalNotes}</p>
       </div>
     `
     : "";
 
-  // Generate HTML template with updated header and heading logic
   const htmlTemplate = `
 <html>
   <head>
@@ -248,28 +250,28 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
       body {
         font-family: 'Roboto', sans-serif;
         margin: 0;
-        padding: 0;
+        padding: 0 20px;
         background-color: #ffffff;
         color: #000000;
       }
       .container {
         display: block;
-        min-height: 100vh;
+        min-height: calc(100vh - 80px); /* Adjusted for footer space */
+        box-sizing: border-box;
+        padding: 0;
+        border:1px solid black;
+
       }
       .header {
         display: flex;
         justify-content: space-between;
         align-items: flex-start;
-        padding: 10px 10px; /* Reduced padding on sides */
-        border-bottom: 1px solid #000;
-      }
-      .logo {
-        margin: 0;
-        padding: 0;
+        padding: 5px;
       }
       .logo img {
         width: 180px;
         height: 100px;
+        object-fit: contain;
       }
       .header-details {
         text-align: right;
@@ -281,35 +283,39 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
         display: inline-block;
         font-weight: bold;
       }
+      .customer-invoice-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        width: 100%;
+        margin-top: 15px;
+      }
       .invoice-table {
         width: 100%;
         border-collapse: collapse;
-        margin-top: 20px;
+        margin-top: 15px;
       }
       .invoice-table thead tr {
         background-color: #d3d3d3;
       }
-      .invoice-table th {
-        padding: 0 16px;
+      .invoice-table th, .invoice-table td {
         font-size: 14px;
+        border: 1px solid #000;
+      }
+      .invoice-table th {
         font-weight: bold;
         text-transform: uppercase;
-        color: #000;
-        text-align: left;
-        border: 1px solid #000;
-        white-space: nowrap;
-      }
-      .invoice-table th:last-child {
-        text-align: right;
       }
       .invoice-table td {
-        padding: 0 16px;
-        font-size: 14px;
-        border: 1px solid #000;
+        word-wrap: break-word;
+        white-space: normal;
+        padding: 4px;
       }
-      .invoice-table td:last-child {
-        text-align: right;
-      }
+      .invoice-table th:nth-child(1), .invoice-table td:nth-child(1) { width: 5%; }
+      .invoice-table th:nth-child(2), .invoice-table td:nth-child(2) { width: 50%; }
+      .invoice-table th:nth-child(3), .invoice-table td:nth-child(3) { width: 10%; }
+      .invoice-table th:nth-child(4), .invoice-table td:nth-child(4) { width: 17%; }
+      .invoice-table th:nth-child(5), .invoice-table td:nth-child(5) { width: 18%; }
       .summary {
         display: flex;
         justify-content: space-between;
@@ -318,121 +324,147 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
       }
       .notes-section {
         width: 55%;
-        padding-right: 20px;
+        break-inside: avoid;
       }
       .amounts-section {
-        width: 35%;
-        text-align: right;
+        width: 30%;
       }
       .amount-line {
-        margin-bottom: 8px;
+        margin-bottom: 4px;
       }
       .total-amount {
         border-top: 1px solid #000;
         border-bottom: 1px solid #000;
-        padding-top: 8px;
+        text-align: right;
+        padding: 8px 0;
         margin-top: 8px;
-        margin-bottom: 8px;
-        text-align: left;
+        font-weight: bold;
+      }
+      .footer {
+        width: calc(100% - 40px);
+        padding-top: 10px;
+        break-inside: avoid;
+        margin-top: 20px; /* Space above footer */
       }
       h3 {
         font-weight: bold;
+        margin-top: 5px;
+        margin-bottom: 5px;
+      }
+      @media print {
+        body {
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        .container {
+          padding-bottom: 80px; /* Ensure space for footer on last page */
+        }
+        .footer {
+          position: static; /* Use static positioning to place footer naturally after content */
+          margin-top: 20px;
+        }
       }
       @page {
-        margin: 10mm; /* Reduced margin on sides */
-        @top-right {
+        margin: 5mm;
+        @bottom-right {
           content: "Page " counter(page) " of " counter(pages);
+          font-family: 'Roboto', sans-serif;
+          font-size: 12px;
+          color: #000000;
         }
+      }
+      .container, .summary, .notes-section, .amounts-section {
+        page-break-inside: avoid;
+      }
+      .invoice-table tr {
+        page-break-inside: avoid;
       }
     </style>
   </head>
   <body>
-    <div class="container">
+    <div class="container mx-auto">
       <div class="header">
         <div class="logo">
           <img src="${logoBase64}" alt="SPC Source Logo" />
         </div>
-        <div class="header-details">
-          <p class="text-sm py-2">Phone: ${senderData.phone || "+971 54 500 4520"}</p>
-          <p class="text-sm py-2">Email: ${senderData.email || "contact@spcsource.com"}</p>
-          <p class="text-sm py-2">Website: www.spcsource.com</p>
-          <p class="text-sm py-2">Address: ${senderData.address || "Iris Bay, Office D-43, Business Bay, Dubai, UAE."}</p>
-          <p class="text-sm py-2">Tax Number: TRN-29484858585</p> 
-
-          <h2 class="text-xl mt-5">
+        <div class="header-details mt-4">
+          <p class="text-sm pt-1">+971 54 500 4520  |  contact@spcsource.com</p>
+          <p class="text-sm pt-1">www.spcsource.com  |  TRN-29484858585</p>
+          <p class="text-sm pt-1">${
+            senderData.address ||
+            "Iris Bay, Office D-43, Business Bay, Dubai, UAE."
+          }</p>
+        </div>
+      </div>
+      <div class="customer-invoice-container">
+        <div class="customer-info">
+          <h3 class="font-bold text-lg">CUSTOMER INFO</h3>
+          <p class="text-md">${receiver.name || ""}</p>
+          <p class="text-md">${receiver.phone || ""}</p>
+        </div>
+        <div class="invoice-info">
+          <h2 class="text-xl">
             <span class="invoice-number">
               ${details.invoiceNumber || ""}
             </span>
           </h2>
-            <p class="text-md">${new Date(
-              details.invoiceDate || new Date()
-            ).toLocaleDateString("en-US", DATE_OPTIONS)}</p>
+          <p class="text-md mt-1">${new Date(
+            details.invoiceDate || new Date()
+          ).toLocaleDateString("en-US", DATE_OPTIONS)}</p>
         </div>
       </div>
-
-      <div style="padding: 10px;"> <!-- Reduced padding on sides -->
-        <div class="mt-6">
-          <h3>CUSTOMER INFO</h3>
-          <p class="text-md">${receiver.name || ""}</p>
-          <p class="text-md">${receiver.phone || ""}</p>
-        </div>
-
-        <div class="mt-4">
-          <h3>${
-            !details.invoiceNumber.includes("INV") ? "Quotation" :
-            (taxDetails.amount && taxDetails.amount > 0) ? "TaxInvoice" : "Invoice"
-          }</h3> <!-- Conditional heading -->
-          <table class="invoice-table">
-            <thead>
-              <tr>
-                <th class="w-1/20">#</th>
-                <th class="w-1/2">DESCRIPTION</th>
-                <th class="w-1/6">Qty</th>
-                <th class="w-1/6">Unit Price</th>
-                <th class="w-1/6 text-right">AMOUNT (AED)</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${itemsHtml}
-            </tbody>
-          </table>
-          <div class="summary">
-            <div class="notes-section">
-              ${additionalNotesHtml}
-              ${paymentTermsHtml}
-              ${totalInWordsHtml}
-            </div>
-            <div class="amounts-section">
-              <p class="text-base text-left text-gray-800">Subtotal: AED ${formatNumberWithCommas(Number(subtotal.toFixed(2)))}</p>
-              ${taxHtml}
-              ${shippingHtml}
-              ${discountHtml}
-              <p class="total-amount font-semibold bg-slate-400">Grand Total: AED ${formatNumberWithCommas(Number(grandTotal.toFixed(2)))}</p>
-            </div>
+      <div class="mt-4">
+        <h3 class="text-lg font-bold">${
+          details.invoiceNumber.includes("INV")
+            ? `${hasTax ? "TAX " : ""}INVOICE`
+            : `QUOTATION`
+        }</h3>
+        <table class="invoice-table">
+          <thead>
+            <tr>
+              <th class="w-[5%] text-center">#</th>
+              <th class="w-[50%] text-center">DESCRIPTION</th>
+              <th class="w-[10%] text-center">QTY</th>
+              <th class="w-[17%] text-center">UNIT PRICE</th>
+              <th class="w-[18%] text-center">AMOUNT</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${itemsHtml}
+          </tbody>
+        </table>
+        <div class="summary">
+          <div class="notes-section">
+            ${additionalNotesHtml}
+            ${paymentTermsHtml}
+            ${totalInWordsHtml}
+          </div>
+          <div class="amounts-section">
+            <p class="text-base text-right text-gray-800">
+              Subtotal: AED ${formatNumberWithCommas(subtotal)}.00
+            </p>
+            ${taxHtml}
+            ${shippingHtml}
+            ${discountHtml}
+            <p class="total-amount">Grand Total: AED ${formatNumberWithCommas(
+              Number(grandTotal.toFixed(2))
+            )}</p>
           </div>
         </div>
+      </div>
+    </div>
+    <div class="footer">
+      <div class="flex justify-between">
+        <p class="text-base font-bold text-gray-800">Receiver's Sign _________________</p>
+        <p class="text-base text-gray-800">for<span class=" font-bold ">${
+          senderData.name || ""
+        }</span> </p>
       </div>
     </div>
   </body>
 </html>
 `;
 
-  // Clean up /tmp to avoid ETXTBSY
-  try {
-    const tmpDir = "/tmp";
-    if (fs.existsSync(tmpDir)) {
-      const files = fs.readdirSync(tmpDir);
-      for (const file of files) {
-        if (file.startsWith("chromium") || file.includes("puppeteer")) {
-          fs.unlinkSync(path.join(tmpDir, file));
-        }
-      }
-    }
-  } catch (cleanupError) {
-    console.warn("Failed to clean /tmp:", cleanupError);
-  }
-
-  // Generate PDF
   let browser = null;
   try {
     const launchOptions: any = {
@@ -451,8 +483,6 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
       ignoreHTTPSErrors: true,
     };
 
-    console.log("Chromium executable path:", launchOptions.executablePath);
-
     browser = await puppeteerCore.launch(launchOptions);
     const page = await browser.newPage();
 
@@ -464,7 +494,8 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
     const pdfBuffer: any = await page.pdf({
       format: "A4",
       printBackground: true,
-      margin: { top: "0", right: "0", bottom: "0", left: "0" },
+      margin: { top: "5mm", right: "5mm", bottom: "20mm", left: "5mm" }, // Increased bottom margin for footer
+      preferCSSPageSize: true,
     });
 
     return pdfBuffer;
@@ -473,9 +504,6 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
       message: error.message,
       stack: error.stack,
       env: process.env.NODE_ENV,
-      executablePath: await chromium.executablePath(
-        "https://github.com/Sparticuz/chromium/releases/download/v133.0.0/chromium-v133.0.0-pack.tar"
-      ),
     });
     throw error;
   } finally {
