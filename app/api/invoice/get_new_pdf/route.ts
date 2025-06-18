@@ -143,11 +143,11 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
 
       return `
         <tr class="border">
-          <td class="w-[5%] text-center font-bold text-black text-base border">${index + 1}</td>
-          <td class="w-[50%] text-center text-black text-base border px-2 py-1" style="word-wrap: break-word; white-space: normal;">${item.name}</td>
-          <td class="w-[10%] text-center text-black text-base border">${quantity}</td>
-          <td class="w-[17%] text-center text-black text-base border">${unitPrice ? `${formatNumberWithCommas(unitPrice)}` : ""}</td>
-          <td class="w-[18%] text-center text-black text-base border">${total ? `${formatNumberWithCommas(total)}` : ""}</td>
+          <td class="w-[5%] text-center font-bold text-black text-base border border-gray-500">${index + 1}</td>
+          <td class="w-[50%] text-center text-black text-base border border-gray-500 px-2 py-1" style="word-wrap: break-word; white-space: normal;">${item.name}</td>
+          <td class="w-[10%] text-center text-black text-base border border-gray-500">${quantity}</td>
+          <td class="w-[17%] text-center text-black text-base border border-gray-500">${unitPrice ? `${formatNumberWithCommas(unitPrice)}` : ""}</td>
+          <td class="w-[18%] text-center text-black text-base border border-gray-500">${total ? `${formatNumberWithCommas(total)}` : ""}</td>
         </tr>
       `;
     })
@@ -202,7 +202,7 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
     ? `
       <div class="flex justify-between amount-line">
         <span class="text-base text-gray-800">Shipping ${shippingDetails.costType === "percentage" ? `(${shippingDetails.cost}%)` : ""}</span>
-        <span class="text-base text-gray-800">AED ${formatNumberWithCommas(Number(shippingAmount.toFixed(2)))}</span>
+  <span class="text-base text-gray-800">AED ${formatNumberWithCommas(Number(shippingAmount.toFixed(2)))}</span>
       </div>
     `
     : "";
@@ -210,8 +210,8 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
   const totalInWordsHtml = hasTotalInWords
     ? `
       <div class="mt-2">
-        <h2 class="font-bold text-sm">Total Amount in Words</h2>
-        <p class="font-normal text-sm">${details.totalAmountInWords}</p>
+        <h2 class="font-bold text-lg">Total Amount in Words</h2>
+        <p class="font-normal text-md">${details.totalAmountInWords}</p>
       </div>
     `
     : "";
@@ -219,8 +219,8 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
   const paymentTermsHtml = details.paymentTerms
     ? `
       <div class="mt-2">
-        <h2 class="font-bold text-sm">Payment Terms</h2>
-        <p class="font-normal text-sm">${details.paymentTerms}</p>
+        <h2 class="font-bold text-lg">Payment Terms</h2>
+        <p class="font-normal text-md">${details.paymentTerms}</p>
       </div>
     `
     : "";
@@ -228,8 +228,8 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
   const additionalNotesHtml = details.additionalNotes
     ? `
       <div class="mt-2">
-        <h2 class="font-bold text-sm">Additional Notes</h2>
-        <p class="font-normal text-sm">${details.additionalNotes}</p>
+        <h2 class="font-bold text-lg">Additional Notes</h2>
+        <p class="font-normal text-md">${details.additionalNotes}</p>
       </div>
     `
     : "";
@@ -272,9 +272,7 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
       .invoice-number {
         background-color: #d3d3d3;
         padding: 5px 10px;
-        border-radius: 4px;
-        display: inline-block;
-        font-weight: bold;
+        border-radius: 4 species: all;
       }
       .customer-invoice-container {
         display: flex;
@@ -293,7 +291,7 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
       }
       .invoice-table th, .invoice-table td {
         font-size: 14px;
-        border: 1px solid #000;
+        border: 1px solid #6b7280;
       }
       .invoice-table th {
         font-weight: bold;
@@ -328,8 +326,8 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
         margin-bottom: 4px;
       }
       .total-amount {
-        border-top: 1px solid #000;
-        border-bottom: 1px solid #000;
+        border-top: 1px solid #6b7280;
+        border-bottom: 1px solid #6b7280;
         padding: 8px 0;
         margin-top: 8px;
         font-weight: bold;
