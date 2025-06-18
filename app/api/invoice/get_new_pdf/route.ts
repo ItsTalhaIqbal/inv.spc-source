@@ -392,7 +392,7 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
         </div>
         <div class="invoice-info">
           <h2 class="text-xl">
-            <span class="invoice-number">
+            <span class="invoice-number text-right">
               ${invoiceNumberPrefix}
             </span>
           </h2>
