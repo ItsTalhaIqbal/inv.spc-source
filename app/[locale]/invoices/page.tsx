@@ -390,7 +390,7 @@ const Page: React.FC = () => {
                 type="button"
                 disabled={pdfLoading}
                 onClick={onGeneratePdf}
-                className={theme === "dark" ? "bg-gray-600 hover:bg-gray-500" : "bg-gray-200 hover:bg-gray-300"}
+                className={theme === "dark" ? "bg-white hover:bg-gray-500" : "bg-gray-200 hover:bg-gray-300"}
               >
                 {pdfLoading ? (
                   <>
