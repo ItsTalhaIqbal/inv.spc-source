@@ -34,6 +34,7 @@ interface Details {
   paymentTerms?: string;
   additionalNotes?: string;
   totalAmountInWords?: string;
+  currency?: string;
 }
 
 interface InvoiceType {
@@ -48,6 +49,116 @@ interface InvoiceType {
   receiver?: Receiver;
   details?: Details;
 }
+
+// Sample formatPriceToString implementation to ensure correct total in words
+const formatPriceToString = (amount: number, currency: string): string => {
+  const numberToWords = (num: number): string => {
+    const units = [
+      "",
+      "one",
+      "two",
+      "three",
+      "four",
+      "five",
+      "six",
+      "seven",
+      "eight",
+      "nine",
+    ];
+    const teens = [
+      "ten",
+      "eleven",
+      "twelve",
+      "thirteen",
+      "fourteen",
+      "fifteen",
+      "sixteen",
+      "seventeen",
+      "eighteen",
+      "nineteen",
+    ];
+    const tens = [
+      "",
+      "",
+      "twenty",
+      "thirty",
+      "forty",
+      "fifty",
+      "sixty",
+      "seventy",
+      "eighty",
+      "ninety",
+    ];
+    const thousands = ["", "thousand", "million", "billion"];
+
+    if (num === 0) return "zero";
+
+    let words = "";
+    let numStr = Math.floor(num).toString();
+    let chunks: number[] = [];
+
+    while (numStr.length > 0) {
+      let chunk = parseInt(numStr.slice(-3)) || 0;
+      chunks.push(chunk);
+      numStr = numStr.slice(0, -3);
+    }
+
+    for (let i = 0; i < chunks.length; i++) {
+      let chunk = chunks[i];
+      if (chunk === 0) continue;
+
+      let chunkWords = "";
+      let hundreds = Math.floor(chunk / 100);
+      let remainder = chunk % 100;
+      let tensPart = Math.floor(remainder / 10);
+      let unitsPart = remainder % 10;
+
+      if (hundreds > 0) {
+        chunkWords += `${units[hundreds]} hundred`;
+        if (remainder > 0) chunkWords += " and ";
+      }
+
+      if (remainder >= 10 && remainder < 20) {
+        chunkWords += teens[remainder - 10];
+      } else {
+        if (tensPart > 0) {
+          chunkWords += tens[tensPart];
+          if (unitsPart > 0) chunkWords += "-";
+        }
+        if (unitsPart > 0 || remainder === 0) {
+          chunkWords += units[unitsPart];
+        }
+      }
+
+      if (chunkWords && i > 0) {
+        chunkWords += ` ${thousands[i]}`;
+      }
+
+      words = chunkWords + (words ? " " + words : "");
+    }
+
+    return words.trim();
+  };
+
+  const [integerPart, decimalPart] = amount.toFixed(2).split(".");
+  const integerNum = parseInt(integerPart);
+  const decimalNum = parseInt(decimalPart);
+
+  let result = numberToWords(integerNum);
+  if (currency === "AED") {
+    result += " Dirham";
+    if (decimalNum > 0) {
+      result += ` and ${numberToWords(decimalNum)} Fils`;
+    }
+  } else {
+    result += ` ${currency}`;
+    if (decimalNum > 0) {
+      result += ` and ${numberToWords(decimalNum)} Cents`;
+    }
+  }
+
+  return result.charAt(0).toUpperCase() + result.slice(1);
+};
 
 export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
   await connectToDatabase();
@@ -135,6 +246,9 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
 
   const grandTotal = subtotal + taxAmount + shippingAmount - discountAmount;
 
+  // Ensure totalAmountInWords is consistent with grandTotal
+  const totalAmountInWords = details.totalAmountInWords || formatPriceToString(grandTotal, details.currency || "AED");
+
   const itemsHtml = (details.items || [])
     .map((item: Item, index: number) => {
       const quantity = item.quantity || 0;
@@ -178,12 +292,14 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
   const hasTax = taxDetails.amount && taxDetails.amount > 0;
   const hasDiscount = discountDetails.amount && discountDetails.amount > 0;
   const hasShipping = shippingDetails.cost && shippingDetails.cost > 0;
-  const hasTotalInWords = details.totalAmountInWords && details.totalAmountInWords.trim() !== "";
+  const hasTotalInWords = totalAmountInWords && totalAmountInWords.trim() !== "";
+
+  const invoiceNumberPrefix = hasTax ? `INV-${details.invoiceNumber}` : `QUT-${details.invoiceNumber}`;
 
   const taxHtml = hasTax
     ? `
       <div class="flex justify-between amount-line">
-        <span class="text-base text-gray-800"> VAT ${taxDetails.amountType === "percentage" ? `(${taxDetails.amount}%)` : ""}</span>
+        <span class="text-base text-gray-800">VAT ${taxDetails.amountType === "percentage" ? `(${taxDetails.amount}%)` : ""}</span>
         <span class="text-base text-gray-800">AED ${formatNumberWithCommas(Number(taxAmount.toFixed(2)))}</span>
       </div>
     `
@@ -211,7 +327,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
     ? `
       <div class="mt-2">
         <h2 class="font-bold text-lg">Total Amount in Words</h2>
-        <p class="font-normal text-md">${details.totalAmountInWords}</p>
+        <p class="font-normal text-md">${totalAmountInWords}</p>
       </div>
     `
     : "";
@@ -275,6 +391,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
         border-radius: 4px;
         display: inline-block;
         font-weight: bold;
+        text-align: right;
       }
       .customer-invoice-container {
         display: flex;
@@ -396,14 +513,14 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
         <div class="invoice-info">
           <h2 class="text-xl text-right">
             <span class="invoice-number">
-              ${details.invoiceNumber || ""}
+              ${invoiceNumberPrefix}
             </span>
           </h2>
           <p class="text-md mt-1">${new Date(details.invoiceDate || new Date()).toLocaleDateString("en-US", DATE_OPTIONS)}</p>
         </div>
       </div>
       <div class="mt-4">
-        <h3 class="text-lg font-bold">${details.invoiceNumber.includes("INV") ? `${hasTax ? "TAX " : ""}INVOICE` : `QUOTATION`}</h3>
+        <h3 class="text-lg font-bold">${hasTax ? "TAX INVOICE" : "QUOTATION"}</h3>
         <table class="invoice-table">
           <thead>
             <tr class="py-8">
