@@ -259,7 +259,6 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
         min-height: calc(100vh - 80px); /* Adjusted for footer space */
         box-sizing: border-box;
         padding: 0;
-        border:1px solid black;
 
       }
       .header {
@@ -362,6 +361,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
         .footer {
           position: static; /* Use static positioning to place footer naturally after content */
           margin-top: 20px;
+
         }
       }
       @page {
@@ -453,7 +453,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
         </div>
       </div>
     </div>
-    <div class="footer">
+    <div class="footer mx-auto">
       <div class="flex justify-between">
         <p class="text-base font-bold text-gray-800">Receiver's Sign _________________</p>
         <p class="text-base text-gray-800">for<span class=" font-bold ">${
