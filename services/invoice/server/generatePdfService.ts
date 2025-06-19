@@ -513,7 +513,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
         <div class="invoice-info">
           <h2 class="text-xl text-right">
             <span class="invoice-number">
-              ${details.invoiceNumber.includes("INV")? `${INVVariable}`:`${QUTVariable}`}${details.invoiceNumber}
+              ${details.invoiceNumber}
             </span>
           </h2>
           <p class="text-md mt-1">${new Date(details.invoiceDate || new Date()).toLocaleDateString("en-US", DATE_OPTIONS)}</p>
