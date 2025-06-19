@@ -1475,16 +1475,11 @@ const Page: React.FC = () => {
                             <span>{shippingAmount.toFixed(2)}</span>
                           </div>
                         )}
-                        <div className="flex justify-between font-bold border-t pt-2">
-                          <span>Total:</span>
+                        <div className="flex justify-between font-bold border-t pt-2 border-t-gray-500">
+                          <span> Grand Total:</span>
                           <span>{totalAmount.toFixed(2)}</span>
                         </div>
-                        <div className="mt-2">
-                          <p className="text-sm">
-                            <strong>Amount in words:</strong>{" "}
-                            {numberToWords(totalAmount)}
-                          </p>
-                        </div>
+                        
                       </div>
                     </div>
                   </div>
