@@ -1,4 +1,4 @@
-"use client"
+"use client";
 import React, { useState, useEffect } from "react";
 import { useTheme } from "next-themes";
 import { Input } from "@/components/ui/input";
@@ -22,7 +22,7 @@ import { EyeIcon, DownloadIcon, Loader2, Search, Pencil } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { isLogin } from "@/lib/Auth";
 import { INVVariable, QUTVariable } from "@/lib/variables";
-import { useForm, FormProvider } from "react-hook-form";
+import { useForm, FormProvider, useFieldArray } from "react-hook-form";
 import { InvoiceType } from "@/types";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
@@ -106,7 +106,11 @@ const Page: React.FC = () => {
   const [pdfLoadingStates, setPdfLoadingStates] = useState<{ [key: string]: boolean }>({});
   const router = useRouter();
   const methods = useForm<InvoiceType>();
-  const { reset, handleSubmit, register } = methods;
+  const { reset, handleSubmit, register, control } = methods;
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: "details.items",
+  });
 
   const mapInvoiceToFormData = (invoice: Invoice): InvoiceType => {
     return {
@@ -138,20 +142,21 @@ const Page: React.FC = () => {
           typeof invoice.details.dueDate === "string"
             ? invoice.details.dueDate
             : invoice.details.dueDate?.toISOString() || new Date().toISOString(),
-        items: invoice.details.items.length > 0
-          ? invoice.details.items.map((item) => ({
-              name: item.name || "",
-              description: item.description || "",
-              quantity: Number(item.quantity) || 0,
-              unitPrice: Number(item.unitPrice) || 0,
-              total: Number(item.total) || 0,
-            }))
-          : [{ name: "", quantity: 0, unitPrice: 0, total: 0 }],
+        items:
+          invoice.details.items.length > 0
+            ? invoice.details.items.map((item) => ({
+                name: item.name || "",
+                description: item.description || "",
+                quantity: Number(item.quantity) || 0,
+                unitPrice: Number(item.unitPrice) || 0,
+                total: Number(item.total) || 0,
+              }))
+            : [{ name: "", quantity: 0, unitPrice: 0, total: 0 }],
         currency: invoice.details.currency || "AED",
         language: invoice.details.language || "English",
         taxDetails: {
           amount: Number(invoice.details.taxDetails?.amount) || 0,
-          amountType: invoice.details.taxDetails?.amountType || "amount",
+          amountType: invoice.details.taxDetails?.amountType || "percentage",
           taxID: invoice.details.taxDetails?.taxID || "",
         },
         discountDetails: {
@@ -167,8 +172,11 @@ const Page: React.FC = () => {
           accountName: invoice.details.paymentInformation?.accountName || "John Doe",
           accountNumber: invoice.details.paymentInformation?.accountNumber || "445566998877",
         },
-        additionalNotes: invoice.details.additionalNotes || "Received above items in good condition.",
-        paymentTerms: invoice.details.paymentTerms || "50% advance upon confirmation of the order, 50% upon delivery or completion.",
+        additionalNotes:
+          invoice.details.additionalNotes || "Received above items in good condition.",
+        paymentTerms:
+          invoice.details.paymentTerms ||
+          "50% advance upon confirmation of the order, 50% upon delivery or completion.",
         signature: invoice.details.signature || undefined,
         subTotal: Number(invoice.details.subTotal) || 0,
         totalAmount: Number(invoice.details.totalAmount) || 0,
@@ -183,7 +191,7 @@ const Page: React.FC = () => {
     reset(formData);
 
     try {
-      setPdfLoadingStates(prev => ({ ...prev, [invoice._id!]: true }));
+      setPdfLoadingStates((prev) => ({ ...prev, [invoice._id!]: true }));
       console.log("Generating PDF for invoice:", formData.details.invoiceNumber);
       const response = await fetch("/api/invoice/get_new_pdf", {
         method: "POST",
@@ -212,7 +220,7 @@ const Page: React.FC = () => {
       console.error("Error generating PDF:", error);
       alert(`Failed to generate PDF: ${error instanceof Error ? error.message : "Unknown error"}`);
     } finally {
-      setPdfLoadingStates(prev => ({ ...prev, [invoice._id!]: false }));
+      setPdfLoadingStates((prev) => ({ ...prev, [invoice._id!]: false }));
     }
   };
 
@@ -235,7 +243,7 @@ const Page: React.FC = () => {
         body: JSON.stringify({
           ...data,
           _id: editInvoice._id,
-          invoiceNumber: data.details.invoiceNumber,
+          invoiceNumber: editInvoice.invoiceNumber, // Preserve original invoice number
         }),
       });
 
@@ -651,7 +659,7 @@ const Page: React.FC = () => {
         {/* Edit Invoice Dialog */}
         <Dialog open={editInvoiceDialog} onOpenChange={setEditInvoiceDialog}>
           <DialogContent
-            className={`${theme === "dark" ? "bg-gray-800 text-white border-gray-700" : "bg-white text-black border-gray-200"} sm:max-w-[600px] shadow-lg rounded-md max-h-[60vh]`}
+            className={`${theme === "dark" ? "bg-gray-800 text-white border-gray-700" : "bg-white text-black border-gray-200"} sm:max-w-[800px] shadow-lg rounded-md`}
           >
             <DialogHeader className="border-b pb-4">
               <DialogTitle className="text-lg font-bold">
@@ -659,43 +667,56 @@ const Page: React.FC = () => {
               </DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit(onSubmitEdit)}>
-              <ScrollArea className="max-h-[40vh] pr-4">
+              <ScrollArea className="h-[60vh] pr-4">
                 <div className="space-y-4">
+                  {/* Sender Information */}
                   <div className="space-y-4">
-                    <h3 className="text-lg font-semibold">Receiver Information</h3>
+                    <h3 className="text-lg font-semibold">Sender Information</h3>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="text-sm font-medium">Name</label>
-                        <Input {...register("receiver.name")} className="mt-1" />
+                        <Input {...register("sender.name")} className="mt-1" />
                       </div>
                       <div>
                         <label className="text-sm font-medium">Email</label>
-                        <Input {...register("receiver.email")} className="mt-1" />
+                        <Input {...register("sender.email")} className="mt-1" />
                       </div>
                       <div>
                         <label className="text-sm font-medium">Phone</label>
-                        <Input {...register("receiver.phone")} className="mt-1" />
+                        <Input {...register("sender.phone")} className="mt-1" />
                       </div>
                       <div>
                         <label className="text-sm font-medium">Address</label>
-                        <Input {...register("receiver.address")} className="mt-1" />
+                        <Input {...register("sender.address")} className="mt-1" />
                       </div>
                       <div>
                         <label className="text-sm font-medium">State</label>
-                        <Input {...register("receiver.state")} className="mt-1" />
+                        <Input {...register("sender.state")} className="mt-1" />
                       </div>
                       <div>
                         <label className="text-sm font-medium">Country</label>
-                        <Input {...register("receiver.country")} className="mt-1" />
+                        <Input {...register("sender.country")} className="mt-1" />
                       </div>
                     </div>
                   </div>
+
+                  {/* Invoice Details */}
                   <div className="space-y-4">
                     <h3 className="text-lg font-semibold">Invoice Details</h3>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="text-sm font-medium">Invoice Number</label>
-                        <Input {...register("details.invoiceNumber")} className="mt-1" />
+                        <label className="text-sm font-medium">Invoice Type</label>
+                        <select
+                          {...register("details.isInvoice")}
+                          className={`mt-1 w-full rounded-md border p-2 ${theme === "dark" ? "bg-gray-800 text-white border-gray-700" : "bg-white text-black border-gray-300"}`}
+                        >
+                          <option value="true">Invoice</option>
+                          <option value="false">Quotation</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium">Invoice Logo</label>
+                        <Input {...register("details.invoiceLogo")} className="mt-1" />
                       </div>
                       <div>
                         <label className="text-sm font-medium">Invoice Date</label>
@@ -716,6 +737,10 @@ const Page: React.FC = () => {
                       <div>
                         <label className="text-sm font-medium">Currency</label>
                         <Input {...register("details.currency")} className="mt-1" />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium">Language</label>
+                        <Input {...register("details.language")} className="mt-1" />
                       </div>
                       <div>
                         <label className="text-sm font-medium">Sub Total</label>
@@ -740,8 +765,84 @@ const Page: React.FC = () => {
                           className="mt-1"
                         />
                       </div>
+                      <div>
+                        <label className="text-sm font-medium">PDF Template</label>
+                        <Input
+                          type="number"
+                          {...register("details.pdfTemplate")}
+                          className="mt-1"
+                        />
+                      </div>
                     </div>
                   </div>
+
+                  {/* Items */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Items</h3>
+                    {fields.map((item, index) => (
+                      <div key={item.id} className="border p-4 rounded-md space-y-2">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-sm font-medium">Name</label>
+                            <Input
+                              {...register(`details.items.${index}.name`)}
+                              className="mt-1"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium">Description</label>
+                            <Input
+                              {...register(`details.items.${index}.description`)}
+                              className="mt-1"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium">Quantity</label>
+                            <Input
+                              type="number"
+                              {...register(`details.items.${index}.quantity`)}
+                              className="mt-1"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium">Unit Price</label>
+                            <Input
+                              type="number"
+                              {...register(`details.items.${index}.unitPrice`)}
+                              className="mt-1"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium">Total</label>
+                            <Input
+                              type="number"
+                              {...register(`details.items.${index}.total`)}
+                              className="mt-1"
+                            />
+                          </div>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => remove(index)}
+                        >
+                          Remove Item
+                        </Button>
+                      </div>
+                    ))}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() =>
+                        append({ name: "", description: "", quantity: 0, unitPrice: 0, total: 0 })
+                      }
+                    >
+                      Add Item
+                    </Button>
+                  </div>
+
+                  {/* Tax Details */}
                   <div className="space-y-4">
                     <h3 className="text-lg font-semibold">Tax Details</h3>
                     <div className="grid grid-cols-2 gap-4">
@@ -755,7 +856,10 @@ const Page: React.FC = () => {
                       </div>
                       <div>
                         <label className="text-sm font-medium">Tax ID</label>
-                        <Input {...register("details.taxDetails.taxID")} className="mt-1" />
+                        <Input
+                          {...register("details.taxDetails.taxID")}
+                          className="mt-1"
+                        />
                       </div>
                       <div>
                         <label className="text-sm font-medium">Amount Type</label>
@@ -769,6 +873,88 @@ const Page: React.FC = () => {
                       </div>
                     </div>
                   </div>
+
+                  {/* Discount Details */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Discount Details</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm font-medium">Amount</label>
+                        <Input
+                          type="number"
+                          {...register("details.discountDetails.amount")}
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium">Amount Type</label>
+                        <select
+                          {...register("details.discountDetails.amountType")}
+                          className={`mt-1 w-full rounded-md border p-2 ${theme === "dark" ? "bg-gray-800 text-white border-gray-700" : "bg-white text-black border-gray-300"}`}
+                        >
+                          <option value="percentage">Percentage</option>
+                          <option value="fixed">Fixed</option>
+                          <option value="amount">Amount</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Shipping Details */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Shipping Details</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm font-medium">Cost</label>
+                        <Input
+                          type="number"
+                          {...register("details.shippingDetails.cost")}
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium">Cost Type</label>
+                        <select
+                          {...register("details.shippingDetails.costType")}
+                          className={`mt-1 w-full rounded-md border p-2 ${theme === "dark" ? "bg-gray-800 text-white border-gray-700" : "bg-white text-black border-gray-300"}`}
+                        >
+                          <option value="percentage">Percentage</option>
+                          <option value="fixed">Fixed</option>
+                          <option value="amount">Amount</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Payment Information */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Payment Information</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm font-medium">Bank Name</label>
+                        <Input
+                          {...register("details.paymentInformation.bankName")}
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium">Account Name</label>
+                        <Input
+                          {...register("details.paymentInformation.accountName")}
+                          className="mt-1"
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <label className="text-sm font-medium">Account Number</label>
+                        <Input
+                          {...register("details.paymentInformation.accountNumber")}
+                          className="mt-1"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Additional Information */}
                   <div className="space-y-4">
                     <h3 className="text-lg font-semibold">Additional Information</h3>
                     <div className="grid grid-cols-2 gap-4">
@@ -783,6 +969,13 @@ const Page: React.FC = () => {
                         <label className="text-sm font-medium">Payment Terms</label>
                         <Input
                           {...register("details.paymentTerms")}
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium">Signature</label>
+                        <Input
+                          {...register("details.signature.data")}
                           className="mt-1"
                         />
                       </div>
@@ -809,3 +1002,4 @@ const Page: React.FC = () => {
 };
 
 export default Page;
+
