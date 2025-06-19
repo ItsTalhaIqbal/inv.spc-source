@@ -457,7 +457,7 @@ const Page: React.FC = () => {
     };
   };
 
-  const onGeneratePdf = async (invoice: Invoice) => {
+const onGeneratePdf = async (invoice: Invoice) => {
   const formData = mapInvoiceToFormData(invoice);
   reset(formData);
 
@@ -477,24 +477,27 @@ const Page: React.FC = () => {
     }
 
     const blob = await response.blob();
-    // Extract file name from Content-Disposition header
-    let fileName = `invoice_${formData.details.invoiceNumber.replace(/\D/g, "")}.pdf`; // Fallback file name
+    let fileName = `invoice_${formData.details.invoiceNumber.replace(/\D/g, "")}.pdf`;
     const contentDisposition = response.headers.get("Content-Disposition");
     if (contentDisposition) {
       const match = contentDisposition.match(/filename\*=UTF-8''([^;]*)/);
       if (match) {
         fileName = decodeURIComponent(match[1]);
       } else {
-        // Fallback to filename without UTF-8 encoding
         const simpleMatch = contentDisposition.match(/filename="([^"]+)"/);
         if (simpleMatch) fileName = simpleMatch[1];
       }
     }
 
+    // Optional: Validate file name format
+    if (!fileName.match(/^SPC_(TAX_INV|INV|QUT)_.*\.pdf$/)) {
+      console.warn("Unexpected file name format:", fileName);
+    }
+
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = fileName; // Use server-provided file name
+    a.download = fileName;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
