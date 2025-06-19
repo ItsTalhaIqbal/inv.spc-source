@@ -1113,38 +1113,7 @@ const Page: React.FC = () => {
                               />
                             </div>
                           </div>
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <label className="text-sm font-medium">
-                                Description
-                              </label>
-                              <Input
-                                {...register(`details.items.${index}.description`)}
-                                className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
-                                  theme === "dark"
-                                    ? "bg-gray-700 text-white border-gray-600"
-                                    : "bg-white text-black border-gray-300"
-                                }`}
-                              />
-                            </div>
-                            <div>
-                              <label className="text-sm font-medium">
-                                Total
-                              </label>
-                              <Input
-                                type="number"
-                                {...register(`details.items.${index}.total`, {
-                                  valueAsNumber: true,
-                                })}
-                                readOnly
-                                className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
-                                  theme === "dark"
-                                    ? "bg-gray-700 text-white border-gray-600"
-                                    : "bg-white text-black border-gray-300"
-                                }`}
-                              />
-                            </div>
-                          </div>
+                          
                           <Button
                             type="button"
                             variant="destructive"
@@ -1177,11 +1146,7 @@ const Page: React.FC = () => {
                         >
                           Add Item
                         </Button>
-                        <div className="text-right">
-                          <p className="text-sm font-medium">
-                            Subtotal: {subTotal.toFixed(2)}
-                          </p>
-                        </div>
+                        
                       </div>
                     </div>
 
