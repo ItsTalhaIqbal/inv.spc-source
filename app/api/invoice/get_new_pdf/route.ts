@@ -617,11 +617,13 @@ export async function POST(req: NextRequest) {
 
     const hasTax = data.details.taxDetails?.amount && data.details.taxDetails.amount > 0;
     const invoiceNumberPrefix = hasTax ? `INV_${data.details.invoiceNumber}` : `QUT_${data.details.invoiceNumber}`;
-    const fileName = `SPC_${invoiceNumberPrefix}.pdf`;
+    const fileName = `SPC_${invoiceNumberPrefix}_${data.details.invoiceNumber}.pdf`;
+
+    console.log("POST file name:", fileName); // Debug log
 
     const headers = new Headers({
       "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="${fileName}"`,
+      "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(fileName)}`,
       "Content-Length": pdfBuffer.length.toString(),
     });
 
@@ -634,7 +636,7 @@ export async function POST(req: NextRequest) {
       headers,
     });
   } catch (error: any) {
-    console.error("Error in PDF generation:", error);
+    console.error("Error in PDF:", error);
     return NextResponse.json(
       { error: error.message || "Failed to generate PDF" },
       { status: 500 }
@@ -650,14 +652,13 @@ export async function GET(req: NextRequest) {
 
     if (!invoiceNumber) {
       return NextResponse.json(
-        { error: "Invoice number is required" },
+        Response.json({ error: "Invoice number is required" }),
         { status: 400 }
       );
     }
-
     let savedInvoices: InvoiceType[] = [];
     try {
-      const savedInvoicesJSON = fs.readFileSync(
+      const savedInvoicesJSON = await fs.readFileSync(
         path.resolve(process.cwd(), "data/savedInvoices.json"),
         "utf8"
       );
@@ -674,23 +675,21 @@ export async function GET(req: NextRequest) {
 
     if (!invoiceData) {
       return NextResponse.json(
-        { error: "Invoice not found" },
+        { error: "Invalid invoice not found" },
         { status: 404 }
       );
     }
-
     const pdfBuffer = await generatePdf(invoiceData);
 
     const hasTax = invoiceData.details?.taxDetails?.amount && invoiceData.details.taxDetails.amount > 0;
     const invoiceNumberPrefix = hasTax ? `INV_${invoiceData.details?.invoiceNumber}` : `QUT_${invoiceData.details?.invoiceNumber}`;
     const fileName = `SPC_${invoiceNumberPrefix}.pdf`;
 
+    console.log("GET invoice file name:", fileName); // Debug log
 
-    console.log(fileName);
-    
     const headers = new Headers({
       "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="${fileName}"`,
+      "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(fileName)}`,
       "Content-Length": pdfBuffer.length.toString(),
     });
 
@@ -701,7 +700,7 @@ export async function GET(req: NextRequest) {
       headers,
     });
   } catch (error: any) {
-    console.error("Error in PDF regeneration:", error);
+    console.error("Error in regenerating PDF:", error);
     return NextResponse.json(
       { error: error.message || "Failed to regenerate PDF" },
       { status: 500 }
