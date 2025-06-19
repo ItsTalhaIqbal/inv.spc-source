@@ -1,6 +1,6 @@
 import chromium from "@sparticuz/chromium-min";
 import puppeteerCore from "puppeteer-core";
-import { TAILWIND_CDN } from "@/lib/variables";
+import { INVVariable, QUTVariable, TAILWIND_CDN } from "@/lib/variables";
 import { connectToDatabase } from "@/lib/mongoose";
 import fs from "fs";
 import path from "path";
@@ -294,7 +294,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
   const hasShipping = shippingDetails.cost && shippingDetails.cost > 0;
   const hasTotalInWords = totalAmountInWords && totalAmountInWords.trim() !== "";
 
-  const invoiceNumberPrefix = hasTax ? `INV-${details.invoiceNumber}` : `QUT-${details.invoiceNumber}`;
+ 
 
   const taxHtml = hasTax
     ? `
@@ -513,7 +513,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
         <div class="invoice-info">
           <h2 class="text-xl text-right">
             <span class="invoice-number">
-              ${invoiceNumberPrefix}
+              ${details.invoiceNumber.includes("INV")? `${INVVariable}`:`${QUTVariable}`}${details.invoiceNumber}
             </span>
           </h2>
           <p class="text-md mt-1">${new Date(details.invoiceDate || new Date()).toLocaleDateString("en-US", DATE_OPTIONS)}</p>
