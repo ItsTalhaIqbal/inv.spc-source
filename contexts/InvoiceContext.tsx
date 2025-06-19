@@ -29,7 +29,7 @@ const defaultInvoiceContext = {
   newInvoiceTrigger: 0,
   generatePdf: async (data: InvoiceType) => {},
   removeFinalPdf: () => {},
-  downloadPdf: async (invoiceNumber: string, isTaxInvoice: boolean, isQuotation: boolean): Promise<void> => Promise.resolve(),
+  downloadPdf: async (invoiceNumber: string): Promise<void> => Promise.resolve(),
   printPdf: () => {},
   previewPdfInTab: () => {},
   saveInvoice: () => {},
@@ -145,21 +145,26 @@ export const InvoiceContextProvider = ({
   }, [reset, router, newInvoiceSuccess, resetWizard]);
 
   const downloadPdf = useCallback(
-    async (invoiceNumber: string, isTaxInvoice: boolean, isQuotation: boolean): Promise<void> => {
+    async (invoiceNumber: string): Promise<void> => {
       return new Promise<void>((resolve, reject) => {
         if (invoicePdf instanceof Blob && invoicePdf.size > 0) {
           try {
             const url = window.URL.createObjectURL(invoicePdf);
             const a = document.createElement("a");
             const numericInvoiceNumber = getNumericInvoiceNumber(invoiceNumber);
+            const formValues = getValues();
+            const isInvoice = formValues.details?.isInvoice || false;
+            const hasTax = formValues.details?.taxDetails?.amount && formValues.details.taxDetails.amount > 0;
+
             let fileName = "";
-            if (isTaxInvoice) {
+            if (isInvoice && hasTax) {
               fileName = `SPC_TAX_INV_${numericInvoiceNumber}.pdf`;
-            } else if (isQuotation) {
-              fileName = `SPC_QUT_${numericInvoiceNumber}.pdf`;
-            } else {
+            } else if (isInvoice && !hasTax) {
               fileName = `SPC_INV_${numericInvoiceNumber}.pdf`;
+            } else {
+              fileName = `SPC_QUT_${numericInvoiceNumber}.pdf`;
             }
+
             a.href = url;
             a.download = fileName;
 
@@ -182,7 +187,7 @@ export const InvoiceContextProvider = ({
         }
       });
     },
-    [invoicePdf, getNumericInvoiceNumber]
+    [invoicePdf, getNumericInvoiceNumber, getValues]
   );
 
   const generatePdf = useCallback(
@@ -192,8 +197,6 @@ export const InvoiceContextProvider = ({
       setInvoicePdfLoading(true);
       try {
         const numericInvoiceNumber = getNumericInvoiceNumber(data.details.invoiceNumber);
-        const isTaxInvoice :any = data.details.taxDetails?.amount && data.details.taxDetails.amount > 0;
-        const isQuotation = !isTaxInvoice; // Quotation if not a tax invoice
         const payload = {
           invoiceNumber: data.details.invoiceNumber || "",
           sender: data.sender,
@@ -239,7 +242,7 @@ export const InvoiceContextProvider = ({
             if (result.size > 0) {
               setInvoicePdf(result);
               pdfGenerationSuccess();
-              await downloadPdf(numericInvoiceNumber, isTaxInvoice, isQuotation);
+              await downloadPdf(numericInvoiceNumber);
               try {
                 await fetch("/api/invoice/new_invoice", {
                   method: "POST",
@@ -505,7 +508,7 @@ export const InvoiceContextProvider = ({
         invoicePdfLoading,
         savedInvoices,
         pdfUrl,
-        onFormSubmit,
+        onFormSubmit,                                        
         newInvoice,
         newInvoiceTrigger,
         generatePdf,
