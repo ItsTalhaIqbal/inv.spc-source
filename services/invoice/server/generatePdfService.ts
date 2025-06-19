@@ -446,7 +446,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
         break-inside: avoid;
       }
       .amounts-section {
-        width: 30%;
+        width: 40%;
       }
       .amount-line {
         margin-bottom: 4px;
