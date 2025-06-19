@@ -497,7 +497,7 @@ const onGeneratePdf = async (invoice: Invoice) => {
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    window.URL.revokeObjectURL(url));
+    window.URL.revokeObjectURL(url);
   } catch (error) {
     console.error("Error generating PDF:", error);
     setToast({
