@@ -110,15 +110,22 @@ const Page: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [viewInvoiceDialog, setViewInvoiceDialog] = useState<boolean>(false);
   const [editInvoiceDialog, setEditInvoiceDialog] = useState<boolean>(false);
-  const [viewInvoice, setViewInvoice] = useState<Invoice | undefined>(undefined);
-  const [editInvoice, setEditInvoice] = useState<Invoice | undefined>(undefined);
+  const [viewInvoice, setViewInvoice] = useState<Invoice | undefined>(
+    undefined
+  );
+  const [editInvoice, setEditInvoice] = useState<Invoice | undefined>(
+    undefined
+  );
   const [loading, setLoading] = useState<boolean>(true);
   const [authChecked, setAuthChecked] = useState<boolean>(false);
   const [pdfLoadingStates, setPdfLoadingStates] = useState<{
     [key: string]: boolean;
   }>({});
   const [errorMessage, setErrorMessage] = useState<string>("");
-  const [toast, setToast] = useState<{ title: string; description: string } | null>(null);
+  const [toast, setToast] = useState<{
+    title: string;
+    description: string;
+  } | null>(null);
   const router = useRouter();
 
   const methods = useForm<InvoiceType>({
@@ -135,7 +142,8 @@ const Page: React.FC = () => {
     },
   });
 
-  const { reset, handleSubmit, register, control, watch, setValue, getValues } = methods;
+  const { reset, handleSubmit, register, control, watch, setValue, getValues } =
+    methods;
   const { fields, append, remove } = useFieldArray({
     control,
     name: "details.items",
@@ -153,57 +161,88 @@ const Page: React.FC = () => {
 
   const subTotal = Number(
     items
-      .reduce((sum, item) => sum + (item.quantity || 0) * (item.unitPrice || 0), 0)
+      .reduce(
+        (sum, item) => sum + (item.quantity || 0) * (item.unitPrice || 0),
+        0
+      )
       .toFixed(2)
   );
 
   const taxAmount = Number(
     (showTax && taxDetails?.amount
       ? taxDetails.amountType === "percentage"
-        ? (subTotal * (taxDetails.amount / 100))
+        ? subTotal * (taxDetails.amount / 100)
         : taxDetails.amount
-      : 0).toFixed(2)
+      : 0
+    ).toFixed(2)
   );
 
   const discountAmount = Number(
     (showDiscount && discountDetails?.amount
       ? discountDetails.amountType === "percentage"
-        ? (subTotal * (discountDetails.amount / 100))
+        ? subTotal * (discountDetails.amount / 100)
         : discountDetails.amount
-      : 0).toFixed(2)
+      : 0
+    ).toFixed(2)
   );
 
   const shippingAmount = Number(
     (showShipping && shippingDetails?.cost
       ? shippingDetails.costType === "percentage"
-        ? (subTotal * (shippingDetails.cost / 100))
+        ? subTotal * (shippingDetails.cost / 100)
         : shippingDetails.cost
-      : 0).toFixed(2)
+      : 0
+    ).toFixed(2)
   );
 
   const totalAmount = Number(
-    (subTotal + 
-     (showTax ? taxAmount : 0) + 
-     (showShipping ? shippingAmount : 0) - 
-     (showDiscount ? discountAmount : 0)
+    (
+      subTotal +
+      (showTax ? taxAmount : 0) +
+      (showShipping ? shippingAmount : 0) -
+      (showDiscount ? discountAmount : 0)
     ).toFixed(2)
   );
 
   // Function to convert numbers to words with proper handling
   const numberToWords = (num: number): string => {
     if (isNaN(num) || num === 0) return "Zero Dirham";
-    
+
     const units = [
-      "", "one", "two", "three", "four", "five", 
-      "six", "seven", "eight", "nine"
+      "",
+      "one",
+      "two",
+      "three",
+      "four",
+      "five",
+      "six",
+      "seven",
+      "eight",
+      "nine",
     ];
     const teens = [
-      "ten", "eleven", "twelve", "thirteen", "fourteen", 
-      "fifteen", "sixteen", "seventeen", "eighteen", "nineteen"
+      "ten",
+      "eleven",
+      "twelve",
+      "thirteen",
+      "fourteen",
+      "fifteen",
+      "sixteen",
+      "seventeen",
+      "eighteen",
+      "nineteen",
     ];
     const tens = [
-      "", "", "twenty", "thirty", "forty", 
-      "fifty", "sixty", "seventy", "eighty", "ninety"
+      "",
+      "",
+      "twenty",
+      "thirty",
+      "forty",
+      "fifty",
+      "sixty",
+      "seventy",
+      "eighty",
+      "ninety",
     ];
     const thousands = ["", "thousand", "million", "billion"];
 
@@ -281,9 +320,10 @@ const Page: React.FC = () => {
     });
 
     // Calculate current total with toggle states
-    const currentTotalAmount = subTotal + 
-      (showTax ? taxAmount : 0) + 
-      (showShipping ? shippingAmount : 0) - 
+    const currentTotalAmount =
+      subTotal +
+      (showTax ? taxAmount : 0) +
+      (showShipping ? shippingAmount : 0) -
       (showDiscount ? discountAmount : 0);
 
     const newTotalAmountInWords = numberToWords(currentTotalAmount);
@@ -331,7 +371,9 @@ const Page: React.FC = () => {
     return {
       sender: {
         name: invoice.sender.name || "SPC Source Technical Services LLC",
-        address: invoice.sender.address || "Iris Bay, Office D-43, Business Bay, Dubai, UAE.",
+        address:
+          invoice.sender.address ||
+          "Iris Bay, Office D-43, Business Bay, Dubai, UAE.",
         state: invoice.sender.state || "Dubai",
         country: invoice.sender.country || "UAE",
         email: invoice.sender.email || "contact@spcsource.com",
@@ -351,29 +393,31 @@ const Page: React.FC = () => {
         invoiceNumber: invoice.details.invoiceNumber || "",
         invoiceDate: invoiceDate,
         dueDate: dueDate,
-        items: invoice.details.items.length > 0
-          ? invoice.details.items.map((item:any) => ({
-              name: item.name || "",
-              description: item.description || "",
-              quantity: Number(item.quantity) || 0,
-              unitPrice: Number(item.unitPrice.toFixed(2)) || 0,
-              total: Number(item.total.toFixed(2)) || 0,
-            }))
-          : [
-              {
-                name: "",
-                description: "",
-                quantity: 0,
-                unitPrice: 0,
-                total: 0,
-              },
-            ],
+        items:
+          invoice.details.items.length > 0
+            ? invoice.details.items.map((item: any) => ({
+                name: item.name || "",
+                description: item.description || "",
+                quantity: Number(item.quantity) || 0,
+                unitPrice: Number(item.unitPrice.toFixed(2)) || 0,
+                total: Number(item.total.toFixed(2)) || 0,
+              }))
+            : [
+                {
+                  name: "",
+                  description: "",
+                  quantity: 0,
+                  unitPrice: 0,
+                  total: 0,
+                },
+              ],
         taxDetails: {
           amount: Number(invoice.details.taxDetails?.amount?.toFixed(2)) || 5,
           amountType: invoice.details.taxDetails?.amountType || "percentage",
         },
         discountDetails: {
-          amount: Number(invoice.details.discountDetails?.amount?.toFixed(2)) || 0,
+          amount:
+            Number(invoice.details.discountDetails?.amount?.toFixed(2)) || 0,
           amountType: invoice.details.discountDetails?.amountType || "amount",
         },
         shippingDetails: {
@@ -382,11 +426,17 @@ const Page: React.FC = () => {
         },
         paymentInformation: {
           bankName: invoice.details.paymentInformation?.bankName || "Bank Inc.",
-          accountName: invoice.details.paymentInformation?.accountName || "John Doe",
-          accountNumber: invoice.details.paymentInformation?.accountNumber || "445566998877",
+          accountName:
+            invoice.details.paymentInformation?.accountName || "John Doe",
+          accountNumber:
+            invoice.details.paymentInformation?.accountNumber || "445566998877",
         },
-        additionalNotes: invoice.details.additionalNotes || "Received above items in good condition.",
-        paymentTerms: invoice.details.paymentTerms || "50% advance upon confirmation of the order, 50% upon delivery or completion.",
+        additionalNotes:
+          invoice.details.additionalNotes ||
+          "Received above items in good condition.",
+        paymentTerms:
+          invoice.details.paymentTerms ||
+          "50% advance upon confirmation of the order, 50% upon delivery or completion.",
         signature: invoice.details.signature || undefined,
         subTotal: Number(invoice.details.subTotal.toFixed(2)) || 0,
         totalAmount: Number(invoice.details.totalAmount.toFixed(2)) || 0,
@@ -415,7 +465,10 @@ const Page: React.FC = () => {
       }
 
       const blob = await response.blob();
-      const numericInvoiceNumber = formData.details.invoiceNumber.replace(/\D/g, "");
+      const numericInvoiceNumber = formData.details.invoiceNumber.replace(
+        /\D/g,
+        ""
+      );
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -428,7 +481,9 @@ const Page: React.FC = () => {
       console.error("Error generating PDF:", error);
       setToast({
         title: "Error",
-        description: `Failed to generate PDF: ${error instanceof Error ? error.message : "Unknown error"}`,
+        description: `Failed to generate PDF: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`,
       });
     } finally {
       setPdfLoadingStates((prev) => ({ ...prev, [invoice._id!]: false }));
@@ -451,9 +506,10 @@ const Page: React.FC = () => {
 
     try {
       setErrorMessage("");
-      const calculatedTotal = subTotal + 
-        (showTax ? taxAmount : 0) + 
-        (showShipping ? shippingAmount : 0) - 
+      const calculatedTotal =
+        subTotal +
+        (showTax ? taxAmount : 0) +
+        (showShipping ? shippingAmount : 0) -
         (showDiscount ? discountAmount : 0);
 
       const response = await fetch("/api/invoice/new_invoice", {
@@ -468,8 +524,12 @@ const Page: React.FC = () => {
           details: {
             ...data.details,
             taxDetails: showTax ? data.details.taxDetails : undefined,
-            discountDetails: showDiscount ? data.details.discountDetails : undefined,
-            shippingDetails: showShipping ? data.details.shippingDetails : undefined,
+            discountDetails: showDiscount
+              ? data.details.discountDetails
+              : undefined,
+            shippingDetails: showShipping
+              ? data.details.shippingDetails
+              : undefined,
             subTotal: Number(subTotal.toFixed(2)),
             totalAmount: Number(calculatedTotal.toFixed(2)),
             totalAmountInWords: numberToWords(calculatedTotal),
@@ -479,7 +539,9 @@ const Page: React.FC = () => {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || `HTTP error! Status: ${response.status}`);
+        throw new Error(
+          errorData.message || `HTTP error! Status: ${response.status}`
+        );
       }
 
       setEditInvoiceDialog(false);
@@ -521,57 +583,64 @@ const Page: React.FC = () => {
     checkAuth();
   }, [router]);
 
- const fetchInvoices = async () => {
-  setLoading(true);
-  try {
-    const response = await fetch("/api/invoice/new_invoice", {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-    if (!response.ok) {
-      throw new Error("Failed to fetch invoices");
+  const fetchInvoices = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch("/api/invoice/new_invoice", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      if (!response.ok) {
+        throw new Error("Failed to fetch invoices");
+      }
+      const data = await response.json();
+      if (!Array.isArray(data)) {
+        throw new Error("Invalid data format received");
+      }
+      // Sort invoices by createdAt in descending order
+      const sortedInvoices = data.sort((a: Invoice, b: Invoice) => {
+        const dateA = new Date(a.createdAt || 0).getTime();
+        const dateB = new Date(b.createdAt || 0).getTime();
+        return dateB - dateA; // Descending order
+      });
+      setInvoices(sortedInvoices);
+      setFilteredInvoices(sortedInvoices);
+    } catch (error) {
+      console.error("Error fetching invoices:", error);
+      setToast({
+        title: "Error",
+        description:
+          error instanceof Error ? error.message : "Failed to fetch invoices",
+      });
+      setInvoices([]);
+      setFilteredInvoices([]);
+    } finally {
+      setLoading(false);
     }
-    const data = await response.json();
-    if (!Array.isArray(data)) {
-      throw new Error("Invalid data format received");
-    }
-    // Sort invoices by createdAt in descending order
-    const sortedInvoices = data.sort((a: Invoice, b: Invoice) => {
-      const dateA = new Date(a.createdAt || 0).getTime();
-      const dateB = new Date(b.createdAt || 0).getTime();
-      return dateB - dateA; // Descending order
-    });
-    setInvoices(sortedInvoices);
-    setFilteredInvoices(sortedInvoices);
-  } catch (error) {
-    console.error("Error fetching invoices:", error);
-    setToast({
-      title: "Error",
-      description: error instanceof Error ? error.message : "Failed to fetch invoices",
-    });
-    setInvoices([]);
-    setFilteredInvoices([]);
-  } finally {
-    setLoading(false);
-  }
-};
+  };
   useEffect(() => {
-  const results = invoices
-    .filter(
-      (invoice) =>
-        invoice.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        invoice.sender.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        invoice.receiver.email.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-    .sort((a: Invoice, b: Invoice) => {
-      const dateA = new Date(a.createdAt || 0).getTime();
-      const dateB = new Date(b.createdAt || 0).getTime();
-      return dateB - dateA; // Descending order
-    });
-  setFilteredInvoices(results);
-}, [searchTerm, invoices]);
+    const results = invoices
+      .filter(
+        (invoice) =>
+          invoice.invoiceNumber
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase()) ||
+          invoice.sender.name
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase()) ||
+          invoice.receiver.email
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase())
+      )
+      .sort((a: Invoice, b: Invoice) => {
+        const dateA = new Date(a.createdAt || 0).getTime();
+        const dateB = new Date(b.createdAt || 0).getTime();
+        return dateB - dateA; // Descending order
+      });
+    setFilteredInvoices(results);
+  }, [searchTerm, invoices]);
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
@@ -634,24 +703,38 @@ const Page: React.FC = () => {
           ) : (
             <Table
               className={`${
-                theme === "dark" ? "bg-gray-800 text-white" : "bg-white text-black"
+                theme === "dark"
+                  ? "bg-gray-800 text-white"
+                  : "bg-white text-black"
               } w-full`}
             >
               <TableHeader>
-                <TableRow className={theme === "dark" ? "bg-gray-700" : "bg-gray-100"}>
-                  <TableHead className={theme === "dark" ? "text-white" : "text-black"}>
+                <TableRow
+                  className={theme === "dark" ? "bg-gray-700" : "bg-gray-100"}
+                >
+                  <TableHead
+                    className={theme === "dark" ? "text-white" : "text-black"}
+                  >
                     Invoice Number
                   </TableHead>
-                  <TableHead className={theme === "dark" ? "text-white" : "text-black"}>
+                  <TableHead
+                    className={theme === "dark" ? "text-white" : "text-black"}
+                  >
                     Customer
                   </TableHead>
-                  <TableHead className={theme === "dark" ? "text-white" : "text-black"}>
+                  <TableHead
+                    className={theme === "dark" ? "text-white" : "text-black"}
+                  >
                     Amount
                   </TableHead>
-                  <TableHead className={theme === "dark" ? "text-white" : "text-black"}>
+                  <TableHead
+                    className={theme === "dark" ? "text-white" : "text-black"}
+                  >
                     Date
                   </TableHead>
-                  <TableHead className={theme === "dark" ? "text-white" : "text-black"}>
+                  <TableHead
+                    className={theme === "dark" ? "text-white" : "text-black"}
+                  >
                     Actions
                   </TableHead>
                 </TableRow>
@@ -660,7 +743,11 @@ const Page: React.FC = () => {
                 {filteredInvoices.map((invoice) => (
                   <TableRow
                     key={invoice._id}
-                    className={theme === "dark" ? "hover:bg-gray-700" : "hover:bg-gray-50"}
+                    className={
+                      theme === "dark"
+                        ? "hover:bg-gray-700"
+                        : "hover:bg-gray-50 "
+                    }
                   >
                     <TableCell>
                       {invoice.details?.isInvoice ? INVVariable : QUTVariable}
@@ -791,18 +878,24 @@ const Page: React.FC = () => {
                       <p className="text-sm">
                         <strong>Invoice Date:</strong>{" "}
                         <span>
-                          {new Date(viewInvoice.details.invoiceDate).toLocaleDateString()}
+                          {new Date(
+                            viewInvoice.details.invoiceDate
+                          ).toLocaleDateString()}
                         </span>
                       </p>
                       <p className="text-sm">
                         <strong>Due Date:</strong>{" "}
                         <span>
-                          {new Date(viewInvoice.details.dueDate).toLocaleDateString()}
+                          {new Date(
+                            viewInvoice.details.dueDate
+                          ).toLocaleDateString()}
                         </span>
                       </p>
                       <p className="text-sm">
                         <strong>Sub Total:</strong>{" "}
-                        <span>{Number(viewInvoice.details.subTotal).toFixed(2)}</span>
+                        <span>
+                          {Number(viewInvoice.details.subTotal).toFixed(2)}
+                        </span>
                       </p>
                       <p className="text-sm">
                         <strong>Total Amount in Words:</strong>{" "}
@@ -882,7 +975,9 @@ const Page: React.FC = () => {
                           </p>
                           <p className="text-sm">
                             <strong>Total:</strong>{" "}
-                            <span className="font-medium">{Number(item.total).toFixed(2)}</span>
+                            <span className="font-medium">
+                              {Number(item.total).toFixed(2)}
+                            </span>
                           </p>
                         </div>
                       </div>
@@ -903,7 +998,9 @@ const Page: React.FC = () => {
                         <strong>Tax Amount:</strong>{" "}
                         <span>
                           {viewInvoice.details.taxDetails?.amount
-                            ? Number(viewInvoice.details.taxDetails.amount).toFixed(2)
+                            ? Number(
+                                viewInvoice.details.taxDetails.amount
+                              ).toFixed(2)
                             : "0.00"}
                         </span>
                       </p>
@@ -911,7 +1008,9 @@ const Page: React.FC = () => {
                         <strong>Discount Amount:</strong>{" "}
                         <span>
                           {viewInvoice.details.discountDetails?.amount
-                            ? Number(viewInvoice.details.discountDetails.amount).toFixed(2)
+                            ? Number(
+                                viewInvoice.details.discountDetails.amount
+                              ).toFixed(2)
                             : "0.00"}
                         </span>
                       </p>
@@ -919,7 +1018,9 @@ const Page: React.FC = () => {
                         <strong>Shipping Cost:</strong>{" "}
                         <span>
                           {viewInvoice.details.shippingDetails?.cost
-                            ? Number(viewInvoice.details.shippingDetails.cost).toFixed(2)
+                            ? Number(
+                                viewInvoice.details.shippingDetails.cost
+                              ).toFixed(2)
                             : "0.00"}
                         </span>
                       </p>
@@ -1085,9 +1186,12 @@ const Page: React.FC = () => {
                               </label>
                               <Input
                                 type="number"
-                                {...register(`details.items.${index}.quantity`, {
-                                  valueAsNumber: true,
-                                })}
+                                {...register(
+                                  `details.items.${index}.quantity`,
+                                  {
+                                    valueAsNumber: true,
+                                  }
+                                )}
                                 className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
                                   theme === "dark"
                                     ? "bg-gray-700 text-white border-gray-600"
@@ -1102,9 +1206,12 @@ const Page: React.FC = () => {
                               <Input
                                 type="number"
                                 step="0.01"
-                                {...register(`details.items.${index}.unitPrice`, {
-                                  valueAsNumber: true,
-                                })}
+                                {...register(
+                                  `details.items.${index}.unitPrice`,
+                                  {
+                                    valueAsNumber: true,
+                                  }
+                                )}
                                 className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
                                   theme === "dark"
                                     ? "bg-gray-700 text-white border-gray-600"
@@ -1113,7 +1220,7 @@ const Page: React.FC = () => {
                               />
                             </div>
                           </div>
-                          
+
                           <Button
                             type="button"
                             variant="destructive"
@@ -1146,7 +1253,6 @@ const Page: React.FC = () => {
                         >
                           Add Item
                         </Button>
-                        
                       </div>
                     </div>
 
@@ -1258,7 +1364,9 @@ const Page: React.FC = () => {
                               Amount Type
                             </label>
                             <select
-                              {...register("details.discountDetails.amountType")}
+                              {...register(
+                                "details.discountDetails.amountType"
+                              )}
                               className={`mt-1 w-full rounded-md border p-2 focus:ring-2 focus:ring-blue-500 ${
                                 theme === "dark"
                                   ? "bg-gray-700 text-white border-gray-600"
@@ -1347,53 +1455,6 @@ const Page: React.FC = () => {
 
                     <div className="space-y-4 p-4 rounded-lg bg-gray-800/50">
                       <h3 className="text-lg font-semibold">
-                        Payment Information
-                      </h3>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="text-sm font-medium">
-                            Bank Name
-                          </label>
-                          <Input
-                            {...register("details.paymentInformation.bankName")}
-                            className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
-                              theme === "dark"
-                                ? "bg-gray-700 text-white border-gray-600"
-                                : "bg-white text-black border-gray-300"
-                            }`}
-                          />
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium">
-                            Account Name
-                          </label>
-                          <Input
-                            {...register("details.paymentInformation.accountName")}
-                            className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
-                              theme === "dark"
-                                ? "bg-gray-700 text-white border-gray-600"
-                                : "bg-white text-black border-gray-300"
-                            }`}
-                          />
-                        </div>
-                        <div className="col-span-2">
-                          <label className="text-sm font-medium">
-                            Account Number
-                          </label>
-                          <Input
-                            {...register("details.paymentInformation.accountNumber")}
-                            className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
-                              theme === "dark"
-                                ? "bg-gray-700 text-white border-gray-600"
-                                : "bg-white text-black border-gray-300"
-                            }`}
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="space-y-4 p-4 rounded-lg bg-gray-800/50">
-                      <h3 className="text-lg font-semibold">
                         Additional Information
                       </h3>
                       <div className="grid grid-cols-1 gap-4">
@@ -1455,7 +1516,6 @@ const Page: React.FC = () => {
                           <span> Grand Total:</span>
                           <span>{totalAmount.toFixed(2)}</span>
                         </div>
-                        
                       </div>
                     </div>
                   </div>
