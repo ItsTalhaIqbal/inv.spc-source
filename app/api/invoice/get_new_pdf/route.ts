@@ -685,6 +685,9 @@ export async function GET(req: NextRequest) {
     const invoiceNumberPrefix = hasTax ? `INV_${invoiceData.details?.invoiceNumber}` : `QUT_${invoiceData.details?.invoiceNumber}`;
     const fileName = `SPC_${invoiceNumberPrefix}.pdf`;
 
+
+    console.log(fileName);
+    
     const headers = new Headers({
       "Content-Type": "application/pdf",
       "Content-Disposition": `attachment; filename="${fileName}"`,
