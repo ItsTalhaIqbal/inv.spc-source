@@ -126,6 +126,7 @@ const Page: React.FC = () => {
     title: string;
     description: string;
   } | null>(null);
+  const [isSaving, setIsSaving] = useState<boolean>(false);
   const router = useRouter();
 
   const methods = useForm<InvoiceType>({
@@ -319,6 +320,17 @@ const Page: React.FC = () => {
       }
     });
 
+    // Update tax, discount, shipping when toggled off
+    if (!showTax) {
+      setValue("details.taxDetails.amount", 0);
+    }
+    if (!showDiscount) {
+      setValue("details.discountDetails.amount", 0);
+    }
+    if (!showShipping) {
+      setValue("details.shippingDetails.cost", 0);
+    }
+
     // Calculate current total with toggle states
     const currentTotalAmount =
       subTotal +
@@ -412,7 +424,7 @@ const Page: React.FC = () => {
                 },
               ],
         taxDetails: {
-          amount: Number(invoice.details.taxDetails?.amount?.toFixed(2)) || 5,
+          amount: Number(invoice.details.taxDetails?.amount?.toFixed(2)) || 0,
           amountType: invoice.details.taxDetails?.amountType || "percentage",
         },
         discountDetails: {
@@ -504,6 +516,7 @@ const Page: React.FC = () => {
   const onSubmitEdit = async (data: InvoiceType) => {
     if (!editInvoice?._id) return;
 
+    setIsSaving(true);
     try {
       setErrorMessage("");
       const calculatedTotal =
@@ -523,13 +536,13 @@ const Page: React.FC = () => {
           invoiceNumber: editInvoice.invoiceNumber,
           details: {
             ...data.details,
-            taxDetails: showTax ? data.details.taxDetails : undefined,
+            taxDetails: showTax ? data.details.taxDetails : { amount: 0, amountType: "percentage" },
             discountDetails: showDiscount
               ? data.details.discountDetails
-              : undefined,
+              : { amount: 0, amountType: "amount" },
             shippingDetails: showShipping
               ? data.details.shippingDetails
-              : undefined,
+              : { cost: 0, costType: "amount" },
             subTotal: Number(subTotal.toFixed(2)),
             totalAmount: Number(calculatedTotal.toFixed(2)),
             totalAmountInWords: numberToWords(calculatedTotal),
@@ -555,6 +568,8 @@ const Page: React.FC = () => {
       setErrorMessage(
         error instanceof Error ? error.message : "Failed to update invoice"
       );
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -1531,7 +1546,16 @@ const Page: React.FC = () => {
                   >
                     Cancel
                   </Button>
-                  <Button type="submit">Save Changes</Button>
+                  <Button type="submit" disabled={isSaving}>
+                    {isSaving ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Saving
+                      </>
+                    ) : (
+                      "Save Changes"
+                    )}
+                  </Button>
                 </DialogFooter>
               </form>
             </DialogContent>
