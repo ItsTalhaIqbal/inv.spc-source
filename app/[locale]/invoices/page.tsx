@@ -458,49 +458,59 @@ const Page: React.FC = () => {
   };
 
   const onGeneratePdf = async (invoice: Invoice) => {
-    const formData = mapInvoiceToFormData(invoice);
-    reset(formData);
+  const formData = mapInvoiceToFormData(invoice);
+  reset(formData);
 
-    try {
-      setPdfLoadingStates((prev) => ({ ...prev, [invoice._id!]: true }));
-      const response = await fetch("/api/invoice/get_new_pdf", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Custom-Request": "invoice-pdf",
-        },
-        body: JSON.stringify({ action: "generate", invoiceData: formData }),
-      });
+  try {
+    setPdfLoadingStates((prev) => ({ ...prev, [invoice._id!]: true }));
+    const response = await fetch("/api/invoice/get_new_pdf", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Custom-Request": "invoice-pdf",
+      },
+      body: JSON.stringify({ action: "generate", invoiceData: formData }),
+    });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      }
-
-      const blob = await response.blob();
-      const numericInvoiceNumber = formData.details.invoiceNumber.replace(
-        /\D/g,
-        ""
-      );
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `invoice_${numericInvoiceNumber}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error("Error generating PDF:", error);
-      setToast({
-        title: "Error",
-        description: `Failed to generate PDF: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`,
-      });
-    } finally {
-      setPdfLoadingStates((prev) => ({ ...prev, [invoice._id!]: false }));
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
     }
-  };
+
+    const blob = await response.blob();
+    // Extract file name from Content-Disposition header
+    let fileName = `invoice_${formData.details.invoiceNumber.replace(/\D/g, "")}.pdf`; // Fallback file name
+    const contentDisposition = response.headers.get("Content-Disposition");
+    if (contentDisposition) {
+      const match = contentDisposition.match(/filename\*=UTF-8''([^;]*)/);
+      if (match) {
+        fileName = decodeURIComponent(match[1]);
+      } else {
+        // Fallback to filename without UTF-8 encoding
+        const simpleMatch = contentDisposition.match(/filename="([^"]+)"/);
+        if (simpleMatch) fileName = simpleMatch[1];
+      }
+    }
+
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = fileName; // Use server-provided file name
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error("Error generating PDF:", error);
+    setToast({
+      title: "Error",
+      description: `Failed to generate PDF: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    });
+  } finally {
+    setPdfLoadingStates((prev) => ({ ...prev, [invoice._id!]: false }));
+  }
+};
 
   const onEditInvoice = (invoice: Invoice) => {
     const formData = mapInvoiceToFormData(invoice);
