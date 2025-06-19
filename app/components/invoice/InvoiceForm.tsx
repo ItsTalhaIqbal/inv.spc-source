@@ -58,9 +58,9 @@ const InvoiceForm = () => {
   // Auto-download PDF when generation is complete
   useEffect(() => {
     if (!invoicePdfLoading && invoicePdfLoading !== undefined && invoiceNumber) {
-      downloadPdf(invoiceNumber, isTaxInvoice, isQuotation);
+      downloadPdf(invoiceNumber,);
     }
-  }, [invoicePdfLoading, invoiceNumber, isTaxInvoice, isQuotation, downloadPdf]);
+  }, [invoicePdfLoading, invoiceNumber, downloadPdf]);
 
   const invoiceNumberLabel = useMemo(() => {
     if (invoiceNumber) {
