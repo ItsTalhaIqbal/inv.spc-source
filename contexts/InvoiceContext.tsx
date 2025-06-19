@@ -29,7 +29,7 @@ const defaultInvoiceContext = {
   newInvoiceTrigger: 0,
   generatePdf: async (data: InvoiceType) => {},
   removeFinalPdf: () => {},
-    downloadPdf: async (): Promise<void> => {},
+  downloadPdf: async (invoiceNumber: string, isTaxInvoice: boolean, isQuotation: boolean): Promise<void> => Promise.resolve(),
   printPdf: () => {},
   previewPdfInTab: () => {},
   saveInvoice: () => {},
@@ -144,34 +144,46 @@ export const InvoiceContextProvider = ({
     newInvoiceSuccess();
   }, [reset, router, newInvoiceSuccess, resetWizard]);
 
-  const downloadPdf = useCallback(async (): Promise<any> => {
-  return new Promise<void>((resolve, reject) => {
-    if (invoicePdf instanceof Blob && invoicePdf.size > 0) {
-      try {
-        const url = window.URL.createObjectURL(invoicePdf);
-        const a = document.createElement("a");
-        const originalInvoiceNumber = getValues().details.invoiceNumber || "unknown";
-        a.href = url;
-        a.download = `invoice_${originalInvoiceNumber}.pdf`;
-        
-        a.addEventListener('click', () => {
-          setTimeout(() => {
-            window.URL.revokeObjectURL(url);
-            resolve(undefined); // Explicitly resolve with undefined
-          }, 1000);
-        });
-        
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-      } catch (error) {
-        resolve(undefined); // Explicitly resolve with undefined
-      }
-    } else {
-      resolve(undefined); // Explicitly resolve with undefined
-    }
-  });
-}, [invoicePdf, getValues]);
+  const downloadPdf = useCallback(
+    async (invoiceNumber: string, isTaxInvoice: boolean, isQuotation: boolean): Promise<void> => {
+      return new Promise<void>((resolve, reject) => {
+        if (invoicePdf instanceof Blob && invoicePdf.size > 0) {
+          try {
+            const url = window.URL.createObjectURL(invoicePdf);
+            const a = document.createElement("a");
+            const numericInvoiceNumber = getNumericInvoiceNumber(invoiceNumber);
+            let fileName = "";
+            if (isTaxInvoice) {
+              fileName = `SPC_TAX_INV_${numericInvoiceNumber}.pdf`;
+            } else if (isQuotation) {
+              fileName = `SPC_QUT_${numericInvoiceNumber}.pdf`;
+            } else {
+              fileName = `SPC_INV_${numericInvoiceNumber}.pdf`;
+            }
+            a.href = url;
+            a.download = fileName;
+
+            a.addEventListener('click', () => {
+              setTimeout(() => {
+                window.URL.revokeObjectURL(url);
+                resolve();
+              }, 1000);
+            });
+
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+          } catch (error) {
+            console.error("Error downloading PDF:", error);
+            resolve();
+          }
+        } else {
+          resolve();
+        }
+      });
+    },
+    [invoicePdf, getNumericInvoiceNumber]
+  );
 
   const generatePdf = useCallback(
     async (data: InvoiceType) => {
@@ -180,6 +192,8 @@ export const InvoiceContextProvider = ({
       setInvoicePdfLoading(true);
       try {
         const numericInvoiceNumber = getNumericInvoiceNumber(data.details.invoiceNumber);
+        const isTaxInvoice :any = data.details.taxDetails?.amount && data.details.taxDetails.amount > 0;
+        const isQuotation = !isTaxInvoice; // Quotation if not a tax invoice
         const payload = {
           invoiceNumber: data.details.invoiceNumber || "",
           sender: data.sender,
@@ -189,10 +203,9 @@ export const InvoiceContextProvider = ({
             invoiceNumber: data.details.invoiceNumber || "",
             currency: "AED",
             items: (data.details.items || []).map((item) => ({
-              ...item,
-              description: item.description || "No description provided",
-              unitPrice: Number(item.unitPrice) || 0,
+              name: item.name || "No description provided",
               quantity: Number(item.quantity) || 0,
+              unitPrice: Number(item.unitPrice) || 0,
             })),
             taxDetails: {
               ...data.details.taxDetails,
@@ -226,9 +239,7 @@ export const InvoiceContextProvider = ({
             if (result.size > 0) {
               setInvoicePdf(result);
               pdfGenerationSuccess();
-              
-              await downloadPdf();
-              
+              await downloadPdf(numericInvoiceNumber, isTaxInvoice, isQuotation);
               try {
                 await fetch("/api/invoice/new_invoice", {
                   method: "POST",
@@ -309,9 +320,25 @@ export const InvoiceContextProvider = ({
 
   const onFormSubmit = useCallback(
     (data: InvoiceType) => {
-      if (!data?.details?.invoiceNumber) return;
-      if (typeof data?.details?.pdfTemplate !== "number") return;
-      
+      if (!data?.details?.invoiceNumber) {
+        console.error("Invoice number is required");
+        return;
+      }
+      if (typeof data?.details?.pdfTemplate !== "number") {
+        console.error("PDF template must be a number");
+        return;
+      }
+      if (!data?.details?.items || data.details.items.length === 0) {
+        console.error("At least one item is required");
+        return;
+      }
+      for (const item of data.details.items) {
+        if (item.quantity === undefined || item.unitPrice === undefined) {
+          console.error("All items must have quantity and unit price");
+          return;
+        }
+      }
+
       generatePdf(data);
       saveInvoice();
     },
@@ -453,10 +480,9 @@ export const InvoiceContextProvider = ({
                 ? new Date(importedData.details.invoiceDate).toISOString()
                 : new Date().toISOString(),
               items: (importedData.details.items || []).map((item) => ({
-                ...item,
-                description: item.description || "No description provided",
-                unitPrice: Number(item.unitPrice) || 0,
+                name: item.name || "No description provided",
                 quantity: Number(item.quantity) || 0,
+                unitPrice: Number(item.unitPrice) || 0,
               })),
             },
           };
