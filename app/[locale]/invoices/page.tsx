@@ -521,46 +521,57 @@ const Page: React.FC = () => {
     checkAuth();
   }, [router]);
 
-  const fetchInvoices = async () => {
-    setLoading(true);
-    try {
-      const response = await fetch("/api/invoice/new_invoice", {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-      if (!response.ok) {
-        throw new Error("Failed to fetch invoices");
-      }
-      const data = await response.json();
-      if (!Array.isArray(data)) {
-        throw new Error("Invalid data format received");
-      }
-      setInvoices(data);
-      setFilteredInvoices(data);
-    } catch (error) {
-      console.error("Error fetching invoices:", error);
-      setToast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to fetch invoices",
-      });
-      setInvoices([]);
-      setFilteredInvoices([]);
-    } finally {
-      setLoading(false);
+ const fetchInvoices = async () => {
+  setLoading(true);
+  try {
+    const response = await fetch("/api/invoice/new_invoice", {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    if (!response.ok) {
+      throw new Error("Failed to fetch invoices");
     }
-  };
-
+    const data = await response.json();
+    if (!Array.isArray(data)) {
+      throw new Error("Invalid data format received");
+    }
+    // Sort invoices by createdAt in descending order
+    const sortedInvoices = data.sort((a: Invoice, b: Invoice) => {
+      const dateA = new Date(a.createdAt || 0).getTime();
+      const dateB = new Date(b.createdAt || 0).getTime();
+      return dateB - dateA; // Descending order
+    });
+    setInvoices(sortedInvoices);
+    setFilteredInvoices(sortedInvoices);
+  } catch (error) {
+    console.error("Error fetching invoices:", error);
+    setToast({
+      title: "Error",
+      description: error instanceof Error ? error.message : "Failed to fetch invoices",
+    });
+    setInvoices([]);
+    setFilteredInvoices([]);
+  } finally {
+    setLoading(false);
+  }
+};
   useEffect(() => {
-    const results = invoices.filter(
+  const results = invoices
+    .filter(
       (invoice) =>
         invoice.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
         invoice.sender.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         invoice.receiver.email.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-    setFilteredInvoices(results);
-  }, [searchTerm, invoices]);
+    )
+    .sort((a: Invoice, b: Invoice) => {
+      const dateA = new Date(a.createdAt || 0).getTime();
+      const dateB = new Date(b.createdAt || 0).getTime();
+      return dateB - dateA; // Descending order
+    });
+  setFilteredInvoices(results);
+}, [searchTerm, invoices]);
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
