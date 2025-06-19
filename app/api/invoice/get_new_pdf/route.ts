@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { connectToDatabase } from "@/lib/mongoose";
 import { Readable } from "stream";
 import chromium from "@sparticuz/chromium-min";
 import puppeteerCore from "puppeteer-core";
 import fs from "fs";
 import path from "path";
 import { TAILWIND_CDN } from "@/lib/variables";
-import { generatePdfService } from "@/services/invoice/server/generatePdfService";
+import { connectToDatabase } from "@/lib/mongoose";
 
 interface Receiver {
   name: string;
@@ -38,6 +37,7 @@ interface Details {
   additionalNotes?: string;
   totalAmountInWords?: string;
   currency?: string;
+  isInvoice?: boolean;
 }
 
 interface InvoiceType {
@@ -278,10 +278,8 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
   const hasShipping = shippingDetails.cost && shippingDetails.cost > 0;
   const hasTotalInWords = totalAmountInWords && totalAmountInWords.trim() !== "";
 
-  const hasTaxDetails = !!details.taxDetails;
-  const taxAmountCheck = hasTaxDetails ? Number(taxDetails.amount) : 0;
-  const isInvoice = hasTaxDetails && taxAmountCheck > 0;
-  const invoiceNumberPrefix = isInvoice ? `INV-${details.invoiceNumber}` : `QUT-${details.invoiceNumber}`;
+  const isInvoice = details.isInvoice || false;
+  const invoiceNumberPrefix = isInvoice && hasTax ? `TAX_INV-${details.invoiceNumber}` : isInvoice ? `INV-${details.invoiceNumber}` : `QUT-${details.invoiceNumber}`;
 
   const taxHtml = hasTax
     ? `
@@ -620,17 +618,19 @@ export async function POST(req: NextRequest) {
 
     const pdfBuffer = await generatePdf(data);
 
+    const isInvoice = data.details.isInvoice || false;
     const hasTaxDetails = !!data.details.taxDetails;
     const taxAmount = hasTaxDetails ? Number(data.details.taxDetails?.amount) : 0;
-    const isInvoice = hasTaxDetails && taxAmount > 0;
+    const numericInvoiceNumber = data.details.invoiceNumber.replace(/\D/g, "");
 
-    let invoiceNumberPrefix;
-    if (isInvoice) {
-      invoiceNumberPrefix = taxAmount > 0 ? `TAX_INV` : `INV`;
+    let fileName = "";
+    if (isInvoice && taxAmount > 0) {
+      fileName = `SPC_TAX_INV_${numericInvoiceNumber}.pdf`;
+    } else if (isInvoice && taxAmount <= 0) {
+      fileName = `SPC_INV_${numericInvoiceNumber}.pdf`;
     } else {
-      invoiceNumberPrefix = `QUT`;
+      fileName = `SPC_QUT_${numericInvoiceNumber}.pdf`;
     }
-    const fileName = `SPC_${invoiceNumberPrefix}_${data.details.invoiceNumber}.pdf`;
 
     console.log("POST file name:", fileName);
 
@@ -698,17 +698,19 @@ export async function GET(req: NextRequest) {
 
     const pdfBuffer = await generatePdf(invoiceData);
 
+    const isInvoice = invoiceData.details?.isInvoice || false;
     const hasTaxDetails = !!invoiceData.details?.taxDetails;
     const taxAmount = hasTaxDetails ? Number(invoiceData.details?.taxDetails?.amount) : 0;
-    const isInvoice = hasTaxDetails && taxAmount > 0;
+    const numericInvoiceNumber = invoiceData.details?.invoiceNumber.replace(/\D/g, "");
 
-    let invoiceNumberPrefix;
-    if (isInvoice) {
-      invoiceNumberPrefix = taxAmount > 0 ? `TAX_INV` : `INV`;
+    let fileName = "";
+    if (isInvoice && taxAmount > 0) {
+      fileName = `SPC_TAX_INV_${numericInvoiceNumber}.pdf`;
+    } else if (isInvoice && taxAmount <= 0) {
+      fileName = `SPC_INV_${numericInvoiceNumber}.pdf`;
     } else {
-      invoiceNumberPrefix = `QUT`;
+      fileName = `SPC_QUT_${numericInvoiceNumber}.pdf`;
     }
-    const fileName = `SPC_${invoiceNumberPrefix}_${invoiceData.details?.invoiceNumber}.pdf`;
 
     console.log("GET invoice file name:", fileName);
 
