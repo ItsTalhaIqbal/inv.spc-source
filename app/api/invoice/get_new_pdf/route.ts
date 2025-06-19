@@ -36,6 +36,7 @@ interface Details {
   paymentTerms?: string;
   additionalNotes?: string;
   totalAmountInWords?: string;
+  currency?: string;
 }
 
 interface InvoiceType {
@@ -50,6 +51,89 @@ interface InvoiceType {
   receiver?: Receiver;
   details?: Details;
 }
+
+const formatPriceToString = (amount: number, currency: string): string => {
+  const numberToWords = (num: number): string => {
+    const units = [
+      "", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine",
+    ];
+    const teens = [
+      "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen",
+      "seventeen", "eighteen", "nineteen",
+    ];
+    const tens = [
+      "", "", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety",
+    ];
+    const thousands = ["", "thousand", "million", "billion"];
+
+    if (num === 0) return "zero";
+
+    let words = "";
+    let numStr = Math.floor(num).toString();
+    let chunks: number[] = [];
+
+    while (numStr.length > 0) {
+      let chunk = parseInt(numStr.slice(-3)) || 0;
+      chunks.push(chunk);
+      numStr = numStr.slice(0, -3);
+    }
+
+    for (let i = 0; i < chunks.length; i++) {
+      let chunk = chunks[i];
+      if (chunk === 0) continue;
+
+      let chunkWords = "";
+      let hundreds = Math.floor(chunk / 100);
+      let remainder = chunk % 100;
+      let tensPart = Math.floor(remainder / 10);
+      let unitsPart = remainder % 10;
+
+      if (hundreds > 0) {
+        chunkWords += `${units[hundreds]} hundred`;
+        if (remainder > 0) chunkWords += " and ";
+      }
+
+      if (remainder >= 10 && remainder < 20) {
+        chunkWords += teens[remainder - 10];
+      } else {
+        if (tensPart > 0) {
+          chunkWords += tens[tensPart];
+          if (unitsPart > 0) chunkWords += "-";
+        }
+        if (unitsPart > 0 || remainder === 0) {
+          chunkWords += units[unitsPart];
+        }
+      }
+
+      if (chunkWords && i > 0) {
+        chunkWords += ` ${thousands[i]}`;
+      }
+
+      words = chunkWords + (words ? " " + words : "");
+    }
+
+    return words.trim();
+  };
+
+  const [integerPart, decimalPart] = amount.toFixed(2).split(".");
+  const integerNum = parseInt(integerPart);
+  const decimalNum = parseInt(decimalPart);
+
+  let result = numberToWords(integerNum);
+  if (currency === "AED") {
+    result += " Dirham";
+    if (decimalNum > 0) {
+      result += ` and ${numberToWords(decimalNum)} Fils`;
+    }
+  } else {
+    result += ` ${currency}`;
+    if (decimalNum > 0) {
+      result += ` and ${numberToWords(decimalNum)} Cents`;
+    }
+  }
+
+  return result.charAt(0).toUpperCase() + result.slice(1);
+};
 
 async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
   if (!invoiceData.details?.invoiceNumber) {
@@ -89,8 +173,12 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
     weekday: "long",
   } as const;
 
-  const formatNumberWithCommas = (num: number): string =>
-    num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  const formatNumberWithCommas = (num: number): string => {
+    const fixedNum = Number(num).toFixed(2);
+    const [integerPart, decimalPart] = fixedNum.split(".");
+    const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    return `${formattedInteger}.${decimalPart}`;
+  };
 
   const taxDetails = details.taxDetails || {
     amount: 0,
@@ -106,34 +194,43 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
     costType: "amount",
   };
 
-  const subtotal = (details.items || []).reduce((sum, item) => {
-    const quantity = item.quantity || 0;
-    const unitPrice = item.unitPrice || 0;
-    return sum + quantity * unitPrice;
-  }, 0);
+  const subtotal = Number(
+    (details.items || []).reduce((sum, item) => {
+      const quantity = item.quantity || 0;
+      const unitPrice = item.unitPrice || 0;
+      return sum + quantity * unitPrice;
+    }, 0).toFixed(2)
+  );
 
-  const taxAmount =
+  const taxAmount = Number(
     taxDetails.amount && taxDetails.amount > 0
       ? taxDetails.amountType === "percentage"
-        ? (subtotal * taxDetails.amount) / 100
-        : taxDetails.amount
-      : 0;
+        ? ((subtotal * taxDetails.amount) / 100).toFixed(2)
+        : taxDetails.amount.toFixed(2)
+      : 0
+  );
 
-  const discountAmount =
+  const discountAmount = Number(
     discountDetails.amount && discountDetails.amount > 0
       ? discountDetails.amountType === "percentage"
-        ? (subtotal * discountDetails.amount) / 100
-        : discountDetails.amount
-      : 0;
+        ? ((subtotal * discountDetails.amount) / 100).toFixed(2)
+        : discountDetails.amount.toFixed(2)
+      : 0
+  );
 
-  const shippingAmount =
+  const shippingAmount = Number(
     shippingDetails.cost && shippingDetails.cost > 0
       ? shippingDetails.costType === "percentage"
-        ? (subtotal * shippingDetails.cost) / 100
-        : shippingDetails.cost
-      : 0;
+        ? ((subtotal * shippingDetails.cost) / 100).toFixed(2)
+        : shippingDetails.cost.toFixed(2)
+      : 0
+  );
 
-  const grandTotal = subtotal + taxAmount + shippingAmount - discountAmount;
+  const grandTotal = Number(
+    (subtotal + taxAmount + shippingAmount - discountAmount).toFixed(2)
+  );
+
+  const totalAmountInWords = formatPriceToString(grandTotal, details.currency || "AED");
 
   const itemsHtml = (details.items || [])
     .map((item: Item, index: number) => {
@@ -146,8 +243,8 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
           <td class="w-[5%] text-center font-bold text-black text-base border border-gray-500">${index + 1}</td>
           <td class="w-[50%] text-center text-black text-base border border-gray-500 px-2 py-1" style="word-wrap: break-word; white-space: normal;">${item.name}</td>
           <td class="w-[10%] text-center text-black text-base border border-gray-500">${quantity}</td>
-          <td class="w-[17%] text-center text-black text-base border border-gray-500">${unitPrice ? `${formatNumberWithCommas(unitPrice)}` : ""}</td>
-          <td class="w-[18%] text-center text-black text-base border border-gray-500">${total ? `${formatNumberWithCommas(total)}` : ""}</td>
+          <td class="w-[17%] text-center text-black text-base border border-gray-500">${unitPrice ? formatNumberWithCommas(unitPrice) : ""}</td>
+          <td class="w-[18%] text-center text-black text-base border border-gray-500">${total ? formatNumberWithCommas(total) : ""}</td>
         </tr>
       `;
     })
@@ -178,13 +275,15 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
   const hasTax = taxDetails.amount && taxDetails.amount > 0;
   const hasDiscount = discountDetails.amount && discountDetails.amount > 0;
   const hasShipping = shippingDetails.cost && shippingDetails.cost > 0;
-  const hasTotalInWords = details.totalAmountInWords && details.totalAmountInWords.trim() !== "";
+  const hasTotalInWords = totalAmountInWords && totalAmountInWords.trim() !== "";
+
+  const invoiceNumberPrefix = hasTax ? `INV-${details.invoiceNumber}` : `QUT-${details.invoiceNumber}`;
 
   const taxHtml = hasTax
     ? `
       <div class="flex justify-between amount-line">
-        <span class="text-base text-gray-800"> VAT ${taxDetails.amountType === "percentage" ? `(${taxDetails.amount}%)` : ""}</span>
-        <span class="text-base text-gray-800">AED ${formatNumberWithCommas(Number(taxAmount.toFixed(2)))}</span>
+        <span class="text-base text-gray-800">VAT ${taxDetails.amountType === "percentage" ? `(${taxDetails.amount}%)` : ""}</span>
+        <span class="text-base text-gray-800">AED ${formatNumberWithCommas(taxAmount)}</span>
       </div>
     `
     : "";
@@ -193,7 +292,7 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
     ? `
       <div class="flex justify-between amount-line">
         <span class="text-base text-gray-800">Discount ${discountDetails.amountType === "percentage" ? `(${discountDetails.amount}%)` : ""}</span>
-        <span class="text-base text-gray-800">AED ${formatNumberWithCommas(Number(discountAmount.toFixed(2)))}</span>
+        <span class="text-base text-gray-800">AED ${formatNumberWithCommas(discountAmount)}</span>
       </div>
     `
     : "";
@@ -202,7 +301,7 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
     ? `
       <div class="flex justify-between amount-line">
         <span class="text-base text-gray-800">Shipping ${shippingDetails.costType === "percentage" ? `(${shippingDetails.cost}%)` : ""}</span>
-        <span class="text-base text-gray-800">AED ${formatNumberWithCommas(Number(shippingAmount.toFixed(2)))}</span>
+        <span class="text-base text-gray-800">AED ${formatNumberWithCommas(shippingAmount)}</span>
       </div>
     `
     : "";
@@ -211,7 +310,7 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
     ? `
       <div class="mt-2">
         <h2 class="font-bold text-lg">Total Amount in Words</h2>
-        <p class="font-normal text-md">${details.totalAmountInWords}</p>
+        <p class="font-normal text-md">${totalAmountInWords}</p>
       </div>
     `
     : "";
@@ -233,8 +332,6 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
       </div>
     `
     : "";
-
-  const invoiceNumberPrefix = hasTax ? `INV-${details.invoiceNumber}` : `QUT-${details.invoiceNumber}`;
 
   const htmlTemplate = `
 <html>
@@ -275,6 +372,8 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
         background-color: #d3d3d3;
         padding: 5px 10px;
         border-radius: 4px;
+        display: inline-block;
+        font-weight: bold;
         text-align: right;
       }
       .customer-invoice-container {
@@ -323,7 +422,7 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
         break-inside: avoid;
       }
       .amounts-section {
-        width: 30%;
+        width: 35%;
       }
       .amount-line {
         margin-bottom: 4px;
@@ -378,9 +477,13 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
           <img src="${logoBase64}" alt="SPC Source Logo" />
         </div>
         <div class="header-details mt-4">
-          <p class="text-sm pt-1"> <span> <a href="https://api.whatsapp.com/send/?phone=971545004520&text&type=phone_number&app_absent=0" target="_blank"> +971 54 500 4520</a></span>  |  contact@spcsource.com</p>
+          <p class="text-sm pt-1">
+            <a href="https://api.whatsapp.com/send?phone=971545004520&text&type=phone_number&app_absent=0" target="_blank" rel="noopener noreferrer">
+              +971 54 500 4520
+            </a> | contact@spcsource.com
+          </p>
           <p class="text-sm pt-1"></p>
-          <p class="text-sm pt-1">www.spcsource.com  |  TRN-29484858585</p>
+          <p class="text-sm pt-1">www.spcsource.com | TRN-29484858585</p>
           <p class="text-sm pt-1">${senderData.address || "Iris Bay, Office D-43, Business Bay, Dubai, UAE."}</p>
         </div>
       </div>
@@ -391,8 +494,8 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
           <p class="text-md">${receiver.phone || ""}</p>
         </div>
         <div class="invoice-info">
-          <h2 class="text-xl">
-            <span class="invoice-number text-right">
+          <h2 class="text-xl text-right">
+            <span class="invoice-number">
               ${invoiceNumberPrefix}
             </span>
           </h2>
@@ -424,14 +527,14 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
           <div class="amounts-section">
             <div class="flex justify-between amount-line">
               <span class="text-base text-gray-800">Subtotal</span>
-              <span class="text-base text-gray-800">AED ${formatNumberWithCommas(subtotal)}.00</span>
+              <span class="text-base text-gray-800">AED ${formatNumberWithCommas(subtotal)}</span>
             </div>
             ${taxHtml}
             ${shippingHtml}
             ${discountHtml}
             <div class="flex justify-between total-amount">
               <span class="text-base font-bold text-gray-800">Grand Total</span>
-              <span class="text-base font-bold text-gray-800">AED ${formatNumberWithCommas(Number(grandTotal.toFixed(2)))}</span>
+              <span class="text-base font-bold text-gray-800">AED ${formatNumberWithCommas(grandTotal)}</span>
             </div>
           </div>
         </div>
@@ -483,8 +586,8 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
     return pdfBuffer;
   } catch (error: any) {
     console.error("Error generating PDF:", {
-      message: error.message,
-      stack: error.stack,
+      message: error.message || "Unknown error",
+      stack: error.stack || "No stack trace",
       env: process.env.NODE_ENV,
     });
     throw error;
@@ -517,10 +620,7 @@ export async function POST(req: NextRequest) {
 
     const pdfBuffer = await generatePdf(invoiceData);
 
-    const numericInvoiceNumber = invoiceData.details.invoiceNumber.replace(
-      /\D/g,
-      ""
-    );
+    const numericInvoiceNumber = invoiceData.details.invoiceNumber.replace(/\D/g, "");
     const fileName = `invoice_${numericInvoiceNumber}.pdf`;
 
     const headers = new Headers({
@@ -529,7 +629,7 @@ export async function POST(req: NextRequest) {
       "Content-Length": pdfBuffer.length.toString(),
     });
 
-    const stream :any= new Readable();
+    const stream :any = new Readable();
     stream.push(pdfBuffer);
     stream.push(null);
 
