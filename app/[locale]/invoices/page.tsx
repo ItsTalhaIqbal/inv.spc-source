@@ -17,7 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { EyeIcon, FileInput, Loader2, Search } from "lucide-react";
+import { EyeIcon, DownloadIcon, Loader2, Search, Pencil } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { isLogin } from "@/lib/Auth";
 import { INVVariable, QUTVariable } from "@/lib/variables";
@@ -173,10 +173,8 @@ const Page: React.FC = () => {
     };
   };
 
-  const onGeneratePdf = async () => {
-    if (!viewInvoice) return;
-
-    const formData = mapInvoiceToFormData(viewInvoice);
+  const onGeneratePdf = async (invoice: Invoice) => {
+    const formData = mapInvoiceToFormData(invoice);
     reset(formData);
 
     try {
@@ -211,6 +209,12 @@ const Page: React.FC = () => {
     } finally {
       setPdfLoading(false);
     }
+  };
+
+  const onEditInvoice = (invoice: Invoice) => {
+    const formData = mapInvoiceToFormData(invoice);
+    reset(formData);
+    router.push(`/edit-invoice/${invoice._id}`);
   };
 
   useEffect(() => {
@@ -348,7 +352,7 @@ const Page: React.FC = () => {
                     ? new Date(invoice.createdAt).toLocaleDateString()
                     : "N/A"}
                 </TableCell>
-                <TableCell>
+                <TableCell className="flex gap-2">
                   <Button
                     variant="ghost"
                     size="sm"
@@ -363,6 +367,35 @@ const Page: React.FC = () => {
                     }}
                   >
                     <EyeIcon className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={
+                      theme === "dark"
+                        ? "bg-gray-600 text-white hover:bg-gray-500"
+                        : "bg-gray-200 text-black hover:bg-gray-300"
+                    }
+                    onClick={() => onGeneratePdf(invoice)}
+                    disabled={pdfLoading}
+                  >
+                    {pdfLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <DownloadIcon className="h-4 w-4" />
+                    )}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={
+                      theme === "dark"
+                        ? "bg-gray-600 text-white hover:bg-gray-500"
+                        : "bg-gray-200 text-black hover:bg-gray-300"
+                    }
+                    onClick={() => onEditInvoice(invoice)}
+                  >
+                    <Pencil className="h-4 w-4" />
                   </Button>
                 </TableCell>
               </TableRow>
@@ -386,24 +419,6 @@ const Page: React.FC = () => {
                   ? new Date(viewInvoice.createdAt).toLocaleString()
                   : "N/A"}
               </p>
-              <Button
-                type="button"
-                disabled={pdfLoading}
-                onClick={onGeneratePdf}
-                className={theme === "dark" ? "bg-white hover:bg-gray-500" : "bg-gray-200 hover:bg-gray-300"}
-              >
-                {pdfLoading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    Generating your PDF
-                  </>
-                ) : (
-                  <>
-                    <FileInput className="h-4 w-4 mr-2" />
-                    Generate PDF
-                  </>
-                )}
-              </Button>
             </div>
           </DialogHeader>
           {viewInvoice && (
