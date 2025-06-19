@@ -256,21 +256,21 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
     (subtotal + taxAmount + shippingAmount - discountAmount).toFixed(2)
   );
 
-  const totalAmountInWords = details.totalAmountInWords || formatPriceToString(grandTotal, details.currency || "AED");
+  const totalAmountInWords = formatPriceToString(grandTotal, details.currency || "AED");
 
   const itemsHtml = (details.items || [])
     .map((item: Item, index: number) => {
       const quantity = item.quantity || 0;
       const unitPrice = item.unitPrice || 0;
-      const total = Number((quantity * unitPrice).toFixed(2));
+      const total = quantity * unitPrice;
 
       return `
         <tr class="border">
           <td class="w-[5%] text-center font-bold text-black text-base border">${index + 1}</td>
           <td class="w-[50%] text-center text-black text-base border px-2 py-1" style="word-wrap: break-word; white-space: normal;">${item.name}</td>
           <td class="w-[10%] text-center text-black text-base border">${quantity}</td>
-          <td class="w-[17%] text-center text-black text-base border">${unitPrice ? `${formatNumberWithCommas(unitPrice)}` : ""}</td>
-          <td class="w-[18%] text-center text-black text-base border">${total ? `${formatNumberWithCommas(total)}` : ""}</td>
+          <td class="w-[17%] text-center text-black text-base border">${unitPrice ? unitPrice : ""}</td>
+          <td class="w-[18%] text-center text-black text-base border">${total ? total : ""}</td>
         </tr>
       `;
     })
