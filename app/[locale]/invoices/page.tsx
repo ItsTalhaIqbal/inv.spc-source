@@ -463,7 +463,7 @@ const onGeneratePdf = async (invoice: Invoice) => {
 
   try {
     setPdfLoadingStates((prev) => ({ ...prev, [invoice._id!]: true }));
-    const response = await fetch("/api/invoice/get_new_pdf", {
+    const response = await fetch("/api/invoice/generate", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -477,21 +477,17 @@ const onGeneratePdf = async (invoice: Invoice) => {
     }
 
     const blob = await response.blob();
-    let fileName = `invoice_${formData.details.invoiceNumber.replace(/\D/g, "")}.pdf`;
-    const contentDisposition = response.headers.get("Content-Disposition");
-    if (contentDisposition) {
-      const match = contentDisposition.match(/filename\*=UTF-8''([^;]*)/);
-      if (match) {
-        fileName = decodeURIComponent(match[1]);
-      } else {
-        const simpleMatch = contentDisposition.match(/filename="([^"]+)"/);
-        if (simpleMatch) fileName = simpleMatch[1];
-      }
-    }
+    const numericInvoiceNumber = formData.details.invoiceNumber.replace(/\D/g, "");
+    const isInvoice = formData.details.isInvoice || false;
+    const taxAmount = formData.details.taxDetails?.amount || 0;
 
-    // Optional: Validate file name format
-    if (!fileName.match(/^SPC_(TAX_INV|INV|QUT)_.*\.pdf$/)) {
-      console.warn("Unexpected file name format:", fileName);
+    let fileName = "";
+    if (isInvoice && taxAmount > 5) {
+      fileName = `SPC_TAX_INV_${numericInvoiceNumber}.pdf`;
+    } else if (isInvoice && taxAmount <= 0) {
+      fileName = `SPC_INV_${numericInvoiceNumber}.pdf`;
+    } else {
+      fileName = `SPC_QUT_${numericInvoiceNumber}}.pdf`;
     }
 
     const url = window.URL.createObjectURL(blob);
@@ -501,7 +497,7 @@ const onGeneratePdf = async (invoice: Invoice) => {
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-    window.URL.revokeObjectURL(url);
+    window.URL.revokeObjectURL(url));
   } catch (error) {
     console.error("Error generating PDF:", error);
     setToast({
@@ -511,9 +507,11 @@ const onGeneratePdf = async (invoice: Invoice) => {
       }`,
     });
   } finally {
-    setPdfLoadingStates((prev) => ({ ...prev, [invoice._id!]: false }));
+    setPdfLoadingStates((prev) => ({ ...prev,
+      [invoice._id!]: false }));
   }
 };
+
 
   const onEditInvoice = (invoice: Invoice) => {
     const formData = mapInvoiceToFormData(invoice);
