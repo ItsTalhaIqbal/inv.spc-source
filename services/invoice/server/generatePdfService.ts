@@ -395,7 +395,6 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
       .invoice-number {
         background-color: #d3d3d3;
         padding: 5px 10px;
-        border-radius: 4px;
         display: inline-block;
         font-weight: bold;
         text-align: right;
