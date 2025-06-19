@@ -24,6 +24,7 @@ import { isLogin } from "@/lib/Auth";
 import { INVVariable, QUTVariable } from "@/lib/variables";
 import { useForm, FormProvider } from "react-hook-form";
 import { InvoiceType } from "@/types";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface Invoice {
   _id?: string;
@@ -650,143 +651,145 @@ const Page: React.FC = () => {
         {/* Edit Invoice Dialog */}
         <Dialog open={editInvoiceDialog} onOpenChange={setEditInvoiceDialog}>
           <DialogContent
-            className={`${theme === "dark" ? "bg-gray-800 text-white border-gray-700" : "bg-white text-black border-gray-200"} max-w-3xl shadow-lg rounded-lg max-h-[80vh] flex flex-col`}
+            className={`${theme === "dark" ? "bg-gray-800 text-white border-gray-700" : "bg-white text-black border-gray-200"} sm:max-w-[600px] shadow-lg rounded-md max-h-[60vh]`}
           >
             <DialogHeader className="border-b pb-4">
-              <DialogTitle className="text-2xl font-bold">
+              <DialogTitle className="text-lg font-bold">
                 Edit Invoice #{editInvoice?.invoiceNumber}
               </DialogTitle>
             </DialogHeader>
-            <form onSubmit={handleSubmit(onSubmitEdit)} className="flex-1 flex flex-col">
-              <div className="flex-1 overflow-y-auto p-4 space-y-6">
+            <form onSubmit={handleSubmit(onSubmitEdit)}>
+              <ScrollArea className="max-h-[40vh] pr-4">
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Receiver Information</h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium">Name</label>
-                      <Input {...register("receiver.name")} className="mt-1" />
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Receiver Information</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm font-medium">Name</label>
+                        <Input {...register("receiver.name")} className="mt-1" />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium">Email</label>
+                        <Input {...register("receiver.email")} className="mt-1" />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium">Phone</label>
+                        <Input {...register("receiver.phone")} className="mt-1" />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium">Address</label>
+                        <Input {...register("receiver.address")} className="mt-1" />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium">State</label>
+                        <Input {...register("receiver.state")} className="mt-1" />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium">Country</label>
+                        <Input {...register("receiver.country")} className="mt-1" />
+                      </div>
                     </div>
-                    <div>
-                      <label className="text-sm font-medium">Email</label>
-                      <Input {...register("receiver.email")} className="mt-1" />
+                  </div>
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Invoice Details</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm font-medium">Invoice Number</label>
+                        <Input {...register("details.invoiceNumber")} className="mt-1" />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium">Invoice Date</label>
+                        <Input
+                          type="date"
+                          {...register("details.invoiceDate")}
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium">Due Date</label>
+                        <Input
+                          type="date"
+                          {...register("details.dueDate")}
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium">Currency</label>
+                        <Input {...register("details.currency")} className="mt-1" />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium">Sub Total</label>
+                        <Input
+                          type="number"
+                          {...register("details.subTotal")}
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium">Total Amount</label>
+                        <Input
+                          type="number"
+                          {...register("details.totalAmount")}
+                          className="mt-1"
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <label className="text-sm font-medium">Total Amount in Words</label>
+                        <Input
+                          {...register("details.totalAmountInWords")}
+                          className="mt-1"
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <label className="text-sm font-medium">Phone</label>
-                      <Input {...register("receiver.phone")} className="mt-1" />
+                  </div>
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Tax Details</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm font-medium">Tax Amount</label>
+                        <Input
+                          type="number"
+                          {...register("details.taxDetails.amount")}
+                          className="mt-1"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium">Tax ID</label>
+                        <Input {...register("details.taxDetails.taxID")} className="mt-1" />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium">Amount Type</label>
+                        <select
+                          {...register("details.taxDetails.amountType")}
+                          className={`mt-1 w-full rounded-md border p-2 ${theme === "dark" ? "bg-gray-800 text-white border-gray-700" : "bg-white text-black border-gray-300"}`}
+                        >
+                          <option value="percentage">Percentage</option>
+                          <option value="fixed">Fixed</option>
+                        </select>
+                      </div>
                     </div>
-                    <div>
-                      <label className="text-sm font-medium">Address</label>
-                      <Input {...register("receiver.address")} className="mt-1" />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">State</label>
-                      <Input {...register("receiver.state")} className="mt-1" />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">Country</label>
-                      <Input {...register("receiver.country")} className="mt-1" />
+                  </div>
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Additional Information</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="col-span-2">
+                        <label className="text-sm font-medium">Additional Notes</label>
+                        <Input
+                          {...register("details.additionalNotes")}
+                          className="mt-1"
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <label className="text-sm font-medium">Payment Terms</label>
+                        <Input
+                          {...register("details.paymentTerms")}
+                          className="mt-1"
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Invoice Details</h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium">Invoice Number</label>
-                      <Input {...register("details.invoiceNumber")} className="mt-1" />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">Invoice Date</label>
-                      <Input
-                        type="date"
-                        {...register("details.invoiceDate")}
-                        className="mt-1"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">Due Date</label>
-                      <Input
-                        type="date"
-                        {...register("details.dueDate")}
-                        className="mt-1"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">Currency</label>
-                      <Input {...register("details.currency")} className="mt-1" />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">Sub Total</label>
-                      <Input
-                        type="number"
-                        {...register("details.subTotal")}
-                        className="mt-1"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">Total Amount</label>
-                      <Input
-                        type="number"
-                        {...register("details.totalAmount")}
-                        className="mt-1"
-                      />
-                    </div>
-                    <div className="col-span-2">
-                      <label className="text-sm font-medium">Total Amount in Words</label>
-                      <Input
-                        {...register("details.totalAmountInWords")}
-                        className="mt-1"
-                      />
-                    </div>
-                  </div>
-                </div>
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Tax Details</h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium">Tax Amount</label>
-                      <Input
-                        type="number"
-                        {...register("details.taxDetails.amount")}
-                        className="mt-1"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">Tax ID</label>
-                      <Input {...register("details.taxDetails.taxID")} className="mt-1" />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">Amount Type</label>
-                      <select
-                        {...register("details.taxDetails.amountType")}
-                        className={`mt-1 w-full rounded-md border p-2 ${theme === "dark" ? "bg-gray-800 text-white border-gray-700" : "bg-white text-black border-gray-300"}`}
-                      >
-                        <option value="percentage">Percentage</option>
-                        <option value="fixed">Fixed</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Additional Information</h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="col-span-2">
-                      <label className="text-sm font-medium">Additional Notes</label>
-                      <Input
-                        {...register("details.additionalNotes")}
-                        className="mt-1"
-                      />
-                    </div>
-                    <div className="col-span-2">
-                      <label className="text-sm font-medium">Payment Terms</label>
-                      <Input
-                        {...register("details.paymentTerms")}
-                        className="mt-1"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
+              </ScrollArea>
               <DialogFooter className="border-t pt-4">
                 <Button
                   type="button"
