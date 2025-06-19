@@ -278,7 +278,10 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
   const hasShipping = shippingDetails.cost && shippingDetails.cost > 0;
   const hasTotalInWords = totalAmountInWords && totalAmountInWords.trim() !== "";
 
-  const invoiceNumberPrefix = hasTax ? `INV-${details.invoiceNumber}` : `QUT-${details.invoiceNumber}`;
+  const hasTaxDetails = !!details.taxDetails;
+  const taxAmountCheck = hasTaxDetails ? Number(taxDetails.amount) : 0;
+  const isInvoice = hasTaxDetails && taxAmountCheck > 0;
+  const invoiceNumberPrefix = isInvoice ? `INV-${details.invoiceNumber}` : `QUT-${details.invoiceNumber}`;
 
   const taxHtml = hasTax
     ? `
@@ -484,7 +487,7 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
           </p>
           <p class="text-sm pt-1"></p>
           <p class="text-sm pt-1">www.spcsource.com | TRN-29484858585</p>
-          <p class="text-sm pt-1">${senderData.address || "Iris Bay, Office D-43, Business Bay, Dubai, UAE."}</p>
+          <p class="text-sm pt-1">${senderData.address || "Iris Bay, Office D-35, Business Bay, Dubai, UAE."}</p>
         </div>
       </div>
       <div class="customer-invoice-container">
@@ -613,22 +616,23 @@ export async function POST(req: NextRequest) {
       throw new Error("Total amount must be a number");
     }
 
-    const pdfBuffer = await generatePdfService(data);
+    console.log("POST invoiceData taxDetails:", JSON.stringify(data.details.taxDetails, null, 2));
 
-    // Determine if it's an invoice or quotation
-    const isInvoice = !!data.details.taxDetails; // Invoice if taxDetails exists
-    const hasTax = isInvoice && data.details.taxDetails?.amount > 0;
+    const pdfBuffer = await generatePdf(data);
 
-    // Set file name based on type and tax
+    const hasTaxDetails = !!data.details.taxDetails;
+    const taxAmount = hasTaxDetails ? Number(data.details.taxDetails?.amount) : 0;
+    const isInvoice = hasTaxDetails && taxAmount > 0;
+
     let invoiceNumberPrefix;
     if (isInvoice) {
-      invoiceNumberPrefix = hasTax ? `TAX_INV` : `INV`;
+      invoiceNumberPrefix = taxAmount > 0 ? `TAX_INV` : `INV`;
     } else {
       invoiceNumberPrefix = `QUT`;
     }
     const fileName = `SPC_${invoiceNumberPrefix}_${data.details.invoiceNumber}.pdf`;
 
-    console.log("POST file name:", fileName); // Debug log
+    console.log("POST file name:", fileName);
 
     const headers = new Headers({
       "Content-Type": "application/pdf",
@@ -636,7 +640,7 @@ export async function POST(req: NextRequest) {
       "Content-Length": pdfBuffer.length.toString(),
     });
 
-    const stream:any = new Readable();
+    const stream: any = new Readable();
     stream.push(pdfBuffer);
     stream.push(null);
 
@@ -644,7 +648,7 @@ export async function POST(req: NextRequest) {
       status: 200,
       headers,
     });
-  } catch (error:any) {
+  } catch (error: any) {
     console.error("Error in PDF:", error);
     return NextResponse.json(
       { error: error.message || "Failed to generate PDF" },
@@ -652,8 +656,6 @@ export async function POST(req: NextRequest) {
     );
   }
 }
-
-
 
 export async function GET(req: NextRequest) {
   try {
@@ -663,10 +665,11 @@ export async function GET(req: NextRequest) {
 
     if (!invoiceNumber) {
       return NextResponse.json(
-        Response.json({ error: "Invoice number is required" }),
+        { error: "Invoice number is required" },
         { status: 400 }
       );
     }
+
     let savedInvoices: InvoiceType[] = [];
     try {
       const savedInvoicesJSON = await fs.readFileSync(
@@ -690,13 +693,24 @@ export async function GET(req: NextRequest) {
         { status: 404 }
       );
     }
+
+    console.log("GET invoiceData taxDetails:", JSON.stringify(invoiceData.details?.taxDetails, null, 2));
+
     const pdfBuffer = await generatePdf(invoiceData);
 
-    const hasTax = invoiceData.details?.taxDetails?.amount && invoiceData.details.taxDetails.amount > 0;
-    const invoiceNumberPrefix = hasTax ? `INV_${invoiceData.details?.invoiceNumber}` : `QUT_${invoiceData.details?.invoiceNumber}`;
-    const fileName = `SPC_${invoiceNumberPrefix}.pdf`;
+    const hasTaxDetails = !!invoiceData.details?.taxDetails;
+    const taxAmount = hasTaxDetails ? Number(invoiceData.details?.taxDetails?.amount) : 0;
+    const isInvoice = hasTaxDetails && taxAmount > 0;
 
-    console.log("GET invoice file name:", fileName); // Debug log
+    let invoiceNumberPrefix;
+    if (isInvoice) {
+      invoiceNumberPrefix = taxAmount > 0 ? `TAX_INV` : `INV`;
+    } else {
+      invoiceNumberPrefix = `QUT`;
+    }
+    const fileName = `SPC_${invoiceNumberPrefix}_${invoiceData.details?.invoiceNumber}.pdf`;
+
+    console.log("GET invoice file name:", fileName);
 
     const headers = new Headers({
       "Content-Type": "application/pdf",
