@@ -55,7 +55,7 @@ export default function FinalPdf() {
                     <Eye className="w-5 h-5" />
                     Preview
                 </BaseButton>
-                <BaseButton
+                {/* <BaseButton
                     tooltipLabel="Download invoice PDF"
                     onClick={downloadPdf}
                     size="sm"
@@ -63,7 +63,7 @@ export default function FinalPdf() {
                 >
                     <DownloadCloudIcon className="w-5 h-5" />
                     Download
-                </BaseButton>
+                </BaseButton> */}
 
                 <BaseButton
                     tooltipLabel="Print invoice"
