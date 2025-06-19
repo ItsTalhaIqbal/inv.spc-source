@@ -615,8 +615,17 @@ export async function POST(req: NextRequest) {
 
     const pdfBuffer = await generatePdfService(data);
 
-    const hasTax = data.details.taxDetails?.amount && data.details.taxDetails.amount > 0;
-    const invoiceNumberPrefix = hasTax ? `INV_${data.details.invoiceNumber}` : `QUT_${data.details.invoiceNumber}`;
+    // Determine if it's an invoice or quotation
+    const isInvoice = !!data.details.taxDetails; // Invoice if taxDetails exists
+    const hasTax = isInvoice && data.details.taxDetails?.amount > 0;
+
+    // Set file name based on type and tax
+    let invoiceNumberPrefix;
+    if (isInvoice) {
+      invoiceNumberPrefix = hasTax ? `TAX_INV` : `INV`;
+    } else {
+      invoiceNumberPrefix = `QUT`;
+    }
     const fileName = `SPC_${invoiceNumberPrefix}_${data.details.invoiceNumber}.pdf`;
 
     console.log("POST file name:", fileName); // Debug log
@@ -627,7 +636,7 @@ export async function POST(req: NextRequest) {
       "Content-Length": pdfBuffer.length.toString(),
     });
 
-    const stream: any = new Readable();
+    const stream:any = new Readable();
     stream.push(pdfBuffer);
     stream.push(null);
 
@@ -635,7 +644,7 @@ export async function POST(req: NextRequest) {
       status: 200,
       headers,
     });
-  } catch (error: any) {
+  } catch (error:any) {
     console.error("Error in PDF:", error);
     return NextResponse.json(
       { error: error.message || "Failed to generate PDF" },
@@ -643,6 +652,8 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
+
 
 export async function GET(req: NextRequest) {
   try {
