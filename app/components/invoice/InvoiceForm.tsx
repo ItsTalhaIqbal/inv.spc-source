@@ -41,18 +41,26 @@ const InvoiceForm = () => {
   const { control } = useFormContext();
   const { invoicePdfLoading, downloadPdf } = useInvoiceContext();
 
-  // Get invoice number variable
+  // Watch invoice number and tax details
   const invoiceNumber = useWatch({
     name: "details.invoiceNumber",
     control,
   });
+  const taxAmount = useWatch({
+    name: "details.taxDetails.amount",
+    control,
+  });
+
+  // Determine document type
+  const isTaxInvoice = taxAmount && taxAmount > 0;
+  const isQuotation = !isTaxInvoice;
 
   // Auto-download PDF when generation is complete
   useEffect(() => {
-    if (!invoicePdfLoading && invoicePdfLoading !== undefined) {
-      downloadPdf();
+    if (!invoicePdfLoading && invoicePdfLoading !== undefined && invoiceNumber) {
+      downloadPdf(invoiceNumber, isTaxInvoice, isQuotation);
     }
-  }, [invoicePdfLoading, downloadPdf]);
+  }, [invoicePdfLoading, invoiceNumber, isTaxInvoice, isQuotation, downloadPdf]);
 
   const invoiceNumberLabel = useMemo(() => {
     if (invoiceNumber) {
