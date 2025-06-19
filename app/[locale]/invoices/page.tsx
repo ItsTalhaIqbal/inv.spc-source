@@ -74,12 +74,9 @@ interface Invoice {
       total: number;
       _id?: string;
     }[];
-    currency: string;
-    language: string;
     taxDetails?: {
       amount: number;
       amountType: "percentage" | "fixed";
-      taxID: string;
     };
     discountDetails?: {
       amount?: number;
@@ -113,12 +110,8 @@ const Page: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [viewInvoiceDialog, setViewInvoiceDialog] = useState<boolean>(false);
   const [editInvoiceDialog, setEditInvoiceDialog] = useState<boolean>(false);
-  const [viewInvoice, setViewInvoice] = useState<Invoice | undefined>(
-    undefined
-  );
-  const [editInvoice, setEditInvoice] = useState<Invoice | undefined>(
-    undefined
-  );
+  const [viewInvoice, setViewInvoice] = useState<Invoice | undefined>(undefined);
+  const [editInvoice, setEditInvoice] = useState<Invoice | undefined>(undefined);
   const [loading, setLoading] = useState<boolean>(true);
   const [authChecked, setAuthChecked] = useState<boolean>(false);
   const [pdfLoadingStates, setPdfLoadingStates] = useState<{
@@ -127,17 +120,22 @@ const Page: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [toast, setToast] = useState<{ title: string; description: string } | null>(null);
   const router = useRouter();
+
   const methods = useForm<InvoiceType>({
     defaultValues: {
       details: {
-        taxDetails: { amount: 5, amountType: "percentage", taxID: "" },
+        isInvoice: true,
+        taxDetails: { amount: 5, amountType: "percentage" },
+        discountDetails: { amount: 0, amountType: "amount" },
+        shippingDetails: { cost: 0, costType: "amount" },
         items: [
           { name: "", description: "", quantity: 0, unitPrice: 0, total: 0 },
         ],
       },
     },
   });
-  const { reset, handleSubmit, register, control, watch } = methods;
+
+  const { reset, handleSubmit, register, control, watch, setValue, getValues } = methods;
   const { fields, append, remove } = useFieldArray({
     control,
     name: "details.items",
@@ -147,19 +145,193 @@ const Page: React.FC = () => {
   const [showDiscount, setShowDiscount] = useState<boolean>(false);
   const [showShipping, setShowShipping] = useState<boolean>(false);
 
+  // Calculate totals based on form values
   const items = watch("details.items") || [];
-  const totalAmount = items.reduce(
-    (sum, item) => sum + item.quantity * item.unitPrice,
-    0
+  const taxDetails = watch("details.taxDetails");
+  const discountDetails = watch("details.discountDetails");
+  const shippingDetails = watch("details.shippingDetails");
+
+  const subTotal = Number(
+    items
+      .reduce((sum, item) => sum + (item.quantity || 0) * (item.unitPrice || 0), 0)
+      .toFixed(2)
   );
 
-  const mapInvoiceToFormData = (invoice: Invoice): InvoiceType => {
+  const taxAmount = Number(
+    (showTax && taxDetails?.amount
+      ? taxDetails.amountType === "percentage"
+        ? (subTotal * (taxDetails.amount / 100))
+        : taxDetails.amount
+      : 0).toFixed(2)
+  );
+
+  const discountAmount = Number(
+    (showDiscount && discountDetails?.amount
+      ? discountDetails.amountType === "percentage"
+        ? (subTotal * (discountDetails.amount / 100))
+        : discountDetails.amount
+      : 0).toFixed(2)
+  );
+
+  const shippingAmount = Number(
+    (showShipping && shippingDetails?.cost
+      ? shippingDetails.costType === "percentage"
+        ? (subTotal * (shippingDetails.cost / 100))
+        : shippingDetails.cost
+      : 0).toFixed(2)
+  );
+
+  const totalAmount = Number(
+    (subTotal + 
+     (showTax ? taxAmount : 0) + 
+     (showShipping ? shippingAmount : 0) - 
+     (showDiscount ? discountAmount : 0)
+    ).toFixed(2)
+  );
+
+  // Function to convert numbers to words with proper handling
+  const numberToWords = (num: number): string => {
+    if (isNaN(num) || num === 0) return "Zero Dirham";
+    
+    const units = [
+      "", "one", "two", "three", "four", "five", 
+      "six", "seven", "eight", "nine"
+    ];
+    const teens = [
+      "ten", "eleven", "twelve", "thirteen", "fourteen", 
+      "fifteen", "sixteen", "seventeen", "eighteen", "nineteen"
+    ];
+    const tens = [
+      "", "", "twenty", "thirty", "forty", 
+      "fifty", "sixty", "seventy", "eighty", "ninety"
+    ];
+    const thousands = ["", "thousand", "million", "billion"];
+
+    const convertLessThanOneThousand = (n: number): string => {
+      if (n === 0) return "";
+      if (n < 10) return units[n];
+      if (n < 20) return teens[n - 10];
+      const tensPart = Math.floor(n / 10);
+      const unitsPart = n % 10;
+      return (
+        tens[tensPart] +
+        (unitsPart !== 0 ? (tensPart > 0 ? "-" : "") + units[unitsPart] : "")
+      );
+    };
+
+    const convert = (n: number): string => {
+      if (n === 0) return "zero";
+      let words = "";
+      let i = 0;
+      while (n > 0) {
+        const chunk = n % 1000;
+        if (chunk > 0) {
+          const chunkWords = convertLessThanOneThousand(chunk);
+          words =
+            chunkWords +
+            (i > 0 ? ` ${thousands[i]}` : "") +
+            (words ? " " + words : "");
+        }
+        n = Math.floor(n / 1000);
+        i++;
+      }
+      return words.trim();
+    };
+
+    const [integerPart, decimalPart] = Number(num).toFixed(2).split(".");
+    const integerNum = parseInt(integerPart);
+    const decimalNum = parseInt(decimalPart);
+
+    let result = convert(integerNum);
+    result += " Dirham";
+    if (decimalNum > 0) {
+      result += ` and ${convert(decimalNum)} Fils`;
+    }
+
+    return result.charAt(0).toUpperCase() + result.slice(1);
+  };
+
+  // Update totals and item totals
+  useEffect(() => {
+    const subscription = watch((value, { name }) => {
+      if (
+        name &&
+        (name.startsWith("details.items") ||
+          name.startsWith("details.taxDetails") ||
+          name.startsWith("details.discountDetails") ||
+          name.startsWith("details.shippingDetails"))
+      ) {
+        // Update item total
+        if (
+          name.startsWith("details.items") &&
+          (name.includes("quantity") || name.includes("unitPrice"))
+        ) {
+          const index = parseInt(name.split(".")[2]);
+          const quantity = value.details?.items?.[index]?.quantity || 0;
+          const unitPrice = value.details?.items?.[index]?.unitPrice || 0;
+          const newTotal = Number((quantity * unitPrice).toFixed(2));
+          const currentTotal = getValues(`details.items.${index}.total`);
+          if (newTotal !== currentTotal) {
+            setValue(`details.items.${index}.total`, newTotal, {
+              shouldValidate: true,
+            });
+          }
+        }
+      }
+    });
+
+    // Calculate current total with toggle states
+    const currentTotalAmount = subTotal + 
+      (showTax ? taxAmount : 0) + 
+      (showShipping ? shippingAmount : 0) - 
+      (showDiscount ? discountAmount : 0);
+
+    const newTotalAmountInWords = numberToWords(currentTotalAmount);
+
+    setValue("details.subTotal", subTotal, {
+      shouldValidate: true,
+      shouldDirty: false,
+    });
+
+    setValue("details.totalAmount", currentTotalAmount, {
+      shouldValidate: true,
+      shouldDirty: false,
+    });
+
+    setValue("details.totalAmountInWords", newTotalAmountInWords, {
+      shouldValidate: true,
+      shouldDirty: false,
+    });
+
+    return () => subscription.unsubscribe();
+  }, [
+    watch,
+    setValue,
+    getValues,
+    subTotal,
+    taxAmount,
+    discountAmount,
+    shippingAmount,
+    showTax,
+    showDiscount,
+    showShipping,
+  ]);
+
+  const mapInvoiceToFormData = (invoice: any): any => {
+    const invoiceDate =
+      typeof invoice.details.invoiceDate === "string"
+        ? invoice.details.invoiceDate.split("T")[0]
+        : new Date(invoice.details.invoiceDate).toISOString().split("T")[0];
+
+    const dueDate =
+      typeof invoice.details.dueDate === "string"
+        ? invoice.details.dueDate.split("T")[0]
+        : new Date(invoice.details.dueDate).toISOString().split("T")[0];
+
     return {
       sender: {
         name: invoice.sender.name || "SPC Source Technical Services LLC",
-        address:
-          invoice.sender.address ||
-          "Iris Bay, Office D-43, Business Bay, Dubai, UAE.",
+        address: invoice.sender.address || "Iris Bay, Office D-43, Business Bay, Dubai, UAE.",
         state: invoice.sender.state || "Dubai",
         country: invoice.sender.country || "UAE",
         email: invoice.sender.email || "contact@spcsource.com",
@@ -177,65 +349,47 @@ const Page: React.FC = () => {
         pdfTemplate: 2,
         isInvoice: invoice.details.isInvoice || false,
         invoiceNumber: invoice.details.invoiceNumber || "",
-        invoiceDate:
-          typeof invoice.details.invoiceDate === "string"
-            ? invoice.details.invoiceDate
-            : invoice.details.invoiceDate?.toISOString() ||
-              new Date().toISOString(),
-        dueDate:
-          typeof invoice.details.dueDate === "string"
-            ? invoice.details.dueDate
-            : invoice.details.dueDate?.toISOString() ||
-              new Date().toISOString(),
-        items:
-          invoice.details.items.length > 0
-            ? invoice.details.items.map((item) => ({
-                name: item.name || "",
-                description: item.description || "",
-                quantity: Number(item.quantity) || 0,
-                unitPrice: Number(item.unitPrice) || 0,
-                total: Number(item.total) || 0,
-              }))
-            : [
-                {
-                  name: "",
-                  description: "",
-                  quantity: 0,
-                  unitPrice: 0,
-                  total: 0,
-                },
-              ],
-        currency: invoice.details.currency || "AED",
-        language: invoice.details.language || "English",
+        invoiceDate: invoiceDate,
+        dueDate: dueDate,
+        items: invoice.details.items.length > 0
+          ? invoice.details.items.map((item:any) => ({
+              name: item.name || "",
+              description: item.description || "",
+              quantity: Number(item.quantity) || 0,
+              unitPrice: Number(item.unitPrice.toFixed(2)) || 0,
+              total: Number(item.total.toFixed(2)) || 0,
+            }))
+          : [
+              {
+                name: "",
+                description: "",
+                quantity: 0,
+                unitPrice: 0,
+                total: 0,
+              },
+            ],
         taxDetails: {
-          amount: Number(invoice.details.taxDetails?.amount) || 5,
+          amount: Number(invoice.details.taxDetails?.amount?.toFixed(2)) || 5,
           amountType: invoice.details.taxDetails?.amountType || "percentage",
-          taxID: invoice.details.taxDetails?.taxID || "",
         },
         discountDetails: {
-          amount: Number(invoice.details.discountDetails?.amount) || 0,
+          amount: Number(invoice.details.discountDetails?.amount?.toFixed(2)) || 0,
           amountType: invoice.details.discountDetails?.amountType || "amount",
         },
         shippingDetails: {
-          cost: Number(invoice.details.shippingDetails?.cost) || 0,
+          cost: Number(invoice.details.shippingDetails?.cost?.toFixed(2)) || 0,
           costType: invoice.details.shippingDetails?.costType || "amount",
         },
         paymentInformation: {
           bankName: invoice.details.paymentInformation?.bankName || "Bank Inc.",
-          accountName:
-            invoice.details.paymentInformation?.accountName || "John Doe",
-          accountNumber:
-            invoice.details.paymentInformation?.accountNumber || "445566998877",
+          accountName: invoice.details.paymentInformation?.accountName || "John Doe",
+          accountNumber: invoice.details.paymentInformation?.accountNumber || "445566998877",
         },
-        additionalNotes:
-          invoice.details.additionalNotes ||
-          "Received above items in good condition.",
-        paymentTerms:
-          invoice.details.paymentTerms ||
-          "50% advance upon confirmation of the order, 50% upon delivery or completion.",
+        additionalNotes: invoice.details.additionalNotes || "Received above items in good condition.",
+        paymentTerms: invoice.details.paymentTerms || "50% advance upon confirmation of the order, 50% upon delivery or completion.",
         signature: invoice.details.signature || undefined,
-        subTotal: Number(invoice.details.subTotal) || 0,
-        totalAmount: Number(invoice.details.totalAmount) || 0,
+        subTotal: Number(invoice.details.subTotal.toFixed(2)) || 0,
+        totalAmount: Number(invoice.details.totalAmount.toFixed(2)) || 0,
         totalAmountInWords: invoice.details.totalAmountInWords || "",
       },
     };
@@ -247,10 +401,6 @@ const Page: React.FC = () => {
 
     try {
       setPdfLoadingStates((prev) => ({ ...prev, [invoice._id!]: true }));
-      console.log(
-        "Generating PDF for invoice:",
-        formData.details.invoiceNumber
-      );
       const response = await fetch("/api/invoice/get_new_pdf", {
         method: "POST",
         headers: {
@@ -265,10 +415,7 @@ const Page: React.FC = () => {
       }
 
       const blob = await response.blob();
-      const numericInvoiceNumber = formData.details.invoiceNumber.replace(
-        /\D/g,
-        ""
-      );
+      const numericInvoiceNumber = formData.details.invoiceNumber.replace(/\D/g, "");
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -281,9 +428,7 @@ const Page: React.FC = () => {
       console.error("Error generating PDF:", error);
       setToast({
         title: "Error",
-        description: `Failed to generate PDF: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`,
+        description: `Failed to generate PDF: ${error instanceof Error ? error.message : "Unknown error"}`,
       });
     } finally {
       setPdfLoadingStates((prev) => ({ ...prev, [invoice._id!]: false }));
@@ -306,6 +451,11 @@ const Page: React.FC = () => {
 
     try {
       setErrorMessage("");
+      const calculatedTotal = subTotal + 
+        (showTax ? taxAmount : 0) + 
+        (showShipping ? shippingAmount : 0) - 
+        (showDiscount ? discountAmount : 0);
+
       const response = await fetch("/api/invoice/new_invoice", {
         method: "PUT",
         headers: {
@@ -318,12 +468,11 @@ const Page: React.FC = () => {
           details: {
             ...data.details,
             taxDetails: showTax ? data.details.taxDetails : undefined,
-            discountDetails: showDiscount
-              ? data.details.discountDetails
-              : undefined,
-            shippingDetails: showShipping
-              ? data.details.shippingDetails
-              : undefined,
+            discountDetails: showDiscount ? data.details.discountDetails : undefined,
+            shippingDetails: showShipping ? data.details.shippingDetails : undefined,
+            subTotal: Number(subTotal.toFixed(2)),
+            totalAmount: Number(calculatedTotal.toFixed(2)),
+            totalAmountInWords: numberToWords(calculatedTotal),
           },
         }),
       });
@@ -394,8 +543,7 @@ const Page: React.FC = () => {
       console.error("Error fetching invoices:", error);
       setToast({
         title: "Error",
-        description:
-          error instanceof Error ? error.message : "Failed to fetch invoices",
+        description: error instanceof Error ? error.message : "Failed to fetch invoices",
       });
       setInvoices([]);
       setFilteredInvoices([]);
@@ -407,9 +555,7 @@ const Page: React.FC = () => {
   useEffect(() => {
     const results = invoices.filter(
       (invoice) =>
-        invoice.invoiceNumber
-          .toLowerCase()
-          .includes(searchTerm.toLowerCase()) ||
+        invoice.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
         invoice.sender.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         invoice.receiver.email.toLowerCase().includes(searchTerm.toLowerCase())
     );
@@ -477,38 +623,24 @@ const Page: React.FC = () => {
           ) : (
             <Table
               className={`${
-                theme === "dark"
-                  ? "bg-gray-800 text-white"
-                  : "bg-white text-black"
+                theme === "dark" ? "bg-gray-800 text-white" : "bg-white text-black"
               } w-full`}
             >
               <TableHeader>
-                <TableRow
-                  className={theme === "dark" ? "bg-gray-700" : "bg-gray-100"}
-                >
-                  <TableHead
-                    className={theme === "dark" ? "text-white" : "text-black"}
-                  >
+                <TableRow className={theme === "dark" ? "bg-gray-700" : "bg-gray-100"}>
+                  <TableHead className={theme === "dark" ? "text-white" : "text-black"}>
                     Invoice Number
                   </TableHead>
-                  <TableHead
-                    className={theme === "dark" ? "text-white" : "text-black"}
-                  >
+                  <TableHead className={theme === "dark" ? "text-white" : "text-black"}>
                     Customer
                   </TableHead>
-                  <TableHead
-                    className={theme === "dark" ? "text-white" : "text-black"}
-                  >
+                  <TableHead className={theme === "dark" ? "text-white" : "text-black"}>
                     Amount
                   </TableHead>
-                  <TableHead
-                    className={theme === "dark" ? "text-white" : "text-black"}
-                  >
+                  <TableHead className={theme === "dark" ? "text-white" : "text-black"}>
                     Date
                   </TableHead>
-                  <TableHead
-                    className={theme === "dark" ? "text-white" : "text-black"}
-                  >
+                  <TableHead className={theme === "dark" ? "text-white" : "text-black"}>
                     Actions
                   </TableHead>
                 </TableRow>
@@ -517,9 +649,7 @@ const Page: React.FC = () => {
                 {filteredInvoices.map((invoice) => (
                   <TableRow
                     key={invoice._id}
-                    className={
-                      theme === "dark" ? "hover:bg-gray-700" : "hover:bg-gray-50"
-                    }
+                    className={theme === "dark" ? "hover:bg-gray-700" : "hover:bg-gray-50"}
                   >
                     <TableCell>
                       {invoice.details?.isInvoice ? INVVariable : QUTVariable}
@@ -527,8 +657,7 @@ const Page: React.FC = () => {
                     </TableCell>
                     <TableCell>{invoice.receiver.name}</TableCell>
                     <TableCell>
-                      {invoice.details.totalAmount.toFixed(2)}{" "}
-                      {invoice.details.currency}
+                      {Number(invoice.details.totalAmount).toFixed(2)}
                     </TableCell>
                     <TableCell>
                       {invoice?.createdAt
@@ -651,26 +780,18 @@ const Page: React.FC = () => {
                       <p className="text-sm">
                         <strong>Invoice Date:</strong>{" "}
                         <span>
-                          {new Date(
-                            viewInvoice.details.invoiceDate
-                          ).toLocaleDateString()}
+                          {new Date(viewInvoice.details.invoiceDate).toLocaleDateString()}
                         </span>
                       </p>
                       <p className="text-sm">
                         <strong>Due Date:</strong>{" "}
                         <span>
-                          {new Date(
-                            viewInvoice.details.dueDate
-                          ).toLocaleDateString()}
+                          {new Date(viewInvoice.details.dueDate).toLocaleDateString()}
                         </span>
                       </p>
                       <p className="text-sm">
-                        <strong>Currency:</strong>{" "}
-                        <span>{viewInvoice.details.currency}</span>
-                      </p>
-                      <p className="text-sm">
                         <strong>Sub Total:</strong>{" "}
-                        <span>{viewInvoice.details.subTotal}</span>
+                        <span>{Number(viewInvoice.details.subTotal).toFixed(2)}</span>
                       </p>
                       <p className="text-sm">
                         <strong>Total Amount in Words:</strong>{" "}
@@ -746,11 +867,11 @@ const Page: React.FC = () => {
                           </p>
                           <p className="text-sm">
                             <strong>Unit Price:</strong>{" "}
-                            <span>{item.unitPrice}</span>
+                            <span>{Number(item.unitPrice).toFixed(2)}</span>
                           </p>
                           <p className="text-sm">
                             <strong>Total:</strong>{" "}
-                            <span className="font-medium">{item.total}</span>
+                            <span className="font-medium">{Number(item.total).toFixed(2)}</span>
                           </p>
                         </div>
                       </div>
@@ -769,18 +890,26 @@ const Page: React.FC = () => {
                     <div className="grid grid-cols-2 gap-4">
                       <p className="text-sm">
                         <strong>Tax Amount:</strong>{" "}
-                        <span>{viewInvoice.details.taxDetails?.amount || 0}</span>
+                        <span>
+                          {viewInvoice.details.taxDetails?.amount
+                            ? Number(viewInvoice.details.taxDetails.amount).toFixed(2)
+                            : "0.00"}
+                        </span>
                       </p>
                       <p className="text-sm">
                         <strong>Discount Amount:</strong>{" "}
                         <span>
-                          {viewInvoice.details.discountDetails?.amount || 0}
+                          {viewInvoice.details.discountDetails?.amount
+                            ? Number(viewInvoice.details.discountDetails.amount).toFixed(2)
+                            : "0.00"}
                         </span>
                       </p>
                       <p className="text-sm">
                         <strong>Shipping Cost:</strong>{" "}
                         <span>
-                          {viewInvoice.details.shippingDetails?.cost || 0}
+                          {viewInvoice.details.shippingDetails?.cost
+                            ? Number(viewInvoice.details.shippingDetails.cost).toFixed(2)
+                            : "0.00"}
                         </span>
                       </p>
                     </div>
@@ -915,32 +1044,6 @@ const Page: React.FC = () => {
                             }`}
                           />
                         </div>
-                        <div>
-                          <label className="text-sm font-medium">
-                            Currency
-                          </label>
-                          <Input
-                            {...register("details.currency")}
-                            className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
-                              theme === "dark"
-                                ? "bg-gray-700 text-white border-gray-600"
-                                : "bg-white text-black border-gray-300"
-                            }`}
-                          />
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium">
-                            Language
-                          </label>
-                          <Input
-                            {...register("details.language")}
-                            className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
-                              theme === "dark"
-                                ? "bg-gray-700 text-white border-gray-600"
-                                : "bg-white text-black border-gray-300"
-                            }`}
-                          />
-                        </div>
                       </div>
                     </div>
 
@@ -971,7 +1074,9 @@ const Page: React.FC = () => {
                               </label>
                               <Input
                                 type="number"
-                                {...register(`details.items.${index}.quantity`)}
+                                {...register(`details.items.${index}.quantity`, {
+                                  valueAsNumber: true,
+                                })}
                                 className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
                                   theme === "dark"
                                     ? "bg-gray-700 text-white border-gray-600"
@@ -985,7 +1090,42 @@ const Page: React.FC = () => {
                               </label>
                               <Input
                                 type="number"
-                                {...register(`details.items.${index}.unitPrice`)}
+                                step="0.01"
+                                {...register(`details.items.${index}.unitPrice`, {
+                                  valueAsNumber: true,
+                                })}
+                                className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
+                                  theme === "dark"
+                                    ? "bg-gray-700 text-white border-gray-600"
+                                    : "bg-white text-black border-gray-300"
+                                }`}
+                              />
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <label className="text-sm font-medium">
+                                Description
+                              </label>
+                              <Input
+                                {...register(`details.items.${index}.description`)}
+                                className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
+                                  theme === "dark"
+                                    ? "bg-gray-700 text-white border-gray-600"
+                                    : "bg-white text-black border-gray-300"
+                                }`}
+                              />
+                            </div>
+                            <div>
+                              <label className="text-sm font-medium">
+                                Total
+                              </label>
+                              <Input
+                                type="number"
+                                {...register(`details.items.${index}.total`, {
+                                  valueAsNumber: true,
+                                })}
+                                readOnly
                                 className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
                                   theme === "dark"
                                     ? "bg-gray-700 text-white border-gray-600"
@@ -1028,7 +1168,7 @@ const Page: React.FC = () => {
                         </Button>
                         <div className="text-right">
                           <p className="text-sm font-medium">
-                            Total: {totalAmount.toFixed(2)}
+                            Subtotal: {subTotal.toFixed(2)}
                           </p>
                         </div>
                       </div>
@@ -1061,7 +1201,10 @@ const Page: React.FC = () => {
                             </label>
                             <Input
                               type="number"
-                              {...register("details.taxDetails.amount")}
+                              step="0.01"
+                              {...register("details.taxDetails.amount", {
+                                valueAsNumber: true,
+                              })}
                               className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
                                 theme === "dark"
                                   ? "bg-gray-700 text-white border-gray-600"
@@ -1085,6 +1228,13 @@ const Page: React.FC = () => {
                               <option value="fixed">Fixed</option>
                             </select>
                           </div>
+                        </div>
+                      )}
+                      {showTax && (
+                        <div className="text-right">
+                          <p className="text-sm font-medium">
+                            Tax Amount: {taxAmount.toFixed(2)}
+                          </p>
                         </div>
                       )}
                     </div>
@@ -1116,7 +1266,10 @@ const Page: React.FC = () => {
                             </label>
                             <Input
                               type="number"
-                              {...register("details.discountDetails.amount")}
+                              step="0.01"
+                              {...register("details.discountDetails.amount", {
+                                valueAsNumber: true,
+                              })}
                               className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
                                 theme === "dark"
                                   ? "bg-gray-700 text-white border-gray-600"
@@ -1141,6 +1294,13 @@ const Page: React.FC = () => {
                               <option value="amount">Amount</option>
                             </select>
                           </div>
+                        </div>
+                      )}
+                      {showDiscount && (
+                        <div className="text-right">
+                          <p className="text-sm font-medium">
+                            Discount Amount: {discountAmount.toFixed(2)}
+                          </p>
                         </div>
                       )}
                     </div>
@@ -1170,7 +1330,10 @@ const Page: React.FC = () => {
                             <label className="text-sm font-medium">Cost</label>
                             <Input
                               type="number"
-                              {...register("details.shippingDetails.cost")}
+                              step="0.01"
+                              {...register("details.shippingDetails.cost", {
+                                valueAsNumber: true,
+                              })}
                               className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
                                 theme === "dark"
                                   ? "bg-gray-700 text-white border-gray-600"
@@ -1197,14 +1360,68 @@ const Page: React.FC = () => {
                           </div>
                         </div>
                       )}
+                      {showShipping && (
+                        <div className="text-right">
+                          <p className="text-sm font-medium">
+                            Shipping Cost: {shippingAmount.toFixed(2)}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="space-y-4 p-4 rounded-lg bg-gray-800/50">
+                      <h3 className="text-lg font-semibold">
+                        Payment Information
+                      </h3>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-sm font-medium">
+                            Bank Name
+                          </label>
+                          <Input
+                            {...register("details.paymentInformation.bankName")}
+                            className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
+                              theme === "dark"
+                                ? "bg-gray-700 text-white border-gray-600"
+                                : "bg-white text-black border-gray-300"
+                            }`}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium">
+                            Account Name
+                          </label>
+                          <Input
+                            {...register("details.paymentInformation.accountName")}
+                            className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
+                              theme === "dark"
+                                ? "bg-gray-700 text-white border-gray-600"
+                                : "bg-white text-black border-gray-300"
+                            }`}
+                          />
+                        </div>
+                        <div className="col-span-2">
+                          <label className="text-sm font-medium">
+                            Account Number
+                          </label>
+                          <Input
+                            {...register("details.paymentInformation.accountNumber")}
+                            className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
+                              theme === "dark"
+                                ? "bg-gray-700 text-white border-gray-600"
+                                : "bg-white text-black border-gray-300"
+                            }`}
+                          />
+                        </div>
+                      </div>
                     </div>
 
                     <div className="space-y-4 p-4 rounded-lg bg-gray-800/50">
                       <h3 className="text-lg font-semibold">
                         Additional Information
                       </h3>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="col-span-2">
+                      <div className="grid grid-cols-1 gap-4">
+                        <div>
                           <label className="text-sm font-medium">
                             Additional Notes
                           </label>
@@ -1217,7 +1434,7 @@ const Page: React.FC = () => {
                             }`}
                           />
                         </div>
-                        <div className="col-span-2">
+                        <div>
                           <label className="text-sm font-medium">
                             Payment Terms
                           </label>
@@ -1229,6 +1446,44 @@ const Page: React.FC = () => {
                                 : "bg-white text-black border-gray-300"
                             }`}
                           />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4 p-4 rounded-lg bg-gray-800/50">
+                      <h3 className="text-lg font-semibold">Summary</h3>
+                      <div className="space-y-2">
+                        <div className="flex justify-between">
+                          <span>Subtotal:</span>
+                          <span>{subTotal.toFixed(2)}</span>
+                        </div>
+                        {showTax && (
+                          <div className="flex justify-between">
+                            <span>Tax:</span>
+                            <span>{taxAmount.toFixed(2)}</span>
+                          </div>
+                        )}
+                        {showDiscount && (
+                          <div className="flex justify-between">
+                            <span>Discount:</span>
+                            <span>-{discountAmount.toFixed(2)}</span>
+                          </div>
+                        )}
+                        {showShipping && (
+                          <div className="flex justify-between">
+                            <span>Shipping:</span>
+                            <span>{shippingAmount.toFixed(2)}</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between font-bold border-t pt-2">
+                          <span>Total:</span>
+                          <span>{totalAmount.toFixed(2)}</span>
+                        </div>
+                        <div className="mt-2">
+                          <p className="text-sm">
+                            <strong>Amount in words:</strong>{" "}
+                            {numberToWords(totalAmount)}
+                          </p>
                         </div>
                       </div>
                     </div>
