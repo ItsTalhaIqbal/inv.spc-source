@@ -6,6 +6,7 @@ import puppeteerCore from "puppeteer-core";
 import fs from "fs";
 import path from "path";
 import { TAILWIND_CDN } from "@/lib/variables";
+import { generatePdfService } from "@/services/invoice/server/generatePdfService";
 
 interface Receiver {
   name: string;
@@ -243,8 +244,8 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
           <td class="w-[5%] text-center font-bold text-black text-base border border-gray-500">${index + 1}</td>
           <td class="w-[50%] text-center text-black text-base border border-gray-500 px-2 py-1" style="word-wrap: break-word; white-space: normal;">${item.name}</td>
           <td class="w-[10%] text-center text-black text-base border border-gray-500">${quantity}</td>
-          <td class="w-[17%] text-center text-black text-base border border-gray-500">${unitPrice ? formatNumberWithCommas(unitPrice) : ""}</td>
-          <td class="w-[18%] text-center text-black text-base border border-gray-500">${total ? formatNumberWithCommas(total) : ""}</td>
+          <td class="w-[17%] text-center text-black text-base border border-gray-500">${unitPrice || ""}</td>
+          <td class="w-[18%] text-center text-black text-base border border-gray-500">${total || ""}</td>
         </tr>
       `;
     })
@@ -371,7 +372,6 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
       .invoice-number {
         background-color: #d3d3d3;
         padding: 5px 10px;
-        border-radius: 4px;
         display: inline-block;
         font-weight: bold;
         text-align: right;
@@ -605,23 +605,19 @@ export async function POST(req: NextRequest) {
     const { action, invoiceData } = body;
 
     if (!invoiceData?.details?.invoiceNumber) {
-      return NextResponse.json(
-        { error: "Invoice number is required" },
-        { status: 400 }
-      );
+      throw new Error("Invoice number is required");
     }
 
-    if (typeof invoiceData?.details?.pdfTemplate !== "number") {
-      return NextResponse.json(
-        { error: "PDF template must be a number" },
-        { status: 400 }
-      );
+    const data = invoiceData;
+    if (typeof data?.details?.totalAmount !== "number") {
+      throw new Error("Total amount must be a number");
     }
 
-    const pdfBuffer = await generatePdf(invoiceData);
+    const pdfBuffer = await generatePdfService(data);
 
-    const numericInvoiceNumber = invoiceData.details.invoiceNumber.replace(/\D/g, "");
-    const fileName = `invoice_${numericInvoiceNumber}.pdf`;
+    const hasTax = data.details.taxDetails?.amount && data.details.taxDetails.amount > 0;
+    const invoiceNumberPrefix = hasTax ? `INV_${data.details.invoiceNumber}` : `QUT_${data.details.invoiceNumber}`;
+    const fileName = `SPC_${invoiceNumberPrefix}.pdf`;
 
     const headers = new Headers({
       "Content-Type": "application/pdf",
@@ -629,7 +625,7 @@ export async function POST(req: NextRequest) {
       "Content-Length": pdfBuffer.length.toString(),
     });
 
-    const stream :any = new Readable();
+    const stream: any = new Readable();
     stream.push(pdfBuffer);
     stream.push(null);
 
@@ -671,9 +667,9 @@ export async function GET(req: NextRequest) {
     }
 
     const invoiceData = savedInvoices.find(
-      (invoice) =>
-        invoice.details?.invoiceNumber.replace(/\D/g, "") ===
-        invoiceNumber.replace(/\D/g, "")
+      (invoice: any) =>
+        invoice.details?.invoiceNumber?.toString().replace(/\D/g, "") ===
+        invoiceNumber.toString().replace(/\D/g, "")
     );
 
     if (!invoiceData) {
@@ -685,7 +681,9 @@ export async function GET(req: NextRequest) {
 
     const pdfBuffer = await generatePdf(invoiceData);
 
-    const fileName = `invoice_${invoiceNumber.replace(/\D/g, "")}.pdf`;
+    const hasTax = invoiceData.details?.taxDetails?.amount && invoiceData.details.taxDetails.amount > 0;
+    const invoiceNumberPrefix = hasTax ? `INV_${invoiceData.details?.invoiceNumber}` : `QUT_${invoiceData.details?.invoiceNumber}`;
+    const fileName = `SPC_${invoiceNumberPrefix}.pdf`;
 
     const headers = new Headers({
       "Content-Type": "application/pdf",
@@ -693,9 +691,7 @@ export async function GET(req: NextRequest) {
       "Content-Length": pdfBuffer.length.toString(),
     });
 
-    const stream:any = new Readable();
-    stream.push(pdfBuffer);
-    stream.push(null);
+    const stream: any = Readable.from(pdfBuffer);
 
     return new NextResponse(stream, {
       status: 200,
