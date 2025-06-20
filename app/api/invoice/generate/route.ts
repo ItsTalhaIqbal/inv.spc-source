@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const pdfBuffer = await generatePdfService(body);
+    const pdfBuffer = await generatePdfService(body as any);
 
     if (!pdfBuffer || pdfBuffer.length === 0) {
       return new NextResponse(JSON.stringify({ error: "Failed to generate PDF" }), {

@@ -57,16 +57,16 @@ export const LOCALES = [
     { code: "de", name: "Deutsch" },
     { code: "it", name: "Italiano" },
     { code: "es", name: "Español" },
-    { code: "ca", name: "Català"},
+    { code: "ca", name: "Català" },
     { code: "fr", name: "Français" },
     { code: "ar", name: "العربية" },
-    { code: "pl", name: "Polish"},
+    { code: "pl", name: "Polish" },
     { code: "pt-BR", name: "Português (Brasil)" },
     { code: "tr", name: "Türkçe" },
     { code: "ja", name: "日本語" },
     { code: "nb-NO", name: "Norwegian (bokmål)" },
     { code: "nn-NO", name: "Norwegian (nynorsk)" },
-]
+];
 export const DEFAULT_LOCALE = LOCALES[0].code;
 
 /**
@@ -75,33 +75,24 @@ export const DEFAULT_LOCALE = LOCALES[0].code;
 export const SIGNATURE_COLORS: SignatureColor[] = [
     { name: "black", label: "Black", color: "rgb(0, 0, 0)" },
     { name: "dark blue", label: "Dark Blue", color: "rgb(0, 0, 128)" },
-    {
-        name: "crimson",
-        label: "Crimson",
-        color: "#DC143C",
-    },
+    { name: "crimson", label: "Crimson", color: "#DC143C" },
 ];
 
-//Global PDF Type Variables
+// Global PDF Type Variables
+export const INVVariable: string = "INV-";
+export const QUTVariable: string = "QUT-";
 
-export const INVVariable : string = "INV-";
-export const QUTVariable : string = "QUT-"
+// Unit Types
+export const UNIT_TYPES = ["pcs", "sqm", "roll"];
 
-
+/**
+ * Signature fonts
+ */
 export const SIGNATURE_FONTS: SignatureFont[] = [
-    {
-        name: "Dancing Script",
-        variable: "var(--font-dancing-script)",
-    },
+    { name: "Dancing Script", variable: "var(--font-dancing-script)" },
     { name: "Parisienne", variable: "var(--font-parisienne)" },
-    {
-        name: "Great Vibes",
-        variable: "var(--font-great-vibes)",
-    },
-    {
-        name: "Alex Brush",
-        variable: "var(--font-alex-brush)",
-    },
+    { name: "Great Vibes", variable: "var(--font-great-vibes)" },
+    { name: "Alex Brush", variable: "var(--font-alex-brush)" },
 ];
 
 /**
@@ -123,62 +114,64 @@ export const SHORT_DATE_OPTIONS: Intl.DateTimeFormatOptions = {
  * Form defaults
  */
 export const FORM_DEFAULT_VALUES = {
-  sender: {
-    name: "SPC Source Technical Serivces LLC",
-    country: "UAE",
-    state: "Dubai",
-    email: "contact@spcsource.com",
-    address: "Iris Bay, Office D-43, Business Bay, Dubai, UAE.",
-    phone: "+971 54 500 4520",
-  },
-  receiver: {
-    name: "",
-    address: "",
-    state: "",
-    country: "",
-    email: "",
-    phone: "",
-  },
-  details: {
-    pdfTemplate: 2,
-    invoiceLogo: "/public/assets/img/image.jpg",
-    invoiceNumber: "",
-    invoiceDate: "",
-    dueDate: "",
-    items: [
-      {
+    sender: {
+        name: "SPC Source Technical Serivces LLC",
+        country: "UAE",
+        state: "Dubai",
+        email: "contact@spcsource.com",
+        address: "Iris Bay, Office D-43, Business Bay, Dubai, UAE.",
+        phone: "+971 54 500 4520",
+    },
+    receiver: {
         name: "",
-        quantity: 0,
-        unitPrice:0 ,
-        total:0 ,
-      },
-    ],
-    currency: "AED",
-    language: "English",
-    taxDetails: {
-      amount: 0,
-      amountType: "percentage",
-      taxID: "",
+        address: "",
+        state: "",
+        country: "",
+        email: "",
+        phone: "",
     },
-    discountDetails: {
-      amount: 0,
-      amountType: "amount",
+    details: {
+        pdfTemplate: 2,
+        invoiceLogo: "/public/assets/img/image.jpg",
+        invoiceNumber: "",
+        invoiceDate: "",
+        dueDate: "",
+        items: [
+            {
+                name: "",
+                quantity: 0,
+                unitPrice: 0,
+                total: 0,
+                unitType: "", 
+            },
+        ],
+        currency: "AED",
+        language: "English",
+        taxDetails: {
+            amount: 0,
+            amountType: "percentage",
+            taxID: "",
+        },
+        discountDetails: {
+            amount: 0,
+            amountType: "amount",
+        },
+        shippingDetails: {
+            cost: 0,
+            costType: "amount",
+        },
+        paymentInformation: {
+            bankName: "Bank Inc.",
+            accountName: "John Doe",
+            accountNumber: "445566998877",
+        },
+        additionalNotes: "Received above items in good condition.",
+        paymentTerms: "50% advance upon confirmation of the order, 50% upon delivery or completion.",
+        totalAmountInWords: "",
+        isInvoice: false,
     },
-    shippingDetails: {
-      cost: 0,
-      costType: "amount",
-    },
-    paymentInformation: {
-      bankName: "Bank Inc.",
-      accountName: "John Doe",
-      accountNumber: "445566998877",
-    },
-    additionalNotes: "Received above items in good condition.",
-    paymentTerms: "50% advance upon confirmation of the order, 50% upon delivery or completion.",
-    totalAmountInWords: "",
-    isInvoice: false
-  },
 };
+
 /**
  * ? DEV Only
  * Form auto fill values for testing
@@ -212,6 +205,7 @@ export const FORM_FILL_VALUES = {
                 quantity: 4,
                 unitPrice: 50,
                 total: 200,
+                unitType: "pcs", // Added unitType
             },
             {
                 name: "Product 2",
@@ -219,6 +213,7 @@ export const FORM_FILL_VALUES = {
                 quantity: 5,
                 unitPrice: 50,
                 total: 250,
+                unitType: "sqm", // Added unitType
             },
             {
                 name: "Product 3",
@@ -226,6 +221,7 @@ export const FORM_FILL_VALUES = {
                 quantity: 5,
                 unitPrice: 80,
                 total: 400,
+                unitType: "roll", // Added unitType
             },
         ],
         currency: "USD",
@@ -257,6 +253,6 @@ export const FORM_FILL_VALUES = {
         totalAmount: "850",
         totalAmountInWords: "Eight Hundred Fifty",
         pdfTemplate: 1,
-        isInvoice:false
+        isInvoice: false,
     },
 };

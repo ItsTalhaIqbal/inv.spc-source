@@ -16,13 +16,21 @@ import { Switch } from "@/components/ui/switch";
 const InvoiceDetails = () => {
   const { _t } = useTranslationContext();
   const { setValue, getValues, watch } = useFormContext();
-  const [loading, setLoading] = useState(true);
-  const [invoiceNum, setInvoiceNum] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [invoiceNum, setInvoiceNum] = useState(getValues("details.invoiceNumber") || "");
 
   const isInvoice = watch("details.isInvoice"); // Watch the form value
+  const invoiceNumber = watch("details.invoiceNumber"); // Watch invoice number
 
   useEffect(() => {
     const fetchInvoiceNumber = async () => {
+      // Only fetch if invoiceNumber is empty or undefined (new invoice or reset)
+      if (invoiceNumber && invoiceNumber !== "") {
+        setInvoiceNum(invoiceNumber); // Sync invoiceNum with form value
+        return;
+      }
+
+      setLoading(true);
       try {
         const response = await fetch("/api/invoice/next-number");
         const data = await response.json();
@@ -52,7 +60,7 @@ const InvoiceDetails = () => {
       }
     };
     fetchInvoiceNumber();
-  }, [setValue]);
+  }, [setValue, invoiceNumber]);
 
   const handleSwitchChange = (checked: any) => {
     setValue("details.isInvoice", checked, { shouldValidate: true });
@@ -73,13 +81,15 @@ const InvoiceDetails = () => {
       <div className="flex flex-row flex-wrap gap-5">
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-2 w-full mb-2">
-            <label >PDF Type</label>
-            <Switch
-              checked={isInvoice} 
-              onCheckedChange={handleSwitchChange}
-              className="ml-[50px]"
-            />
-            <span className="text-sm">{isInvoice ? "Invoice" : "Quote"}</span>
+            <label>Invoice Type</label>
+            <div className="flex items-center gap-4">
+              <span className="text-sm ml-[50px] ">Quote</span>
+              <Switch  
+                checked={isInvoice}
+                onCheckedChange={handleSwitchChange}
+              />
+              <span className="text-sm">Invoice</span>
+            </div>
           </div>
           <FormInput
             name="details.invoiceNumber"
@@ -88,23 +98,20 @@ const InvoiceDetails = () => {
             value={loading ? "Loading..." : invoiceNum}
             readOnly
             className="text-center w-[13rem]"
-
           />
           <DatePickerFormField
             name="details.invoiceDate"
             label={_t("form.steps.invoiceDetails.issuedDate")}
             defaultToday={true}
-
           />
           <DatePickerFormField
             name="details.dueDate"
             label={_t("form.steps.invoiceDetails.dueDate")}
-
-          />
+            />
+          </div>
         </div>
-      </div>
-    </section>
-  );
-};
-
-export default InvoiceDetails;
+      </section>
+    );
+  };
+  
+  export default InvoiceDetails;

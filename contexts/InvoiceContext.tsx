@@ -1,3 +1,4 @@
+// InvoiceContextProvider.tsx
 "use client";
 
 import React, {
@@ -16,6 +17,7 @@ import {
   FORM_DEFAULT_VALUES,
   SEND_PDF_API,
   SHORT_DATE_OPTIONS,
+  UNIT_TYPES,
 } from "@/lib/variables";
 import { ExportTypes, InvoiceType } from "@/types";
 
@@ -29,7 +31,7 @@ const defaultInvoiceContext = {
   newInvoiceTrigger: 0,
   generatePdf: async (data: InvoiceType) => {},
   removeFinalPdf: () => {},
-    downloadPdf: async (): Promise<void> => {},
+  downloadPdf: async (invoiceNumber: string): Promise<void> => Promise.resolve(),
   printPdf: () => {},
   previewPdfInTab: () => {},
   saveInvoice: () => {},
@@ -122,6 +124,10 @@ export const InvoiceContextProvider = ({
       details: {
         ...FORM_DEFAULT_VALUES.details,
         currency: "AED",
+        items: FORM_DEFAULT_VALUES.details.items.map((item) => ({
+          ...item,
+          unitType: item.unitType || "pcs", // Ensure default unitType
+        })),
       },
     }),
     []
@@ -136,42 +142,59 @@ export const InvoiceContextProvider = ({
   }, []);
 
   const newInvoice = useCallback(() => {
-    reset(FORM_DEFAULT_VALUES);
+    reset(updatedDefaultValues);
     setInvoicePdf(new Blob());
     resetWizard();
     router.refresh();
     setNewInvoiceTrigger((prev) => prev + 1);
     newInvoiceSuccess();
-  }, [reset, router, newInvoiceSuccess, resetWizard]);
+  }, [reset, router, newInvoiceSuccess, resetWizard, updatedDefaultValues]);
 
-  const downloadPdf = useCallback(async (): Promise<any> => {
-  return new Promise<void>((resolve, reject) => {
-    if (invoicePdf instanceof Blob && invoicePdf.size > 0) {
-      try {
-        const url = window.URL.createObjectURL(invoicePdf);
-        const a = document.createElement("a");
-        const originalInvoiceNumber = getValues().details.invoiceNumber || "unknown";
-        a.href = url;
-        a.download = `invoice_${originalInvoiceNumber}.pdf`;
-        
-        a.addEventListener('click', () => {
-          setTimeout(() => {
-            window.URL.revokeObjectURL(url);
-            resolve(undefined); // Explicitly resolve with undefined
-          }, 1000);
-        });
-        
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-      } catch (error) {
-        resolve(undefined); // Explicitly resolve with undefined
-      }
-    } else {
-      resolve(undefined); // Explicitly resolve with undefined
-    }
-  });
-}, [invoicePdf, getValues]);
+  const downloadPdf = useCallback(
+    async (invoiceNumber: string): Promise<void> => {
+      return new Promise<void>((resolve, reject) => {
+        if (invoicePdf instanceof Blob && invoicePdf.size > 0) {
+          try {
+            const url = window.URL.createObjectURL(invoicePdf);
+            const a = document.createElement("a");
+            const numericInvoiceNumber = getNumericInvoiceNumber(invoiceNumber);
+            const formValues = getValues();
+            const isInvoice = formValues.details?.isInvoice || false;
+            const hasTax = formValues.details?.taxDetails?.amount && formValues.details.taxDetails.amount > 0;
+
+            let fileName = "";
+            if (isInvoice && hasTax) {
+              fileName = `SPC_TAX_INV_${numericInvoiceNumber}.pdf`;
+            } else if (isInvoice && !hasTax) {
+              fileName = `SPC_INV_${numericInvoiceNumber}.pdf`;
+            } else {
+              fileName = `SPC_QUT_${numericInvoiceNumber}.pdf`;
+            }
+
+            a.href = url;
+            a.download = fileName;
+
+            a.addEventListener('click', () => {
+              setTimeout(() => {
+                window.URL.revokeObjectURL(url);
+                resolve();
+              }, 1000);
+            });
+
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+          } catch (error) {
+            console.error("Error downloading PDF:", error);
+            resolve();
+          }
+        } else {
+          resolve();
+        }
+      });
+    },
+    [invoicePdf, getValues, getNumericInvoiceNumber]
+  );
 
   const generatePdf = useCallback(
     async (data: InvoiceType) => {
@@ -189,10 +212,11 @@ export const InvoiceContextProvider = ({
             invoiceNumber: data.details.invoiceNumber || "",
             currency: "AED",
             items: (data.details.items || []).map((item) => ({
-              ...item,
-              description: item.description || "No description provided",
-              unitPrice: Number(item.unitPrice) || 0,
+              name: item.name || "No description provided",
               quantity: Number(item.quantity) || 0,
+              unitPrice: Number(item.unitPrice) || 0,
+              unitType: item.unitType || "pcs", // Ensure unitType
+              total: Number(item.quantity) * Number(item.unitPrice) || 0,
             })),
             taxDetails: {
               ...data.details.taxDetails,
@@ -201,6 +225,7 @@ export const InvoiceContextProvider = ({
             },
           },
         };
+        console.log("generatePdf payload:", payload.details.items);
 
         let attempts = 0;
         const maxAttempts = 3;
@@ -226,9 +251,7 @@ export const InvoiceContextProvider = ({
             if (result.size > 0) {
               setInvoicePdf(result);
               pdfGenerationSuccess();
-              
-              await downloadPdf();
-              
+              await downloadPdf(numericInvoiceNumber);
               try {
                 await fetch("/api/invoice/new_invoice", {
                   method: "POST",
@@ -269,49 +292,62 @@ export const InvoiceContextProvider = ({
     [pdfGenerationSuccess, downloadPdf, newInvoice]
   );
 
-  const saveInvoice = useCallback(() => {
-    try {
-      if (invoicePdf instanceof Blob && invoicePdf.size > 0) {
-        const formValues = getValues();
-        if (!formValues?.details?.invoiceNumber) return;
+  const saveInvoice = useCallback(
+    () => {
+      try {
+        if (invoicePdf instanceof Blob && invoicePdf.size > 0) {
+          const formValues = getValues();
+          if (!formValues?.details?.invoiceNumber) return;
 
-        const updatedDate = new Date().toLocaleDateString("en-US", SHORT_DATE_OPTIONS);
-        const numericInvoiceNumber = getNumericInvoiceNumber(formValues.details.invoiceNumber);
-        const updatedFormValues = {
-          ...formValues,
-          details: {
-            ...formValues.details,
-            invoiceNumber: numericInvoiceNumber,
-            updatedAt: updatedDate,
-          },
-        };
+          const updatedDate = new Date().toLocaleDateString("en-US", SHORT_DATE_OPTIONS);
+          const numericInvoiceNumber = getNumericInvoiceNumber(formValues.details.invoiceNumber);
+          const updatedFormValues = {
+            ...formValues,
+            details: {
+              ...formValues.details,
+              invoiceNumber: numericInvoiceNumber,
+              updatedAt: updatedDate,
+              items: formValues.details.items.map((item) => ({
+                ...item,
+                unitType: item.unitType || "pcs", // Ensure unitType
+              })),
+            },
+          };
 
-        const existingInvoiceIndex = savedInvoices.findIndex(
-          (invoice) => invoice.details.invoiceNumber === numericInvoiceNumber
-        );
+          const existingInvoiceIndex = savedInvoices.findIndex(
+            (invoice) => invoice.details.invoiceNumber === numericInvoiceNumber
+          );
 
-        let updatedInvoices = [...savedInvoices];
-        if (existingInvoiceIndex !== -1) {
-          updatedInvoices[existingInvoiceIndex] = updatedFormValues;
-          modifiedInvoiceSuccess();
-        } else {
-          updatedInvoices.push(updatedFormValues);
-          saveInvoiceSuccess();
+          let updatedInvoices = [...savedInvoices];
+          if (existingInvoiceIndex !== -1) {
+            updatedInvoices[existingInvoiceIndex] = updatedFormValues;
+            modifiedInvoiceSuccess();
+          } else {
+            updatedInvoices.push(updatedFormValues);
+            saveInvoiceSuccess();
+          }
+
+          setSavedInvoices(updatedInvoices);
+          localStorage.setItem("savedInvoices", JSON.stringify(updatedInvoices));
         }
-
-        setSavedInvoices(updatedInvoices);
-        localStorage.setItem("savedInvoices", JSON.stringify(updatedInvoices));
+      } catch (error) {
+        console.error("Error saving invoice:", error);
       }
-    } catch (error) {
-      console.error("Error saving invoice:", error);
-    }
-  }, [getValues, savedInvoices, modifiedInvoiceSuccess, saveInvoiceSuccess]);
+    },
+    [getValues, savedInvoices, modifiedInvoiceSuccess, saveInvoiceSuccess]
+  );
 
   const onFormSubmit = useCallback(
     (data: InvoiceType) => {
-      if (!data?.details?.invoiceNumber) return;
-      if (typeof data?.details?.pdfTemplate !== "number") return;
-      
+      if (!data?.details?.invoiceNumber) {
+        console.error("Invoice number is required");
+        return;
+      }
+      if (typeof data?.details?.pdfTemplate !== "number") {
+        console.error("PDF template must be a number");
+        return;
+      }
+
       generatePdf(data);
       saveInvoice();
     },
@@ -418,6 +454,10 @@ export const InvoiceContextProvider = ({
           details: {
             ...formValues.details,
             invoiceNumber: numericInvoiceNumber,
+            items: formValues.details.items.map((item) => ({
+              ...item,
+              unitType: item.unitType || "pcs", // Ensure unitType
+            })),
           },
         });
       } catch (error) {
@@ -453,10 +493,11 @@ export const InvoiceContextProvider = ({
                 ? new Date(importedData.details.invoiceDate).toISOString()
                 : new Date().toISOString(),
               items: (importedData.details.items || []).map((item) => ({
-                ...item,
-                description: item.description || "No description provided",
-                unitPrice: Number(item.unitPrice) || 0,
+                name: item.name || "No description provided",
                 quantity: Number(item.quantity) || 0,
+                unitPrice: Number(item.unitPrice) || 0,
+                unitType: item.unitType && UNIT_TYPES.includes(item.unitType) ? item.unitType : "pcs", // Validate unitType
+                total: Number(item.quantity) * Number(item.unitPrice) || 0,
               })),
             },
           };

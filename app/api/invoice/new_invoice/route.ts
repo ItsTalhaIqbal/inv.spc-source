@@ -214,7 +214,6 @@ export async function POST(req: NextRequest) {
 
     // Create new invoice
     const invoiceDoc = await Invoice.create({
-      invoiceNumber: body.invoiceNumber,
       sender: body.sender,
       receiver: body.receiver,
       details: {

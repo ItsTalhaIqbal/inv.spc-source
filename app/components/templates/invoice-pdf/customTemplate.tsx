@@ -89,10 +89,10 @@ const CustomTemplate = (data: InvoiceType) => {
                 Due date:
               </dt>
               <dd className="col-span-3 text-gray-500">
-                {new Date(details.dueDate).toLocaleDateString(
+                {/* {new Date(details.dueDate).toLocaleDateString(
                   "en-US",
                   DATE_OPTIONS
-                )}
+                )} */}
               </dd>
             </dl>
           </div>
