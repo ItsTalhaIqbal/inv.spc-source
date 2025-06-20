@@ -1270,6 +1270,7 @@ const onGeneratePdf = async (invoice: Invoice) => {
                               quantity: 0,
                               unitPrice: 0,
                               total: 0,
+                              unitType:""
                             })
                           }
                           className={`${
