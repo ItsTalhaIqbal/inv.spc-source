@@ -409,7 +409,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
       body {
         font-family: 'Roboto', sans-serif;
         margin: 0;
-        padding: 0 20px;
+        padding: 0 10px;
         background-color: #ffffff;
         color: #000000;
       }
