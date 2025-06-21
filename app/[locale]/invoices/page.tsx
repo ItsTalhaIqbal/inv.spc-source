@@ -550,8 +550,8 @@ const Page: React.FC = () => {
             shippingDetails: showShipping
               ? data.details.shippingDetails
               : { cost: 0, costType: "amount" },
-            subTotal: Number(subTotal.toFixed(2)),
-            totalAmount: Number(calculatedTotal.toFixed(2)),
+            subTotal: Number(subTotal?.toFixed(2)),
+            totalAmount: Number(calculatedTotal?.toFixed(2)),
             totalAmountInWords: numberToWords(calculatedTotal),
             items: data.details.items.map((item) => ({
               ...item,
@@ -645,7 +645,7 @@ const Page: React.FC = () => {
     const results = invoices
       .filter(
         (invoice) =>
-          invoice.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          invoice.details.invoiceNumber?.includes(searchTerm.toLowerCase()) ||
           invoice.sender.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
           invoice.receiver.email.toLowerCase().includes(searchTerm.toLowerCase())
       )
@@ -726,7 +726,7 @@ const Page: React.FC = () => {
                   >
                     <TableCell>
                       {invoice.details?.isInvoice ? INVVariable : QUTVariable}
-                      {invoice.invoiceNumber}
+                      {invoice.details.invoiceNumber}
                     </TableCell>
                     <TableCell>{invoice.receiver.name}</TableCell>
                     <TableCell>{Number(invoice.details.totalAmount).toFixed(2)}</TableCell>
