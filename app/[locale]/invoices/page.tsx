@@ -21,7 +21,7 @@ import {
 import { EyeIcon, DownloadIcon, Loader2, Search, Pencil } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { isLogin } from "@/lib/Auth";
-import { INVVariable, QUTVariable } from "@/lib/variables";
+import { INVVariable, QUTVariable, UNIT_TYPES } from "@/lib/variables";
 import { useForm, FormProvider, useFieldArray } from "react-hook-form";
 import { InvoiceType } from "@/types";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -62,21 +62,26 @@ interface Invoice {
     phone: string;
   };
   details: {
+    pdfTemplate?: number;
     isInvoice: boolean;
     invoiceNumber: string;
-    invoiceDate: Date | string;
-    dueDate: Date | string;
+    invoiceDate: string;
+    dueDate: string;
+    currency: string;
+    language: string;
     items: {
       name: string;
       description: string;
       quantity: number;
       unitPrice: number;
       total: number;
+      unitType: string;
       _id?: string;
     }[];
     taxDetails?: {
       amount: number;
       amountType: "percentage" | "fixed";
+      taxID?: string;
     };
     discountDetails?: {
       amount?: number;
@@ -110,41 +115,70 @@ const Page: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [viewInvoiceDialog, setViewInvoiceDialog] = useState<boolean>(false);
   const [editInvoiceDialog, setEditInvoiceDialog] = useState<boolean>(false);
-  const [viewInvoice, setViewInvoice] = useState<Invoice | undefined>(
-    undefined
-  );
-  const [editInvoice, setEditInvoice] = useState<Invoice | undefined>(
-    undefined
-  );
+  const [viewInvoice, setViewInvoice] = useState<Invoice | undefined>(undefined);
+  const [editInvoice, setEditInvoice] = useState<Invoice | undefined>(undefined);
   const [loading, setLoading] = useState<boolean>(true);
   const [authChecked, setAuthChecked] = useState<boolean>(false);
-  const [pdfLoadingStates, setPdfLoadingStates] = useState<{
-    [key: string]: boolean;
-  }>({});
+  const [pdfLoadingStates, setPdfLoadingStates] = useState<{ [key: string]: boolean }>({});
   const [errorMessage, setErrorMessage] = useState<string>("");
-  const [toast, setToast] = useState<{
-    title: string;
-    description: string;
-  } | null>(null);
+  const [toast, setToast] = useState<{ title: string; description: string } | null>(null);
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const router = useRouter();
 
   const methods = useForm<InvoiceType>({
     defaultValues: {
+      sender: {
+        name: "SPC Source Technical Services LLC",
+        address: "Iris Bay, Office D-43, Business Bay, Dubai, UAE",
+        state: "Dubai",
+        country: "UAE",
+        email: "contact@spcsource.com",
+        phone: "+971 54 500 4520",
+      },
+      receiver: {
+        name: "",
+        address: "",
+        state: "",
+        country: "",
+        email: "",
+        phone: "",
+      },
       details: {
+        pdfTemplate: 2,
         isInvoice: true,
+        invoiceNumber: "",
+        invoiceDate: new Date().toISOString().split("T")[0],
+        dueDate: new Date().toISOString().split("T")[0],
+        currency: "AED",
+        language: "en",
+        items: [
+          {
+            name: "",
+            description: "",
+            quantity: 0,
+            unitPrice: 0,
+            total: 0,
+            unitType: "pcs",
+          },
+        ],
         taxDetails: { amount: 5, amountType: "percentage" },
         discountDetails: { amount: 0, amountType: "amount" },
         shippingDetails: { cost: 0, costType: "amount" },
-        items: [
-          { name: "", description: "", quantity: 0, unitPrice: 0, total: 0 },
-        ],
+        paymentInformation: {
+          bankName: "Bank Inc.",
+          accountName: "John Doe",
+          accountNumber: "445566998877",
+        },
+        additionalNotes: "Received above items in good condition.",
+        paymentTerms: "50% advance upon confirmation of the order, 50% upon delivery or completion.",
+        subTotal: 0,
+        totalAmount: 0,
+        totalAmountInWords: "",
       },
     },
   });
 
-  const { reset, handleSubmit, register, control, watch, setValue, getValues } =
-    methods;
+  const { reset, handleSubmit, register, control, watch, setValue, getValues } = methods;
   const { fields, append, remove } = useFieldArray({
     control,
     name: "details.items",
@@ -154,7 +188,6 @@ const Page: React.FC = () => {
   const [showDiscount, setShowDiscount] = useState<boolean>(false);
   const [showShipping, setShowShipping] = useState<boolean>(false);
 
-  // Calculate totals based on form values
   const items = watch("details.items") || [];
   const taxDetails = watch("details.taxDetails");
   const discountDetails = watch("details.discountDetails");
@@ -162,10 +195,7 @@ const Page: React.FC = () => {
 
   const subTotal = Number(
     items
-      .reduce(
-        (sum, item) => sum + (item.quantity || 0) * (item.unitPrice || 0),
-        0
-      )
+      .reduce((sum, item) => sum + (item.quantity || 0) * (item.unitPrice || 0), 0)
       .toFixed(2)
   );
 
@@ -205,22 +235,9 @@ const Page: React.FC = () => {
     ).toFixed(2)
   );
 
-  // Function to convert numbers to words with proper handling
   const numberToWords = (num: number): string => {
     if (isNaN(num) || num === 0) return "Zero Dirham";
-
-    const units = [
-      "",
-      "one",
-      "two",
-      "three",
-      "four",
-      "five",
-      "six",
-      "seven",
-      "eight",
-      "nine",
-    ];
+    const units = ["", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"];
     const teens = [
       "ten",
       "eleven",
@@ -233,18 +250,7 @@ const Page: React.FC = () => {
       "eighteen",
       "nineteen",
     ];
-    const tens = [
-      "",
-      "",
-      "twenty",
-      "thirty",
-      "forty",
-      "fifty",
-      "sixty",
-      "seventy",
-      "eighty",
-      "ninety",
-    ];
+    const tens = ["", "", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"];
     const thousands = ["", "thousand", "million", "billion"];
 
     const convertLessThanOneThousand = (n: number): string => {
@@ -253,10 +259,7 @@ const Page: React.FC = () => {
       if (n < 20) return teens[n - 10];
       const tensPart = Math.floor(n / 10);
       const unitsPart = n % 10;
-      return (
-        tens[tensPart] +
-        (unitsPart !== 0 ? (tensPart > 0 ? "-" : "") + units[unitsPart] : "")
-      );
+      return tens[tensPart] + (unitsPart !== 0 ? (tensPart > 0 ? "-" : "") + units[unitsPart] : "");
     };
 
     const convert = (n: number): string => {
@@ -267,10 +270,7 @@ const Page: React.FC = () => {
         const chunk = n % 1000;
         if (chunk > 0) {
           const chunkWords = convertLessThanOneThousand(chunk);
-          words =
-            chunkWords +
-            (i > 0 ? ` ${thousands[i]}` : "") +
-            (words ? " " + words : "");
+          words = chunkWords + (i > 0 ? ` ${thousands[i]}` : "") + (words ? " " + words : "");
         }
         n = Math.floor(n / 1000);
         i++;
@@ -283,7 +283,7 @@ const Page: React.FC = () => {
     const decimalNum = parseInt(decimalPart);
 
     let result = convert(integerNum);
-    result += " Dirham";
+    result += ` ${methods.getValues("details.currency") || "Dirham"}`;
     if (decimalNum > 0) {
       result += ` and ${convert(decimalNum)} Fils`;
     }
@@ -291,7 +291,6 @@ const Page: React.FC = () => {
     return result.charAt(0).toUpperCase() + result.slice(1);
   };
 
-  // Update totals and item totals
   useEffect(() => {
     const subscription = watch((value, { name }) => {
       if (
@@ -301,7 +300,6 @@ const Page: React.FC = () => {
           name.startsWith("details.discountDetails") ||
           name.startsWith("details.shippingDetails"))
       ) {
-        // Update item total
         if (
           name.startsWith("details.items") &&
           (name.includes("quantity") || name.includes("unitPrice"))
@@ -320,7 +318,6 @@ const Page: React.FC = () => {
       }
     });
 
-    // Update tax, discount, shipping when toggled off
     if (!showTax) {
       setValue("details.taxDetails.amount", 0);
     }
@@ -331,7 +328,6 @@ const Page: React.FC = () => {
       setValue("details.shippingDetails.cost", 0);
     }
 
-    // Calculate current total with toggle states
     const currentTotalAmount =
       subTotal +
       (showTax ? taxAmount : 0) +
@@ -369,50 +365,51 @@ const Page: React.FC = () => {
     showShipping,
   ]);
 
-  const mapInvoiceToFormData = (invoice: any): any => {
+  const mapInvoiceToFormData = (invoice: Invoice): InvoiceType => {
     const invoiceDate =
-      typeof invoice.details.invoiceDate === "string"
+      typeof invoice.details?.invoiceDate === "string"
         ? invoice.details.invoiceDate.split("T")[0]
-        : new Date(invoice.details.invoiceDate).toISOString().split("T")[0];
+        : new Date(invoice.details?.invoiceDate).toISOString().split("T")[0];
 
     const dueDate =
-      typeof invoice.details.dueDate === "string"
+      typeof invoice.details?.dueDate === "string"
         ? invoice.details.dueDate.split("T")[0]
-        : new Date(invoice.details.dueDate).toISOString().split("T")[0];
+        : new Date(invoice.details?.dueDate).toISOString().split("T")[0];
 
     return {
       sender: {
-        name: invoice.sender.name || "SPC Source Technical Services LLC",
-        address:
-          invoice.sender.address ||
-          "Iris Bay, Office D-43, Business Bay, Dubai, UAE.",
-        state: invoice.sender.state || "Dubai",
-        country: invoice.sender.country || "UAE",
-        email: invoice.sender.email || "contact@spcsource.com",
-        phone: invoice.sender.phone || "+971 54 500 4520",
+        name: invoice.sender?.name || "SPC Source Technical Services LLC",
+        address: invoice.sender?.address || "Iris Bay, Office D-43, Business Bay, Dubai, UAE",
+        state: invoice.sender?.state || "Dubai",
+        country: invoice.sender?.country || "UAE",
+        email: invoice.sender?.email || "contact@spcsource.com",
+        phone: invoice.sender?.phone || "+971 54 500 4520",
       },
       receiver: {
-        name: invoice.receiver.name || "",
-        address: invoice.receiver.address || "",
-        state: invoice.receiver.state || "",
-        country: invoice.receiver.country || "",
-        email: invoice.receiver.email || "",
-        phone: invoice.receiver.phone || "",
+        name: invoice.receiver?.name || "",
+        address: invoice.receiver?.address || "",
+        state: invoice.receiver?.state || "",
+        country: invoice.receiver?.country || "",
+        email: invoice.receiver?.email || "",
+        phone: invoice.receiver?.phone || "",
       },
       details: {
-        pdfTemplate: 2,
-        isInvoice: invoice.details.isInvoice || false,
-        invoiceNumber: invoice.details.invoiceNumber || "",
-        invoiceDate: invoiceDate,
-        dueDate: dueDate,
+        pdfTemplate: invoice.details?.pdfTemplate || 2,
+        isInvoice: invoice.details?.isInvoice || false,
+        invoiceNumber: invoice.details?.invoiceNumber || "",
+        invoiceDate,
+        dueDate,
+        currency: invoice.details?.currency || "AED",
+        language: invoice.details?.language || "en",
         items:
-          invoice.details.items.length > 0
-            ? invoice.details.items.map((item: any) => ({
+          invoice.details?.items?.length > 0
+            ? invoice.details.items.map((item) => ({
                 name: item.name || "",
                 description: item.description || "",
                 quantity: Number(item.quantity) || 0,
                 unitPrice: Number(item.unitPrice?.toFixed(2)) || 0,
                 total: Number(item.total?.toFixed(2)) || 0,
+                unitType: item.unitType && UNIT_TYPES.includes(item.unitType) ? item.unitType : "pcs",
               }))
             : [
                 {
@@ -421,98 +418,91 @@ const Page: React.FC = () => {
                   quantity: 0,
                   unitPrice: 0,
                   total: 0,
+                  unitType: "pcs",
                 },
               ],
         taxDetails: {
-          amount: Number(invoice.details.taxDetails?.amount?.toFixed(2)) || 0,
-          amountType: invoice.details.taxDetails?.amountType || "percentage",
+          amount: Number(invoice.details?.taxDetails?.amount?.toFixed(2)) || 0,
+          amountType: invoice.details?.taxDetails?.amountType || "percentage",
+          taxID: invoice.details?.taxDetails?.taxID || "",
         },
         discountDetails: {
-          amount:
-            Number(invoice.details.discountDetails?.amount?.toFixed(2)) || 0,
-          amountType: invoice.details.discountDetails?.amountType || "amount",
+          amount: Number(invoice.details?.discountDetails?.amount?.toFixed(2)) || 0,
+          amountType: invoice.details?.discountDetails?.amountType || "amount",
         },
         shippingDetails: {
-          cost: Number(invoice.details.shippingDetails?.cost?.toFixed(2)) || 0,
-          costType: invoice.details.shippingDetails?.costType || "amount",
+          cost: Number(invoice.details?.shippingDetails?.cost?.toFixed(2)) || 0,
+          costType: invoice.details?.shippingDetails?.costType || "amount",
         },
         paymentInformation: {
-          bankName: invoice.details.paymentInformation?.bankName || "Bank Inc.",
-          accountName:
-            invoice.details.paymentInformation?.accountName || "John Doe",
-          accountNumber:
-            invoice.details.paymentInformation?.accountNumber || "445566998877",
+          bankName: invoice.details?.paymentInformation?.bankName || "Bank Inc.",
+          accountName: invoice.details?.paymentInformation?.accountName || "John Doe",
+          accountNumber: invoice.details?.paymentInformation?.accountNumber || "445566998877",
         },
         additionalNotes:
-          invoice.details.additionalNotes ||
-          "Received above items in good condition.",
+          invoice.details?.additionalNotes || "Received above items in good condition.",
         paymentTerms:
-          invoice.details.paymentTerms ||
+          invoice.details?.paymentTerms ||
           "50% advance upon confirmation of the order, 50% upon delivery or completion.",
-        signature: invoice.details.signature || undefined,
-        subTotal: Number(invoice.details.subTotal.toFixed(2)) || 0,
-        totalAmount: Number(invoice.details.totalAmount.toFixed(2)) || 0,
-        totalAmountInWords: invoice.details.totalAmountInWords || "",
+        signature: invoice.details?.signature || undefined,
+        subTotal: Number(invoice.details?.subTotal?.toFixed(2)) || 0,
+        totalAmount: Number(invoice.details?.totalAmount?.toFixed(2)) || 0,
+        totalAmountInWords: invoice.details?.totalAmountInWords || "",
       },
     };
   };
 
-const onGeneratePdf = async (invoice: Invoice) => {
-  const formData = mapInvoiceToFormData(invoice);
-  reset(formData);
+  const onGeneratePdf = async (invoice: Invoice) => {
+    const formData = mapInvoiceToFormData(invoice);
+    reset(formData);
 
-  try {
-    setPdfLoadingStates((prev) => ({ ...prev, [invoice._id!]: true }));
-    const response = await fetch("/api/invoice/get_new_pdf", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Custom-Request": "invoice-pdf",
-      },
-      body: JSON.stringify({ action: "generate", invoiceData: formData }),
-    });
+    try {
+      setPdfLoadingStates((prev) => ({ ...prev, [invoice._id!]: true }));
+      const response = await fetch("/api/invoice/get_new_pdf", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Custom-Request": "invoice-pdf",
+        },
+        body: JSON.stringify({ action: "generate", invoiceData: formData }),
+      });
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! Status: ${response.status}`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+
+      const blob = await response.blob();
+      const numericInvoiceNumber = formData.details.invoiceNumber.replace(/\D/g, "");
+      const isInvoice = formData.details.isInvoice || false;
+      const taxAmount = formData.details.taxDetails?.amount || 0;
+
+      let fileName = "";
+      if (isInvoice && taxAmount) {
+        fileName = `SPC_TAX_INV_${numericInvoiceNumber}.pdf`;
+      } else if (isInvoice && !taxAmount) {
+        fileName = `SPC_INV_${numericInvoiceNumber}.pdf`;
+      } else {
+        fileName = `SPC_QUT_${numericInvoiceNumber}.pdf`;
+      }
+
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      setToast({
+        title: "Error",
+        description: `Failed to generate PDF: ${error instanceof Error ? error.message : "Unknown error"}`,
+      });
+    } finally {
+      setPdfLoadingStates((prev) => ({ ...prev, [invoice._id!]: false }));
     }
-
-    const blob = await response.blob();
-    const numericInvoiceNumber = formData.details.invoiceNumber.replace(/\D/g, "");
-    const isInvoice = formData.details.isInvoice || false;
-    const taxAmount = formData.details.taxDetails?.amount || 0;
-
-    let fileName = "";
-    if (isInvoice && taxAmount) {
-      fileName = `SPC_TAX_INV_${numericInvoiceNumber}.pdf`;
-    } 
-     else if (isInvoice && !taxAmount) {
-      fileName = `SPC_INV_${numericInvoiceNumber}.pdf`;
-    } else {
-      fileName = `SPC_QUT_${numericInvoiceNumber}}.pdf`;
-    }
-
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = fileName;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    window.URL.revokeObjectURL(url);
-  } catch (error) {
-    console.error("Error generating PDF:", error);
-    setToast({
-      title: "Error",
-      description: `Failed to generate PDF: ${
-        error instanceof Error ? error.message : "Unknown error"
-      }`,
-    });
-  } finally {
-    setPdfLoadingStates((prev) => ({ ...prev,
-      [invoice._id!]: false }));
-  }
-};
-
+  };
 
   const onEditInvoice = (invoice: Invoice) => {
     const formData = mapInvoiceToFormData(invoice);
@@ -548,7 +538,12 @@ const onGeneratePdf = async (invoice: Invoice) => {
           invoiceNumber: editInvoice.invoiceNumber,
           details: {
             ...data.details,
-            taxDetails: showTax ? data.details.taxDetails : { amount: 0, amountType: "percentage" },
+            pdfTemplate: data.details.pdfTemplate || 2,
+            currency: data.details.currency || "AED",
+            language: data.details.language || "en",
+            taxDetails: showTax
+              ? data.details.taxDetails
+              : { amount: 0, amountType: "percentage" },
             discountDetails: showDiscount
               ? data.details.discountDetails
               : { amount: 0, amountType: "amount" },
@@ -558,15 +553,17 @@ const onGeneratePdf = async (invoice: Invoice) => {
             subTotal: Number(subTotal.toFixed(2)),
             totalAmount: Number(calculatedTotal.toFixed(2)),
             totalAmountInWords: numberToWords(calculatedTotal),
+            items: data.details.items.map((item) => ({
+              ...item,
+              unitType: item.unitType && UNIT_TYPES.includes(item.unitType) ? item.unitType : "pcs",
+            })),
           },
         }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(
-          errorData.message || `HTTP error! Status: ${response.status}`
-        );
+        throw new Error(errorData.message || `HTTP error! Status: ${response.status}`);
       }
 
       setEditInvoiceDialog(false);
@@ -577,9 +574,7 @@ const onGeneratePdf = async (invoice: Invoice) => {
       });
     } catch (error) {
       console.error("Error updating invoice:", error);
-      setErrorMessage(
-        error instanceof Error ? error.message : "Failed to update invoice"
-      );
+      setErrorMessage(error instanceof Error ? error.message : "Failed to update invoice");
     } finally {
       setIsSaving(false);
     }
@@ -626,11 +621,10 @@ const onGeneratePdf = async (invoice: Invoice) => {
       if (!Array.isArray(data)) {
         throw new Error("Invalid data format received");
       }
-      // Sort invoices by createdAt in descending order
       const sortedInvoices = data.sort((a: Invoice, b: Invoice) => {
         const dateA = new Date(a.createdAt || 0).getTime();
         const dateB = new Date(b.createdAt || 0).getTime();
-        return dateB - dateA; // Descending order
+        return dateB - dateA;
       });
       setInvoices(sortedInvoices);
       setFilteredInvoices(sortedInvoices);
@@ -638,8 +632,7 @@ const onGeneratePdf = async (invoice: Invoice) => {
       console.error("Error fetching invoices:", error);
       setToast({
         title: "Error",
-        description:
-          error instanceof Error ? error.message : "Failed to fetch invoices",
+        description: error instanceof Error ? error.message : "Failed to fetch invoices",
       });
       setInvoices([]);
       setFilteredInvoices([]);
@@ -647,24 +640,19 @@ const onGeneratePdf = async (invoice: Invoice) => {
       setLoading(false);
     }
   };
+
   useEffect(() => {
     const results = invoices
       .filter(
         (invoice) =>
-          invoice.invoiceNumber
-            .toLowerCase()
-            .includes(searchTerm.toLowerCase()) ||
-          invoice.sender.name
-            .toLowerCase()
-            .includes(searchTerm.toLowerCase()) ||
-          invoice.receiver.email
-            .toLowerCase()
-            .includes(searchTerm.toLowerCase())
+          invoice.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          invoice.sender.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          invoice.receiver.email.toLowerCase().includes(searchTerm.toLowerCase())
       )
       .sort((a: Invoice, b: Invoice) => {
         const dateA = new Date(a.createdAt || 0).getTime();
         const dateB = new Date(b.createdAt || 0).getTime();
-        return dateB - dateA; // Descending order
+        return dateB - dateA;
       });
     setFilteredInvoices(results);
   }, [searchTerm, invoices]);
@@ -677,9 +665,7 @@ const onGeneratePdf = async (invoice: Invoice) => {
     return (
       <div className="flex justify-center items-center h-screen">
         <Loader2
-          className={`h-8 w-8 animate-spin ${
-            theme === "dark" ? "text-gray-300" : "text-gray-500"
-          }`}
+          className={`h-8 w-8 animate-spin ${theme === "dark" ? "text-gray-300" : "text-gray-500"}`}
         />
       </div>
     );
@@ -703,9 +689,7 @@ const onGeneratePdf = async (invoice: Invoice) => {
                 value={searchTerm}
                 onChange={handleSearch}
                 className={`pl-10 ${
-                  theme === "dark"
-                    ? "bg-gray-800 text-white border-gray-700"
-                    : "bg-white text-black border-gray-300"
+                  theme === "dark" ? "bg-gray-800 text-white border-gray-700" : "bg-white text-black border-gray-300"
                 }`}
               />
             </div>
@@ -714,80 +698,40 @@ const onGeneratePdf = async (invoice: Invoice) => {
           {loading ? (
             <div className="flex justify-center items-center h-64">
               <Loader2
-                className={`h-8 w-8 animate-spin ${
-                  theme === "dark" ? "text-gray-300" : "text-gray-500"
-                }`}
+                className={`h-8 w-8 animate-spin ${theme === "dark" ? "text-gray-300" : "text-gray-500"}`}
               />
             </div>
           ) : filteredInvoices.length === 0 ? (
             <div
-              className={`text-center text-lg ${
-                theme === "dark" ? "text-gray-300" : "text-gray-500"
-              } mt-8`}
+              className={`text-center text-lg ${theme === "dark" ? "text-gray-300" : "text-gray-500"} mt-8`}
             >
               No invoices available
             </div>
           ) : (
-            <Table
-              className={`${
-                theme === "dark"
-                  ? "bg-gray-800 text-white"
-                  : "bg-white text-black"
-              } w-full`}
-            >
+            <Table className={`${theme === "dark" ? "bg-gray-800 text-white" : "bg-white text-black"} w-full`}>
               <TableHeader>
-                <TableRow
-                  className={theme === "dark" ? "bg-gray-700" : "bg-gray-100"}
-                >
-                  <TableHead
-                    className={theme === "dark" ? "text-white" : "text-black"}
-                  >
-                    Invoice Number
-                  </TableHead>
-                  <TableHead
-                    className={theme === "dark" ? "text-white" : "text-black"}
-                  >
-                    Customer
-                  </TableHead>
-                  <TableHead
-                    className={theme === "dark" ? "text-white" : "text-black"}
-                  >
-                    Amount
-                  </TableHead>
-                  <TableHead
-                    className={theme === "dark" ? "text-white" : "text-black"}
-                  >
-                    Date
-                  </TableHead>
-                  <TableHead
-                    className={theme === "dark" ? "text-white" : "text-black"}
-                  >
-                    Actions
-                  </TableHead>
+                <TableRow className={theme === "dark" ? "bg-gray-700" : "bg-gray-100"}>
+                  <TableHead className={theme === "dark" ? "text-white" : "text-black"}>Invoice Number</TableHead>
+                  <TableHead className={theme === "dark" ? "text-white" : "text-black"}>Customer</TableHead>
+                  <TableHead className={theme === "dark" ? "text-white" : "text-black"}>Amount</TableHead>
+                  <TableHead className={theme === "dark" ? "text-white" : "text-black"}>Date</TableHead>
+                  <TableHead className={theme === "dark" ? "text-white" : "text-black"}>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredInvoices.map((invoice) => (
                   <TableRow
                     key={invoice._id}
-                    className={
-                      theme === "dark"
-                        ? "hover:bg-gray-700"
-                        : "hover:bg-gray-50 "
-                    }
+                    className={theme === "dark" ? "hover:bg-gray-700" : "hover:bg-gray-50"}
                   >
                     <TableCell>
                       {invoice.details?.isInvoice ? INVVariable : QUTVariable}
                       {invoice.invoiceNumber}
                     </TableCell>
                     <TableCell>{invoice.receiver.name}</TableCell>
+                    <TableCell>{Number(invoice.details.totalAmount).toFixed(2)}</TableCell>
                     <TableCell>
-                      {Number(invoice.details.totalAmount).toFixed(2)}
-                    </TableCell>
-                    <TableCell>
-                      {invoice?.createdAt
-                        ? new Date(invoice.createdAt).toLocaleDateString()
-                        : "N/A"}
+                      {invoice?.createdAt ? new Date(invoice.createdAt).toLocaleDateString() : "N/A"}
                     </TableCell>
                     <TableCell className="flex gap-2">
                       <TooltipProvider>
@@ -867,9 +811,7 @@ const onGeneratePdf = async (invoice: Invoice) => {
           <Dialog open={viewInvoiceDialog} onOpenChange={setViewInvoiceDialog}>
             <DialogContent
               className={`${
-                theme === "dark"
-                  ? "bg-gray-800 text-white border-gray-700"
-                  : "bg-white text-black border-gray-200"
+                theme === "dark" ? "bg-gray-800 text-white border-gray-700" : "bg-white text-black border-gray-200"
               } max-w-3xl shadow-lg rounded-lg`}
             >
               <DialogHeader className="border-b pb-4">
@@ -879,50 +821,37 @@ const onGeneratePdf = async (invoice: Invoice) => {
                 <div className="flex items-center justify-between mb-4 gap-4">
                   <p className="text-sm text-gray-500">
                     <strong>Created At:</strong>{" "}
-                    {viewInvoice?.createdAt
-                      ? new Date(viewInvoice.createdAt).toLocaleString()
-                      : "N/A"}
+                    {viewInvoice?.createdAt ? new Date(viewInvoice.createdAt).toLocaleString() : "N/A"}
                   </p>
                 </div>
               </DialogHeader>
               {viewInvoice && (
                 <div className="max-h-[70vh] overflow-y-auto p-4 space-y-6">
                   <div
-                    className={
-                      theme === "dark"
-                        ? "bg-gray-700 p-4 rounded-md shadow-sm"
-                        : "bg-gray-50 p-4 rounded-md shadow-sm"
-                    }
+                    className={theme === "dark" ? "bg-gray-700 p-4 rounded-md shadow-sm" : "bg-gray-50 p-4 rounded-md shadow-sm"}
                   >
-                    <h3 className="text-lg font-semibold mb-2">
-                      Invoice Details
-                    </h3>
+                    <h3 className="text-lg font-semibold mb-2">Invoice Details</h3>
                     <div className="grid grid-cols-2 gap-4">
                       <p className="text-sm">
-                        <strong>Invoice Number:</strong>{" "}
-                        <span>{viewInvoice.invoiceNumber}</span>
+                        <strong>Invoice Number:</strong> <span>{viewInvoice.invoiceNumber}</span>
                       </p>
                       <p className="text-sm">
                         <strong>Invoice Date:</strong>{" "}
-                        <span>
-                          {new Date(
-                            viewInvoice.details.invoiceDate
-                          ).toLocaleDateString()}
-                        </span>
+                        <span>{new Date(viewInvoice.details.invoiceDate).toLocaleDateString()}</span>
                       </p>
                       <p className="text-sm">
                         <strong>Due Date:</strong>{" "}
-                        <span>
-                          {new Date(
-                            viewInvoice.details.dueDate
-                          ).toLocaleDateString()}
-                        </span>
+                        <span>{new Date(viewInvoice.details.dueDate).toLocaleDateString()}</span>
+                      </p>
+                      <p className="text-sm">
+                        <strong>Currency:</strong> <span>{viewInvoice.details.currency}</span>
+                      </p>
+                      <p className="text-sm">
+                        <strong>Language:</strong> <span>{viewInvoice.details.language}</span>
                       </p>
                       <p className="text-sm">
                         <strong>Sub Total:</strong>{" "}
-                        <span>
-                          {Number(viewInvoice.details.subTotal).toFixed(2)}
-                        </span>
+                        <span>{Number(viewInvoice.details.subTotal).toFixed(2)}</span>
                       </p>
                       <p className="text-sm">
                         <strong>Total Amount in Words:</strong>{" "}
@@ -931,48 +860,32 @@ const onGeneratePdf = async (invoice: Invoice) => {
                     </div>
                   </div>
                   <div
-                    className={
-                      theme === "dark"
-                        ? "bg-gray-700 p-4 rounded-md shadow-sm"
-                        : "bg-gray-50 p-4 rounded-md shadow-sm"
-                    }
+                    className={theme === "dark" ? "bg-gray-700 p-4 rounded-md shadow-sm" : "bg-gray-50 p-4 rounded-md shadow-sm"}
                   >
-                    <h3 className="text-lg font-semibold mb-2">
-                      Receiver Information
-                    </h3>
+                    <h3 className="text-lg font-semibold mb-2">Receiver Information</h3>
                     <div className="grid grid-cols-2 gap-4">
                       <p className="text-sm">
-                        <strong>Name:</strong>{" "}
-                        <span>{viewInvoice.receiver.name}</span>
+                        <strong>Name:</strong> <span>{viewInvoice.receiver.name}</span>
                       </p>
                       <p className="text-sm">
-                        <strong>Address:</strong>{" "}
-                        <span>{viewInvoice.receiver.address}</span>
+                        <strong>Address:</strong> <span>{viewInvoice.receiver.address}</span>
                       </p>
                       <p className="text-sm">
-                        <strong>State:</strong>{" "}
-                        <span>{viewInvoice.receiver.state || "N/A"}</span>
+                        <strong>State:</strong> <span>{viewInvoice.receiver.state || "N/A"}</span>
                       </p>
                       <p className="text-sm">
-                        <strong>Country:</strong>{" "}
-                        <span>{viewInvoice.receiver.country}</span>
+                        <strong>Country:</strong> <span>{viewInvoice.receiver.country}</span>
                       </p>
                       <p className="text-sm">
-                        <strong>Email:</strong>{" "}
-                        <span>{viewInvoice.receiver.email}</span>
+                        <strong>Email:</strong> <span>{viewInvoice.receiver.email}</span>
                       </p>
                       <p className="text-sm">
-                        <strong>Phone:</strong>{" "}
-                        <span>{viewInvoice.receiver.phone}</span>
+                        <strong>Phone:</strong> <span>{viewInvoice.receiver.phone}</span>
                       </p>
                     </div>
                   </div>
                   <div
-                    className={
-                      theme === "dark"
-                        ? "bg-gray-700 p-4 rounded-md shadow-sm"
-                        : "bg-gray-50 p-4 rounded-md shadow-sm"
-                    }
+                    className={theme === "dark" ? "bg-gray-700 p-4 rounded-md shadow-sm" : "bg-gray-50 p-4 rounded-md shadow-sm"}
                   >
                     <h3 className="text-lg font-semibold mb-2">Items</h3>
                     {viewInvoice.details.items.map((item, index) => (
@@ -989,45 +902,35 @@ const onGeneratePdf = async (invoice: Invoice) => {
                             <strong>Name:</strong> <span>{item.name}</span>
                           </p>
                           <p className="text-sm">
-                            <strong>Description:</strong>{" "}
-                            <span>{item.description}</span>
+                            <strong>Description:</strong> <span>{item.description}</span>
                           </p>
                           <p className="text-sm">
-                            <strong>Quantity:</strong>{" "}
-                            <span>{item.quantity}</span>
+                            <strong>Quantity:</strong> <span>{item.quantity}</span>
                           </p>
                           <p className="text-sm">
-                            <strong>Unit Price:</strong>{" "}
-                            <span>{Number(item.unitPrice).toFixed(2)}</span>
+                            <strong>Unit Price:</strong> <span>{Number(item.unitPrice).toFixed(2)}</span>
+                          </p>
+                          <p className="text-sm">
+                            <strong>Unit Type:</strong> <span>{item.unitType || "pcs"}</span>
                           </p>
                           <p className="text-sm">
                             <strong>Total:</strong>{" "}
-                            <span className="font-medium">
-                              {Number(item.total).toFixed(2)}
-                            </span>
+                            <span className="font-medium">{Number(item.total).toFixed(2)}</span>
                           </p>
                         </div>
                       </div>
                     ))}
                   </div>
                   <div
-                    className={
-                      theme === "dark"
-                        ? "bg-gray-700 p-4 rounded-md shadow-sm"
-                        : "bg-gray-50 p-4 rounded-md shadow-sm"
-                    }
+                    className={theme === "dark" ? "bg-gray-700 p-4 rounded-md shadow-sm" : "bg-gray-50 p-4 rounded-md shadow-sm"}
                   >
-                    <h3 className="text-lg font-semibold mb-2">
-                      Tax, Discount & Shipping Details
-                    </h3>
+                    <h3 className="text-lg font-semibold mb-2">Tax, Discount & Shipping Details</h3>
                     <div className="grid grid-cols-2 gap-4">
                       <p className="text-sm">
                         <strong>Tax Amount:</strong>{" "}
                         <span>
                           {viewInvoice.details.taxDetails?.amount
-                            ? Number(
-                                viewInvoice.details.taxDetails.amount
-                              ).toFixed(2)
+                            ? Number(viewInvoice.details.taxDetails.amount).toFixed(2)
                             : "0.00"}
                         </span>
                       </p>
@@ -1035,9 +938,7 @@ const onGeneratePdf = async (invoice: Invoice) => {
                         <strong>Discount Amount:</strong>{" "}
                         <span>
                           {viewInvoice.details.discountDetails?.amount
-                            ? Number(
-                                viewInvoice.details.discountDetails.amount
-                              ).toFixed(2)
+                            ? Number(viewInvoice.details.discountDetails.amount).toFixed(2)
                             : "0.00"}
                         </span>
                       </p>
@@ -1045,73 +946,42 @@ const onGeneratePdf = async (invoice: Invoice) => {
                         <strong>Shipping Cost:</strong>{" "}
                         <span>
                           {viewInvoice.details.shippingDetails?.cost
-                            ? Number(
-                                viewInvoice.details.shippingDetails.cost
-                              ).toFixed(2)
+                            ? Number(viewInvoice.details.shippingDetails.cost).toFixed(2)
                             : "0.00"}
                         </span>
                       </p>
                     </div>
                   </div>
                   <div
-                    className={
-                      theme === "dark"
-                        ? "bg-gray-700 p-4 rounded-md shadow-sm"
-                        : "bg-gray-50 p-4 rounded-md shadow-sm"
-                    }
+                    className={theme === "dark" ? "bg-gray-700 p-4 rounded-md shadow-sm" : "bg-gray-50 p-4 rounded-md shadow-sm"}
                   >
-                    <h3 className="text-lg font-semibold mb-2">
-                      Payment Information
-                    </h3>
+                    <h3 className="text-lg font-semibold mb-2">Payment Information</h3>
                     <div className="grid grid-cols-2 gap-4">
                       <p className="text-sm">
-                        <strong>Bank Name:</strong>{" "}
-                        <span>
-                          {viewInvoice.details.paymentInformation.bankName}
-                        </span>
+                        <strong>Bank Name:</strong> <span>{viewInvoice.details.paymentInformation?.bankName}</span>
                       </p>
                       <p className="text-sm">
-                        <strong>Account Name:</strong>{" "}
-                        <span>
-                          {viewInvoice.details.paymentInformation.accountName}
-                        </span>
+                        <strong>Account Name:</strong> <span>{viewInvoice.details.paymentInformation?.accountName}</span>
                       </p>
                       <p className="text-sm">
-                        <strong>Account Number:</strong>{" "}
-                        <span>
-                          {viewInvoice.details.paymentInformation.accountNumber}
-                        </span>
+                        <strong>Account Number:</strong> <span>{viewInvoice.details.paymentInformation?.accountNumber}</span>
                       </p>
                     </div>
                   </div>
                   <div
-                    className={
-                      theme === "dark"
-                        ? "bg-gray-700 p-4 rounded-md shadow-sm"
-                        : "bg-gray-50 p-4 rounded-md shadow-sm"
-                    }
+                    className={theme === "dark" ? "bg-gray-700 p-4 rounded-md shadow-sm" : "bg-gray-50 p-4 rounded-md shadow-sm"}
                   >
-                    <h3 className="text-lg font-semibold mb-2">
-                      Additional Information
-                    </h3>
+                    <h3 className="text-lg font-semibold mb-2">Additional Information</h3>
                     <div className="grid grid-cols-2 gap-4">
                       <p className="text-sm">
-                        <strong>Additional Notes:</strong>{" "}
-                        <span>
-                          {viewInvoice.details.additionalNotes || "N/A"}
-                        </span>
+                        <strong>Additional Notes:</strong> <span>{viewInvoice.details.additionalNotes || "N/A"}</span>
                       </p>
                       <p className="text-sm">
-                        <strong>Payment Terms:</strong>{" "}
-                        <span>{viewInvoice.details.paymentTerms}</span>
+                        <strong>Payment Terms:</strong> <span>{viewInvoice.details.paymentTerms}</span>
                       </p>
                       <p className="text-sm">
                         <strong>Signature:</strong>{" "}
-                        <span>
-                          {viewInvoice.details.signature?.data
-                            ? "Present"
-                            : "N/A"}
-                        </span>
+                        <span>{viewInvoice.details.signature?.data ? "Present" : "N/A"}</span>
                       </p>
                     </div>
                   </div>
@@ -1123,9 +993,7 @@ const onGeneratePdf = async (invoice: Invoice) => {
           <Dialog open={editInvoiceDialog} onOpenChange={setEditInvoiceDialog}>
             <DialogContent
               className={`${
-                theme === "dark"
-                  ? "bg-gray-800 text-white border-gray-700"
-                  : "bg-white text-black border-gray-200"
+                theme === "dark" ? "bg-gray-800 text-white border-gray-700" : "bg-white text-black border-gray-200"
               } sm:max-w-[800px] shadow-lg rounded-md`}
             >
               <DialogHeader className="border-b pb-4">
@@ -1140,15 +1008,11 @@ const onGeneratePdf = async (invoice: Invoice) => {
                       <h3 className="text-lg font-semibold">Invoice Details</h3>
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <label className="text-sm font-medium">
-                            Invoice Type
-                          </label>
+                          <label className="text-sm font-medium">Invoice Type</label>
                           <select
                             {...register("details.isInvoice")}
                             className={`mt-1 w-full rounded-md border p-2 focus:ring-2 focus:ring-blue-500 ${
-                              theme === "dark"
-                                ? "bg-gray-700 text-white border-gray-600"
-                                : "bg-white text-black border-gray-300"
+                              theme === "dark" ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"
                             }`}
                           >
                             <option value="true">Invoice</option>
@@ -1156,32 +1020,49 @@ const onGeneratePdf = async (invoice: Invoice) => {
                           </select>
                         </div>
                         <div>
-                          <label className="text-sm font-medium">
-                            Invoice Date
-                          </label>
+                          <label className="text-sm font-medium">Invoice Date</label>
                           <Input
                             type="date"
                             {...register("details.invoiceDate")}
                             className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
-                              theme === "dark"
-                                ? "bg-gray-700 text-white border-gray-600"
-                                : "bg-white text-black border-gray-300"
+                              theme === "dark" ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"
                             }`}
                           />
                         </div>
                         <div>
-                          <label className="text-sm font-medium">
-                            Due Date
-                          </label>
+                          <label className="text-sm font-medium">Due Date</label>
                           <Input
                             type="date"
                             {...register("details.dueDate")}
                             className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
-                              theme === "dark"
-                                ? "bg-gray-700 text-white border-gray-600"
-                                : "bg-white text-black border-gray-300"
+                              theme === "dark" ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"
                             }`}
                           />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium">Currency</label>
+                          <select
+                            {...register("details.currency")}
+                            className={`mt-1 w-full rounded-md border p-2 focus:ring-2 focus:ring-blue-500 ${
+                              theme === "dark" ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"
+                            }`}
+                          >
+                            <option value="AED">AED</option>
+                            <option value="USD">USD</option>
+                            <option value="EUR">EUR</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium">Language</label>
+                          <select
+                            {...register("details.language")}
+                            className={`mt-1 w-full rounded-md border p-2 focus:ring-2 focus:ring-blue-500 ${
+                              theme === "dark" ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"
+                            }`}
+                          >
+                            <option value="en">English</option>
+                            <option value="ar">Arabic</option>
+                          </select>
                         </div>
                       </div>
                     </div>
@@ -1189,65 +1070,61 @@ const onGeneratePdf = async (invoice: Invoice) => {
                     <div className="space-y-4 p-4 rounded-lg bg-gray-800/50">
                       <h3 className="text-lg font-semibold">Items</h3>
                       {fields.map((item, index) => (
-                        <div
-                          key={item.id}
-                          className="border border-gray-600 p-4 rounded-md space-y-2"
-                        >
-                          <div className="grid grid-cols-3 gap-4">
+                        <div key={item.id} className="border border-gray-600 p-4 rounded-md space-y-2">
+                          <div className="grid grid-cols-4 gap-4">
                             <div>
-                              <label className="text-sm font-medium">
-                                Name
-                              </label>
+                              <label className="text-sm font-medium">Name</label>
                               <Input
                                 {...register(`details.items.${index}.name`)}
                                 className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
-                                  theme === "dark"
-                                    ? "bg-gray-700 text-white border-gray-600"
-                                    : "bg-white text-black border-gray-300"
+                                  theme === "dark" ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"
                                 }`}
                               />
                             </div>
                             <div>
-                              <label className="text-sm font-medium">
-                                Quantity
-                              </label>
+                              <label className="text-sm font-medium">Unit Type</label>
+                              <select
+                                {...register(`details.items.${index}.unitType`, {
+                                  validate: (value) => UNIT_TYPES.includes(value) || "Please select a valid unit type",
+                                })}
+                                className={`mt-1 w-full rounded-md border p-2 focus:ring-2 focus:ring-blue-500 ${
+                                  theme === "dark" ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"
+                                }`}
+                              >
+                                <option value="" disabled>Select Unit</option>
+                                {UNIT_TYPES.map((unit) => (
+                                  <option key={unit} value={unit}>
+                                    {unit}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                            <div>
+                              <label className="text-sm font-medium">Quantity</label>
                               <Input
                                 type="number"
-                                {...register(
-                                  `details.items.${index}.quantity`,
-                                  {
-                                    valueAsNumber: true,
-                                  }
-                                )}
+                                {...register(`details.items.${index}.quantity`, {
+                                  valueAsNumber: true,
+                                })}
                                 className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
-                                  theme === "dark"
-                                    ? "bg-gray-700 text-white border-gray-600"
-                                    : "bg-white text-black border-gray-300"
+                                  theme === "dark" ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"
                                 }`}
                               />
                             </div>
                             <div>
-                              <label className="text-sm font-medium">
-                                Unit Price
-                              </label>
+                              <label className="text-sm font-medium">Unit Price</label>
                               <Input
                                 type="number"
                                 step="0.01"
-                                {...register(
-                                  `details.items.${index}.unitPrice`,
-                                  {
-                                    valueAsNumber: true,
-                                  }
-                                )}
+                                {...register(`details.items.${index}.unitPrice`, {
+                                  valueAsNumber: true,
+                                })}
                                 className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
-                                  theme === "dark"
-                                    ? "bg-gray-700 text-white border-gray-600"
-                                    : "bg-white text-black border-gray-300"
+                                  theme === "dark" ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"
                                 }`}
                               />
                             </div>
                           </div>
-
                           <Button
                             type="button"
                             variant="destructive"
@@ -1270,13 +1147,13 @@ const onGeneratePdf = async (invoice: Invoice) => {
                               quantity: 0,
                               unitPrice: 0,
                               total: 0,
-                              unitType:""
+                              unitType: "pcs",
                             })
                           }
                           className={`${
                             theme === "dark"
-                              ? "bg-white text-black hover:bg-gray-200 border-white"
-                              : "bg-gray-100 text-black hover:bg-gray-200"
+                              ? "bg-gray-300 text-black hover:bg-gray-400 border-gray-200"
+                              : "bg-white text-black hover:bg-gray-100 border-gray-200"
                           }`}
                         >
                           Add Item
@@ -1296,19 +1173,14 @@ const onGeneratePdf = async (invoice: Invoice) => {
                               : "data-[state=checked]:bg-white data-[state=unchecked]:bg-gray-300"
                           }`}
                         />
-                        <Label
-                          htmlFor="tax-switch"
-                          className="text-lg font-semibold"
-                        >
+                        <Label htmlFor="tax-switch" className="text-lg font-semibold">
                           Tax Details
                         </Label>
                       </div>
                       {showTax && (
                         <div className="grid grid-cols-2 gap-4">
                           <div>
-                            <label className="text-sm font-medium">
-                              Tax Amount
-                            </label>
+                            <label className="text-sm font-medium">Tax Amount</label>
                             <Input
                               type="number"
                               step="0.01"
@@ -1316,22 +1188,16 @@ const onGeneratePdf = async (invoice: Invoice) => {
                                 valueAsNumber: true,
                               })}
                               className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
-                                theme === "dark"
-                                  ? "bg-gray-700 text-white border-gray-600"
-                                  : "bg-white text-black border-gray-300"
+                                theme === "dark" ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"
                               }`}
                             />
                           </div>
                           <div>
-                            <label className="text-sm font-medium">
-                              Amount Type
-                            </label>
+                            <label className="text-sm font-medium">Amount Type</label>
                             <select
                               {...register("details.taxDetails.amountType")}
                               className={`mt-1 w-full rounded-md border p-2 focus:ring-2 focus:ring-blue-500 ${
-                                theme === "dark"
-                                  ? "bg-gray-700 text-white border-gray-600"
-                                  : "bg-white text-black border-gray-300"
+                                theme === "dark" ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"
                               }`}
                             >
                               <option value="percentage">Percentage</option>
@@ -1342,9 +1208,7 @@ const onGeneratePdf = async (invoice: Invoice) => {
                       )}
                       {showTax && (
                         <div className="text-right">
-                          <p className="text-sm font-medium">
-                            Tax Amount: {taxAmount.toFixed(2)}
-                          </p>
+                          <p className="text-sm font-medium">Tax Amount: {taxAmount.toFixed(2)}</p>
                         </div>
                       )}
                     </div>
@@ -1361,19 +1225,14 @@ const onGeneratePdf = async (invoice: Invoice) => {
                               : "data-[state=checked]:bg-white data-[state=unchecked]:bg-gray-300"
                           }`}
                         />
-                        <Label
-                          htmlFor="discount-switch"
-                          className="text-lg font-semibold"
-                        >
+                        <Label htmlFor="discount-switch" className="text-lg font-semibold">
                           Discount Details
                         </Label>
                       </div>
                       {showDiscount && (
                         <div className="grid grid-cols-2 gap-4">
                           <div>
-                            <label className="text-sm font-medium">
-                              Amount
-                            </label>
+                            <label className="text-sm font-medium">Amount</label>
                             <Input
                               type="number"
                               step="0.01"
@@ -1381,24 +1240,16 @@ const onGeneratePdf = async (invoice: Invoice) => {
                                 valueAsNumber: true,
                               })}
                               className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
-                                theme === "dark"
-                                  ? "bg-gray-700 text-white border-gray-600"
-                                  : "bg-white text-black border-gray-300"
+                                theme === "dark" ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"
                               }`}
                             />
                           </div>
                           <div>
-                            <label className="text-sm font-medium">
-                              Amount Type
-                            </label>
+                            <label className="text-sm font-medium">Amount Type</label>
                             <select
-                              {...register(
-                                "details.discountDetails.amountType"
-                              )}
+                              {...register("details.discountDetails.amountType")}
                               className={`mt-1 w-full rounded-md border p-2 focus:ring-2 focus:ring-blue-500 ${
-                                theme === "dark"
-                                  ? "bg-gray-700 text-white border-gray-600"
-                                  : "bg-white text-black border-gray-300"
+                                theme === "dark" ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"
                               }`}
                             >
                               <option value="percentage">Percentage</option>
@@ -1410,9 +1261,7 @@ const onGeneratePdf = async (invoice: Invoice) => {
                       )}
                       {showDiscount && (
                         <div className="text-right">
-                          <p className="text-sm font-medium">
-                            Discount Amount: {discountAmount.toFixed(2)}
-                          </p>
+                          <p className="text-sm font-medium">Discount Amount: {discountAmount.toFixed(2)}</p>
                         </div>
                       )}
                     </div>
@@ -1429,10 +1278,7 @@ const onGeneratePdf = async (invoice: Invoice) => {
                               : "data-[state=checked]:bg-white data-[state=unchecked]:bg-gray-300"
                           }`}
                         />
-                        <Label
-                          htmlFor="shipping-switch"
-                          className="text-lg font-semibold"
-                        >
+                        <Label htmlFor="shipping-switch" className="text-lg font-semibold">
                           Shipping Details
                         </Label>
                       </div>
@@ -1447,22 +1293,16 @@ const onGeneratePdf = async (invoice: Invoice) => {
                                 valueAsNumber: true,
                               })}
                               className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
-                                theme === "dark"
-                                  ? "bg-gray-700 text-white border-gray-600"
-                                  : "bg-white text-black border-gray-300"
+                                theme === "dark" ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"
                               }`}
                             />
                           </div>
                           <div>
-                            <label className="text-sm font-medium">
-                              Cost Type
-                            </label>
+                            <label className="text-sm font-medium">Cost Type</label>
                             <select
                               {...register("details.shippingDetails.costType")}
                               className={`mt-1 w-full rounded-md border p-2 focus:ring-2 focus:ring-blue-500 ${
-                                theme === "dark"
-                                  ? "bg-gray-700 text-white border-gray-600"
-                                  : "bg-white text-black border-gray-300"
+                                theme === "dark" ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"
                               }`}
                             >
                               <option value="percentage">Percentage</option>
@@ -1474,41 +1314,29 @@ const onGeneratePdf = async (invoice: Invoice) => {
                       )}
                       {showShipping && (
                         <div className="text-right">
-                          <p className="text-sm font-medium">
-                            Shipping Cost: {shippingAmount.toFixed(2)}
-                          </p>
+                          <p className="text-sm font-medium">Shipping Cost: {shippingAmount.toFixed(2)}</p>
                         </div>
                       )}
                     </div>
 
                     <div className="space-y-4 p-4 rounded-lg bg-gray-800/50">
-                      <h3 className="text-lg font-semibold">
-                        Additional Information
-                      </h3>
+                      <h3 className="text-lg font-semibold">Additional Information</h3>
                       <div className="grid grid-cols-1 gap-4">
                         <div>
-                          <label className="text-sm font-medium">
-                            Additional Notes
-                          </label>
+                          <label className="text-sm font-medium">Additional Notes</label>
                           <Input
                             {...register("details.additionalNotes")}
                             className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
-                              theme === "dark"
-                                ? "bg-gray-700 text-white border-gray-600"
-                                : "bg-white text-black border-gray-300"
+                              theme === "dark" ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"
                             }`}
                           />
                         </div>
                         <div>
-                          <label className="text-sm font-medium">
-                            Payment Terms
-                          </label>
+                          <label className="text-sm font-medium">Payment Terms</label>
                           <Input
                             {...register("details.paymentTerms")}
                             className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
-                              theme === "dark"
-                                ? "bg-gray-700 text-white border-gray-600"
-                                : "bg-white text-black border-gray-300"
+                              theme === "dark" ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"
                             }`}
                           />
                         </div>
@@ -1540,8 +1368,8 @@ const onGeneratePdf = async (invoice: Invoice) => {
                             <span>{shippingAmount.toFixed(2)}</span>
                           </div>
                         )}
-                        <div className="flex justify-between font-bold border-t pt-2 border-t-gray-500">
-                          <span> Grand Total:</span>
+                        <div className="flex justify-between font-bold border-t pt-2 border-t-gray-200">
+                          <span>Grand Total:</span>
                           <span>{totalAmount.toFixed(2)}</span>
                         </div>
                       </div>
@@ -1549,14 +1377,8 @@ const onGeneratePdf = async (invoice: Invoice) => {
                   </div>
                 </ScrollArea>
                 <DialogFooter className="border-t pt-4 flex justify-end gap-2">
-                  {errorMessage && (
-                    <p className="text-red-500 text-sm">{errorMessage}</p>
-                  )}
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setEditInvoiceDialog(false)}
-                  >
+                  {errorMessage && <p className="text-red-500 text-sm">{errorMessage}</p>}
+                  <Button type="button" variant="outline" onClick={() => setEditInvoiceDialog(false)}>
                     Cancel
                   </Button>
                   <Button type="submit" disabled={isSaving}>
