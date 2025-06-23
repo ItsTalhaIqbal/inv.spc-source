@@ -86,7 +86,7 @@ const CreateUserDialog = ({
     }
 
     const payload = {
-      name,
+      name:name.toLowerCase(),
       address,
       state,
       country,

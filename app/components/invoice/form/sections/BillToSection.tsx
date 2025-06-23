@@ -40,6 +40,11 @@ interface User {
   phone: string;
 }
 
+// Utility function to capitalize each word
+const capitalizeEachWord = (str: string) => {
+  return str.replace(/\b\w/g, (char) => char.toUpperCase());
+};
+
 // Remove setDialogOpen from props since we'll manage it locally
 interface BillToSectionProps {}
 
@@ -67,7 +72,12 @@ const BillToSection = ({}: BillToSectionProps) => {
         }
 
         const data: User[] = await response.json();
-        setUsers(data);
+        // Capitalize names when fetching users
+        const capitalizedUsers = data.map(user => ({
+          ...user,
+          name: capitalizeEachWord(user.name)
+        }));
+        setUsers(capitalizedUsers);
         setError(null);
       } catch (err: any) {
         setError("Failed to load users");
@@ -80,7 +90,7 @@ const BillToSection = ({}: BillToSectionProps) => {
   }, []);
 
   const handleUserSelect = (user: User) => {
-    setValue("receiver.name", user.name, { shouldValidate: true });
+    setValue("receiver.name", capitalizeEachWord(user.name), { shouldValidate: true });
     setValue("receiver.address", user.address, { shouldValidate: true });
     setValue("receiver.state", user.state, { shouldValidate: true });
     setValue("receiver.country", user.country, { shouldValidate: true });
@@ -92,12 +102,16 @@ const BillToSection = ({}: BillToSectionProps) => {
 
   const handleUserCreated = (newUser?: User) => {
     if (newUser && newUser._id) {
+      const capitalizedUser = {
+        ...newUser,
+        name: capitalizeEachWord(newUser.name)
+      };
       setUsers((prevUsers) => {
-        const updatedUsers = [...prevUsers, newUser];
+        const updatedUsers = [...prevUsers, capitalizedUser];
         return updatedUsers;
       });
       setError(null);
-      handleUserSelect(newUser);
+      handleUserSelect(capitalizedUser);
     } else {
       setLoading(true);
       fetch("/api/invoice/customer", {
@@ -110,7 +124,11 @@ const BillToSection = ({}: BillToSectionProps) => {
           return response.json();
         })
         .then((data: User[]) => {
-          setUsers(data);
+          const capitalizedUsers = data.map(user => ({
+            ...user,
+            name: capitalizeEachWord(user.name)
+          }));
+          setUsers(capitalizedUsers);
           setError(null);
         })
         .catch((err: any) => {
@@ -137,8 +155,10 @@ const BillToSection = ({}: BillToSectionProps) => {
                 disabled={loading}
               >
                 {selectedUserId
-                  ? users.find((user) => user._id === selectedUserId)?.name ||
-                    "Select a customer..."
+                  ? capitalizeEachWord(
+                      users.find((user) => user._id === selectedUserId)?.name || 
+                      "Select a customer..."
+                    )
                   : loading
                   ? "Loading customers..."
                   : "Select a customer..."}
@@ -165,7 +185,7 @@ const BillToSection = ({}: BillToSectionProps) => {
                               : "opacity-0"
                           )}
                         />
-                        {user.name}
+                        {capitalizeEachWord(user.name)}
                       </CommandItem>
                     ))}
                   </CommandGroup>

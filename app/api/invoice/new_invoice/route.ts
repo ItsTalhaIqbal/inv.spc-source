@@ -187,9 +187,9 @@ export async function POST(req: NextRequest) {
     }
 
     // Check if invoiceNumber already exists
-    const existingInvoice = await Invoice.findOne({ invoiceNumber: body.invoiceNumber });
+    const existingInvoice = await Invoice.findOne({ invoiceNumber: body.details.invoiceNumber });
     if (existingInvoice) {
-      console.log(`Invoice number ${body.invoiceNumber} already exists, skipping save.`);
+      console.log(`Invoice number ${body.details.invoiceNumber} already exists, skipping save.`);
       return NextResponse.json(
         { message: "Invoice already exists, no new record created" },
         {
@@ -239,10 +239,9 @@ export async function POST(req: NextRequest) {
       },
       createdAt,
     });
-
     const invoiceResponse: any = {
       _id: invoiceDoc._id.toString(),
-      invoiceNumber: invoiceDoc.invoiceNumber,
+      invoiceNumber: invoiceDoc.details.invoiceNumber,
       sender: invoiceDoc.sender,
       receiver: invoiceDoc.receiver,
       details: {

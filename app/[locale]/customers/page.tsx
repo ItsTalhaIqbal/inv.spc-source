@@ -25,7 +25,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { Loader2, MoreHorizontal, Search, Moon, Sun } from "lucide-react";
+import { Loader2, MoreHorizontal, Search } from "lucide-react";
 import CreateUserDialog from "@/components/createUserDialog";
 import { isLogin } from "@/lib/Auth";
 import { useRouter } from "next/navigation";
@@ -58,45 +58,22 @@ const Page = () => {
   const [editDialogOpen, setEditDialogOpen] = useState<boolean>(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
-  const [authChecked, setAuthChecked] = useState<boolean>(false);
   const router = useRouter();
 
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const user = await isLogin();
-        if (!user || user?.role !== "admin") {
-          const isProduction = process.env.NODE_ENV === "production";
-          const loginPath = isProduction ? "/en/login" : "/login";
-          router.push(loginPath);
-          return;
-        }
-        setAuthChecked(true);
-        fetchUsers();
-      } catch (error) {
-        console.error("Authentication error:", error);
-        const isProduction = process.env.NODE_ENV === "production";
-        const loginPath = isProduction ? "/en/login" : "/login";
-        router.push(loginPath);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    checkAuth();
-  }, [router]);
-
   const fetchUsers = async () => {
-    setLoading(true);
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5-second timeout
       const response = await fetch("/api/invoice/customer", {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
         },
+        signal: controller.signal,
       });
+      clearTimeout(timeoutId);
       if (!response.ok) {
-        throw new Error("Failed to fetch users");
+        throw new Error(`Failed to fetch users: ${response.statusText}`);
       }
       const data = await response.json();
       if (!Array.isArray(data)) {
@@ -105,7 +82,7 @@ const Page = () => {
       setUsers(data);
       setFilteredUsers(data);
     } catch (error) {
-      console.error("Error fetching users:", error);
+      console.error("Error fetching users:", error, error instanceof Error ? error.stack : "");
       alert(error instanceof Error ? error.message : "Failed to fetch users");
       setUsers([]);
       setFilteredUsers([]);
@@ -115,10 +92,19 @@ const Page = () => {
   };
 
   useEffect(() => {
-    const results = users.filter((user) =>
-      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.phone.toLowerCase().includes(searchTerm.toLowerCase())
+    if (!isLogin()) {
+      router.push("/login");
+      return;
+    }
+    fetchUsers();
+  }, [router]);
+
+  useEffect(() => {
+    const results = users.filter(
+      (user) =>
+        user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.phone.toLowerCase().includes(searchTerm.toLowerCase())
     );
     setFilteredUsers(results);
   }, [searchTerm, users]);
@@ -189,16 +175,12 @@ const Page = () => {
     }
   };
 
-  if (!authChecked) {
-    return (
-      <div className="flex justify-center items-center h-screen">
-        <Loader2 className={`h-8 w-8 animate-spin ${theme === "dark" ? "text-gray-300" : "text-gray-500"}`} />
-      </div>
-    );
-  }
-
   return (
-    <div className={`p-6 max-w-6xl mx-auto ${theme === "dark" ? "bg-gray-900 text-white" : "bg-white text-black"} transition-colors duration-300`}>
+    <div
+      className={`p-6 max-w-6xl mx-auto ${
+        theme === "dark" ? "bg-gray-900 text-white" : "bg-white text-black"
+      } transition-colors duration-300`}
+    >
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-bold">Customer Management</h1>
       </div>
@@ -210,14 +192,18 @@ const Page = () => {
             placeholder="Search customers..."
             value={searchTerm}
             onChange={handleSearch}
-            className={`pl-10 ${theme === "dark" ? "bg-gray-800 text-white border-gray-700" : "bg-white text-black border-gray-300"}`}
+            className={`pl-10 ${
+              theme === "dark" ? "bg-gray-800 text-white border-gray-700" : "bg-white text-black border-gray-300"
+            }`}
           />
         </div>
       </div>
 
       {loading ? (
         <div className="flex justify-center items-center h-64">
-          <Loader2 className={`h-8 w-8 animate-spin ${theme === "dark" ? "text-gray-300" : "text-gray-500"}`} />
+          <Loader2
+            className={`h-8 w-8 animate-spin ${theme === "dark" ? "text-gray-300" : "text-gray-500"}`}
+          />
         </div>
       ) : filteredUsers.length === 0 ? (
         <div className={`text-center text-lg ${theme === "dark" ? "text-gray-300" : "text-gray-500"} mt-8`}>
@@ -235,7 +221,10 @@ const Page = () => {
           </TableHeader>
           <TableBody>
             {filteredUsers.map((user) => (
-              <TableRow key={user._id} className={theme === "dark" ? "hover:bg-gray-700" : "hover:bg-gray-50"}>
+              <TableRow
+                key={user._id}
+                className={theme === "dark" ? "hover:bg-gray-700" : "hover:bg-gray-50"}
+              >
                 <TableCell>{user.name}</TableCell>
                 <TableCell>{user.email}</TableCell>
                 <TableCell>{user.phone}</TableCell>
@@ -245,16 +234,28 @@ const Page = () => {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className={theme === "dark" ? "bg-gray-600 text-white hover:bg-gray-500" : "bg-gray-200 text-black hover:bg-gray-300"}
+                        className={
+                          theme === "dark"
+                            ? "bg-gray-600 text-white hover:bg-gray-500"
+                            : "bg-gray-200 text-black hover:bg-gray-300"
+                        }
                       >
                         <MoreHorizontal className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent className={theme === "dark" ? "bg-gray-800 text-white border-gray-700" : "bg-white text-black border-gray-200"}>
-                      <DropdownMenuItem onClick={() => handleEdit(user)} className={theme === "dark" ? "hover:bg-gray-700" : "hover:bg-gray-100"}>
+                    <DropdownMenuContent
+                      className={theme === "dark" ? "bg-gray-800 text-white border-gray-700" : "bg-white text-black border-gray-200"}
+                    >
+                      <DropdownMenuItem
+                        onClick={() => handleEdit(user)}
+                        className={theme === "dark" ? "hover:bg-gray-700" : "hover:bg-gray-100"}
+                      >
                         Edit
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleDelete(user)} className={theme === "dark" ? "hover:bg-gray-700" : "hover:bg-gray-100"}>
+                      <DropdownMenuItem
+                        onClick={() => handleDelete(user)}
+                        className={theme === "dark" ? "hover:bg-gray-700" : "hover:bg-gray-100"}
+                      >
                         Delete
                       </DropdownMenuItem>
                     </DropdownMenuContent>
@@ -267,7 +268,9 @@ const Page = () => {
       )}
 
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className={theme === "dark" ? "bg-gray-800 text-white border-gray-700" : "bg-white text-black border-gray-200"}>
+        <DialogContent
+          className={theme === "dark" ? "bg-gray-800 text-white border-gray-700" : "bg-white text-black border-gray-200"}
+        >
           <DialogHeader>
             <DialogTitle>Edit User</DialogTitle>
           </DialogHeader>
@@ -277,14 +280,14 @@ const Page = () => {
                 if (key === "_id" || key === "bills") return null;
                 return (
                   <div key={key}>
-                    <label className="block text-sm font-medium capitalize">
-                      {key}
-                    </label>
+                    <label className="block text-sm font-medium capitalize">{key}</label>
                     <Input
                       name={key}
                       value={value as string}
                       onChange={handleEditChange}
-                      className={theme === "dark" ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"}
+                      className={
+                        theme === "dark" ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"
+                      }
                     />
                   </div>
                 );
@@ -295,13 +298,19 @@ const Page = () => {
             <Button
               variant="outline"
               onClick={() => setEditDialogOpen(false)}
-              className={theme === "dark" ? "bg-gray-700 text-white border-gray-600 hover:bg-gray-600" : "bg-white text-black border-gray-300 hover:bg-gray-100"}
+              className={
+                theme === "dark"
+                  ? "bg-gray-700 text-white border-gray-600 hover:bg-gray-600"
+                  : "bg-white text-black border-gray-300 hover:bg-gray-100"
+              }
             >
               Cancel
             </Button>
             <Button
               onClick={confirmEdit}
-              className={theme === "dark" ? "bg-blue-600 text-white hover:bg-blue-700" : "bg-blue-500 text-white hover:bg-blue-600"}
+              className={
+                theme === "dark" ? "bg-blue-600 text-white hover:bg-blue-700" : "bg-blue-500 text-white hover:bg-blue-600"
+              }
             >
               Save
             </Button>
@@ -310,7 +319,9 @@ const Page = () => {
       </Dialog>
 
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent className={theme === "dark" ? "bg-gray-800 text-white border-gray-700" : "bg-white text-black border-gray-200"}>
+        <DialogContent
+          className={theme === "dark" ? "bg-gray-800 text-white border-gray-700" : "bg-white text-black border-gray-200"}
+        >
           <DialogHeader>
             <DialogTitle>Delete User</DialogTitle>
           </DialogHeader>
@@ -319,14 +330,20 @@ const Page = () => {
             <Button
               variant="outline"
               onClick={() => setDeleteDialogOpen(false)}
-              className={theme === "dark" ? "bg-gray-700 text-white border-gray-600 hover:bg-gray-600" : "bg-white text-black border-gray-300 hover:bg-gray-100"}
+              className={
+                theme === "dark"
+                  ? "bg-gray-700 text-white border-gray-600 hover:bg-gray-600"
+                  : "bg-white text-black border-gray-300 hover:bg-gray-100"
+              }
             >
               Cancel
             </Button>
             <Button
               variant="destructive"
               onClick={confirmDelete}
-              className={theme === "dark" ? "bg-red-600 text-white hover:bg-red-700" : "bg-red-500 text-white hover:bg-red-600"}
+              className={
+                theme === "dark" ? "bg-red-600 text-white hover:bg-red-700" : "bg-red-500 text-white hover:bg-red-600"
+              }
             >
               Delete
             </Button>

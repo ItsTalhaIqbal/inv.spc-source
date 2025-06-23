@@ -78,7 +78,7 @@ export default async function LocaleLayout({
 
   return (
     <html lang={locale}>
-      <body>
+      <body >
         <NextIntlClientProvider locale={locale} messages={messages}>
           <Providers>
             <AuthWrapper>
