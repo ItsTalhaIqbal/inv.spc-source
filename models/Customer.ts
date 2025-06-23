@@ -31,9 +31,7 @@ const CustomerSchema: Schema = new Schema(
 );
 
 // Log schema definition
-console.log('CustomerSchema defined with email options:', CustomerSchema.paths.email.options);
 
 const CustomerModel = mongoose.models.Customer || mongoose.model<ICustomer>('Customer', CustomerSchema);
-console.log('Customer model loaded');
 
 export default CustomerModel;

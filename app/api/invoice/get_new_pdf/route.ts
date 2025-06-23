@@ -132,7 +132,6 @@ const formatPriceToString = (amount: number, currency: string): string => {
 };
 
 async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
-  console.log("Starting PDF generation for invoice:", invoiceData.details?.invoiceNumber);
 
   if (!invoiceData.details?.invoiceNumber) {
     console.error("Invoice number missing");
@@ -182,9 +181,6 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
   const discountDetails = details.discountDetails || { amount: 0, amountType: "amount" };
   const shippingDetails = details.shippingDetails || { cost: 0, costType: "amount" };
 
-  console.log("Tax details:", JSON.stringify(taxDetails));
-  console.log("Discount details:", JSON.stringify(discountDetails));
-  console.log("Shipping details:", JSON.stringify(shippingDetails));
 
   const subtotal = Number(
     (details.items || []).reduce((sum, item) => {
@@ -222,7 +218,6 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
 
   const totalAmountInWords = formatPriceToString(grandTotal, details.currency || "AED");
 
-  console.log("Calculated amounts:", { subtotal, taxAmount, discountAmount, shippingAmount, grandTotal });
 
   const itemsHtml = (details.items || [])
     .map((item: Item, index: number) => {
@@ -246,11 +241,9 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
   const logoPath = path.join(process.cwd(), "public", "assets", "img", "image.jpg");
   let logoBase64 = "";
   try {
-    console.log("Attempting to load logo from:", logoPath);
     if (fs.existsSync(logoPath)) {
       const logoBuffer = fs.readFileSync(logoPath);
       logoBase64 = `data:image/jpeg;base64,${logoBuffer.toString("base64")}`;
-      console.log("Logo loaded successfully");
     } else {
       console.warn("Logo file not found at:", logoPath);
     }
@@ -261,16 +254,12 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
   let tailwindCss = "";
   const localTailwindPath = path.join(process.cwd(), "public", "tailwind.min.css");
   try {
-    console.log("Attempting to load Tailwind CSS from:", localTailwindPath);
     if (fs.existsSync(localTailwindPath)) {
       tailwindCss = fs.readFileSync(localTailwindPath, "utf8");
-      console.log("Local Tailwind CSS loaded");
     } else {
-      console.log("Fetching Tailwind CSS from CDN:", TAILWIND_CDN);
       const response = await fetch(TAILWIND_CDN, { cache: "no-store" });
       if (!response.ok) throw new Error("Failed to fetch Tailwind CSS");
       tailwindCss = await response.text();
-      console.log("Tailwind CSS fetched from CDN");
     }
   } catch (error) {
     console.warn("Error loading Tailwind CSS:", error);
@@ -557,7 +546,6 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
 
   let browser = null;
   try {
-    console.log("Launching Puppeteer...");
     const launchOptions:any = {
       args: [
         ...chromium.args,
@@ -578,16 +566,13 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
     };
 
     browser = await puppeteerCore.launch(launchOptions);
-    console.log("Browser launched successfully");
 
     const page = await browser.newPage();
-    console.log("New page created");
 
     await page.setContent(htmlTemplate, {
       waitUntil: "networkidle0", // Wait until network is idle
       timeout: 60000, // Increased timeout
     });
-    console.log("HTML content set");
 
     const pdfBuffer:any = await page.pdf({
       format: "A4",
@@ -595,7 +580,6 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
       margin: { top: "5mm", right: "5mm", bottom: "20mm", left: "5mm" },
       preferCSSPageSize: true,
     });
-    console.log("PDF generated successfully, buffer length:", pdfBuffer.length);
 
     return pdfBuffer;
   } catch (error: any) {
@@ -607,7 +591,6 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
     throw error;
   } finally {
     if (browser) {
-      console.log("Closing browser");
       await browser.close();
     }
   }
@@ -615,7 +598,6 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
 
 export async function POST(req: NextRequest) {
   try {
-    console.log("Received POST request");
     const body = await req.json();
     const { action, invoiceData } = body;
 
@@ -627,10 +609,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    console.log("POST invoiceData:", JSON.stringify(invoiceData, null, 2));
 
     const pdfBuffer = await generatePdf(invoiceData);
-    console.log("PDF buffer generated for POST, length:", pdfBuffer.length);
 
     const isInvoice = invoiceData.details.isInvoice || false;
     const hasTaxDetails = !!invoiceData.details.taxDetails;
@@ -646,7 +626,6 @@ export async function POST(req: NextRequest) {
       fileName = `SPC_QUT_${numericInvoiceNumber}.pdf`;
     }
 
-    console.log("POST response file name:", fileName);
 
     const headers = new Headers({
       "Content-Type": "application/pdf",
@@ -674,7 +653,6 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   try {
-    console.log("Received GET request");
     const { db } = await connectToDatabase();
     const url = new URL(req.url);
     const invoiceNumber = url.searchParams.get("invoiceNumber");
@@ -699,10 +677,8 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    console.log("GET invoiceData:", JSON.stringify(invoiceData, null, 2));
 
     const pdfBuffer = await generatePdf(invoiceData);
-    console.log("PDF buffer generated for GET, length:", pdfBuffer.length);
 
     const isInvoice = invoiceData.details?.isInvoice || false;
     const hasTaxDetails = !!invoiceData.details?.taxDetails;
@@ -718,7 +694,6 @@ export async function GET(req: NextRequest) {
       fileName = `SPC_QUT_${numericInvoiceNumber}.pdf`;
     }
 
-    console.log("GET response file name:", fileName);
 
     const headers = new Headers({
       "Content-Type": "application/pdf",

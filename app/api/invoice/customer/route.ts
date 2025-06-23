@@ -18,18 +18,14 @@ const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export async function POST(req: NextRequest) {
   let body: any  = null; // Declare body at top scope
   try {
-    console.log('POST /api/invoice/customer started');
     await connectToDatabase();
-    console.log('Connected to database');
 
     body = await req.json();
-    console.log('Request body:', body);
 
     const { name, address, state, country, email, phone } = body;
 
     // Require all fields except email
     if (!name || !address || !state || !country || !phone) {
-      console.log('Missing required fields:', { name, address, state, country, phone });
       return NextResponse.json(
         {
           error: 'Missing required fields',
@@ -41,20 +37,16 @@ export async function POST(req: NextRequest) {
 
     // Validate email only if provided and not empty
     if (email && !emailRegex.test(email)) {
-      console.log('Invalid email format:', email);
       return NextResponse.json({ error: 'Invalid email format' }, { status: 400 });
     }
 
     // Check for existing email only if provided
     if (email) {
-      console.log('Checking for existing email:', email);
       const existingEmail = await Customer.findOne({ email });
       if (existingEmail) {
-        console.log('Email already exists:', email);
         return NextResponse.json({ error: 'Email already exists' }, { status: 409 });
       }
     } else {
-      console.log('No email provided');
     }
 
  // In your POST handler, modify the createData section:
@@ -66,10 +58,8 @@ const createData = {
   email: email && email?.trim()  || undefined, // Convert empty string to undefined
   phone,
 };
-    console.log('Creating customer with data:', createData);
 
     const userDoc = await Customer.create(createData);
-    console.log('Customer created:', userDoc);
 
     const userResponse: any = {
       _id: userDoc._id.toString(),
@@ -81,7 +71,6 @@ const createData = {
       phone: userDoc.phone,
     };
 
-    console.log('Returning response:', userResponse);
     return NextResponse.json(userResponse, {
       status: 201,
       headers: { 'Access-Control-Allow-Origin': '*' },

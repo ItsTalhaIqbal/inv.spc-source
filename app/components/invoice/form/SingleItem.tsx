@@ -25,7 +25,7 @@ import { UNIT_TYPES } from "@/lib/variables";
 type SingleItemProps = {
   name: NameType;
   index: number;
-  fields: ItemType[];
+  items: ItemType[];
   field: FieldArrayWithId<ItemType>;
   moveFieldUp: (index: number) => void;
   moveFieldDown: (index: number) => void;
@@ -35,16 +35,13 @@ type SingleItemProps = {
 const SingleItem = ({
   name,
   index,
-  fields,
+  items,
   field,
   moveFieldUp,
   moveFieldDown,
   removeField,
 }: SingleItemProps) => {
   const { control, setValue, register } = useFormContext();
-
-  // Local state for unitType
-  const [unitType, setUnitType] = useState<string>(""); // Default to 'pcs'
 
   // Watch form values
   const itemName = useWatch({
@@ -62,8 +59,8 @@ const SingleItem = ({
     control,
   });
 
-  const total = useWatch({
-    name: `${name}[${index}].total`,
+  const currency = useWatch({
+    name: `details.currency`,
     control,
   });
 
@@ -72,20 +69,10 @@ const SingleItem = ({
     control,
   });
 
-  // Currency
-  const currency = useWatch({
-    name: `details.currency`,
-    control,
-  });
+  // State for unitType, initialized with form value
+  const [unitType, setUnitType] = useState<string>(formUnitType || "");
 
-  // Sync local state with form state on mount or when formUnitType changes
-  useEffect(() => {
-    
-      setValue(`${name}[${index}].unitType`, unitType, { shouldValidate: true });
-    
-  }, [unitType, setValue, name, index]);
-
-  // Calculate total when rate or quantity changes
+  // Calculate total
   useEffect(() => {
     if (rate !== undefined && quantity !== undefined) {
       const calculatedTotal = Number(rate) * Number(quantity);
@@ -95,17 +82,20 @@ const SingleItem = ({
     }
   }, [rate, quantity, setValue, name, index]);
 
-  console.log(unitType)
   // Handle unitType change
   const handleUnitTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedUnitType = e.target.value;
     setUnitType(selectedUnitType); // Update local state
-    setValue(`${name}[${index}].unitType`, selectedUnitType, {
-      shouldValidate: true,
-    }); // Update form state
+
+    // Update itemName to include unitType in format "itemName\n(unitType)"
+    const currentItemName = itemName || "";
+    const baseName = currentItemName.split("\n")[0].trim(); // e.g., "juice"
+    const formattedName = baseName ? `${baseName}\n(1${selectedUnitType})` : `(1${selectedUnitType})`;
+    setValue(`${name}[${index}].name`, formattedName, { shouldValidate: true });
+    setValue(`${name}[${index}].unitType`, selectedUnitType, { shouldValidate: true });
   };
 
-  // DnD functionality
+  // DnD
   const {
     attributes,
     listeners,
@@ -128,13 +118,13 @@ const SingleItem = ({
     ? "opacity-0 group-hover:opacity-100 transition-opacity cursor-grabbing"
     : "cursor-grab";
 
-  // Normalize input value to remove leading zeros
+  // Normalize input
   const normalizeNumber = (
     value: string | number | undefined
   ): number | undefined => {
-    if (value === undefined || value === "") return 0;
+    if (value === undefined || value === "") return undefined;
     const num = parseFloat(value.toString());
-    return isNaN(num) ? 0 : num;
+    return isNaN(num) ? undefined : num;
   };
 
   return (
@@ -144,8 +134,8 @@ const SingleItem = ({
       className={`${boxDragClasses} group flex flex-col gap-y-5 p-3 my-2 cursor-default rounded-xl bg-gray-50 dark:bg-slate-800 dark:border-gray-600`}
     >
       <div className="flex flex-wrap justify-between">
-        {itemName != "" ? (
-          <p className="font-medium text-wrap">
+        {itemName ? (
+          <p className="font-medium text-wrap font-sans text-center text-base leading-tight whitespace-pre-line">
             #{index + 1} - {itemName}
           </p>
         ) : (
@@ -153,7 +143,7 @@ const SingleItem = ({
         )}
 
         <div className="flex gap-3">
-          {/* Drag and Drop Button */}
+          {/* Drag and Drop */}
           <div
             className={`${gripDragClasses} flex justify-center items-center`}
             ref={setNodeRef}
@@ -162,7 +152,7 @@ const SingleItem = ({
             <GripVertical className="hover:text-blue-600" />
           </div>
 
-          {/* Up Button */}
+          {/* Up */}
           <BaseButton
             size={"icon"}
             tooltipLabel={"Move the item up"}
@@ -172,12 +162,12 @@ const SingleItem = ({
             <ChevronUp />
           </BaseButton>
 
-          {/* Down Button */}
+          {/* Down */}
           <BaseButton
             size={"icon"}
             tooltipLabel={"Move the item down"}
             onClick={() => moveFieldDown(index)}
-            disabled={index === fields.length - 1}
+            disabled={index === items?.length - 1}
           >
             <ChevronDown />
           </BaseButton>
@@ -191,8 +181,7 @@ const SingleItem = ({
           name={`${name}[${index}].name`}
           label={"Item Name"}
           placeholder={"Item Name"}
-          rows={1}
-          className="w-full min-h-[2.5rem] resize-y text-wrap"
+          className="w-full min-h-[2.5rem] resize-y text-wrap font-sans text-center text-base leading-tight"
         />
 
         {/* Unit Type Dropdown */}
@@ -204,7 +193,7 @@ const SingleItem = ({
                 UNIT_TYPES.includes(value) || "Please select a valid unit type",
             })}
             onChange={handleUnitTypeChange}
-            value={unitType} // Use local state
+            value={unitType}
             className="flex h-10 mt-2 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <option value="" disabled>
@@ -218,7 +207,7 @@ const SingleItem = ({
           </select>
         </div>
 
-        {/* Quantity Input */}
+        {/* Quantity */}
         <div className="w-[8rem]">
           <Label>{"Quantity"}</Label>
           <Input
@@ -240,7 +229,7 @@ const SingleItem = ({
           />
         </div>
 
-        {/* Unit Price Input */}
+        {/* Unit Price */}
         <div className="w-[8rem]">
           <Label>
             {"Rate"} ({currency})
@@ -265,7 +254,7 @@ const SingleItem = ({
         </div>
       </div>
       <div>
-        {fields.length > 1 && (
+        {items?.length > 1 && (
           <BaseButton variant="destructive" onClick={() => removeField(index)}>
             <Trash2 />
             {"Remove Item"}

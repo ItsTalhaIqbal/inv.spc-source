@@ -57,25 +57,21 @@ const Items: React.FC<ItemsProps> = () => {
             unitType: "", // Add default unitType
         };
         append(newItem);
-        console.log("New Item Added:", getValues(ITEMS_NAME)); // Debug form state
     };
 
     const removeField = (index: number) => {
         remove(index);
-        console.log("Item Removed, Form State:", getValues(ITEMS_NAME)); // Debug form state
     };
 
     const moveFieldUp = (index: number) => {
         if (index > 0) {
             move(index, index - 1);
-            console.log("Moved Up, Form State:", getValues(ITEMS_NAME)); // Debug form state
         }
     };
 
     const moveFieldDown = (index: number) => {
         if (index < fields.length - 1) {
             move(index, index + 1);
-            console.log("Moved Down, Form State:", getValues(ITEMS_NAME)); // Debug form state
         }
     };
 
@@ -97,7 +93,6 @@ const Items: React.FC<ItemsProps> = () => {
                 );
 
                 move(oldIndex, newIndex);
-                console.log("Dragged, Form State:", getValues(ITEMS_NAME)); // Debug form state
             }
         },
         [fields, move, getValues]

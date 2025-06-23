@@ -5,11 +5,9 @@ import { connectToDatabase } from "@/lib/mongoose";
 import User from "@/models/user";
 
 export async function POST(req: Request): Promise<NextResponse> {
-  console.log('POST /api/invoice/auth/login');
 
   try {
     await connectToDatabase();
-    console.log('MongoDB connected');
 
     const { username, password } = await req.json();
     if (!username || !password) {
@@ -45,6 +43,5 @@ export async function POST(req: Request): Promise<NextResponse> {
 }
 
 export async function GET(req: NextRequest) {
-  console.log('Unexpected GET request to /api/invoice/auth/login from:', req.headers.get('user-agent'));
   return NextResponse.json({ error: 'GET method not supported. Use POST for login.' }, { status: 405 });
 }

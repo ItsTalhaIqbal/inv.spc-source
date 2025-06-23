@@ -176,7 +176,6 @@ export async function POST(req: NextRequest) {
   try {
     await connectToDatabase();
     const body: InvoiceInput = await req.json();
-    console.log("Request body:", JSON.stringify(body, null, 2));
 
     // Validate required fields
     if (!body.invoiceNumber) {
@@ -189,7 +188,6 @@ export async function POST(req: NextRequest) {
     // Check if invoiceNumber already exists
     const existingInvoice = await Invoice.findOne({ invoiceNumber: body.details.invoiceNumber });
     if (existingInvoice) {
-      console.log(`Invoice number ${body.details.invoiceNumber} already exists, skipping save.`);
       return NextResponse.json(
         { message: "Invoice already exists, no new record created" },
         {

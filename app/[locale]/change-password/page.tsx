@@ -64,12 +64,10 @@ export default function ChangePassword() {
       });
 
       const data = await res.json();
-      console.log("API Response:", { status: res.status, data }); // Debugging
 
       if (res.ok) {
         setMessage(data.message);
         const basePath = getBasePath();
-        console.log("Redirecting to:", basePath); // Debugging
         setTimeout(() => {
           router.push(basePath || "/"); // Fallback to "/" if basePath is empty
         }, 2000);

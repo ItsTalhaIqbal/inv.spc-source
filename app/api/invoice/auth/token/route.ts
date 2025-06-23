@@ -3,11 +3,9 @@ import jwt from 'jsonwebtoken';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
-  console.log('POST /api/invoice/auth/token called');
 
   try {
     const { token } = await req.json();
-    console.log('Request body:', { token: token ? '****' : 'missing' });
 
     if (!token) {
       return NextResponse.json({ auth: false, data: 'No token found in request' }, { status: 401 });

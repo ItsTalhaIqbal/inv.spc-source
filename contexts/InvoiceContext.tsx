@@ -288,7 +288,6 @@ export const InvoiceContextProvider = ({
           },
         };
 
-        console.log("Payload for /api/invoice/new_invoice:", JSON.stringify(payload, null, 2));
 
         let attempts = 0;
         const maxAttempts = 3;

@@ -5,11 +5,9 @@ import jwt from "jsonwebtoken";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: Request): Promise<NextResponse> {
-  console.log('POST /api/invoice/auth/register');
 
   try {
     await connectToDatabase();
-    console.log('MongoDB connected');
 
     const { username, email, password, role } = await req.json();
     if (!username || !email || !password) {

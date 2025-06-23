@@ -60,7 +60,6 @@ const LoginForm = () => {
       //   router.replace("/");
       // }, 2000); // Delay redirect to inspect logs
     } catch (error: any) {
-      console.log(error)
       if (error instanceof AxiosError && error.response) {
         setErrorMsg(
           error.response.data?.error
