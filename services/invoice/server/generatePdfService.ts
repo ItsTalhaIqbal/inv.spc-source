@@ -275,7 +275,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
           <td class="w-[5%] text-center font-bold text-black text-base border">${
             index + 1
           }</td>
-          <td class="w-[45%] text-center text-black text-base border px-2 py-1" style="word-wrap: break-word; white-space: normal;">${
+          <td class="w-[40%] text-center text-black text-base border px-2 py-1" style="word-wrap: break-word; white-space: normal;">${
             item.name || ""
           }</td>
           <td class="w-[10%] text-center text-black text-base border">${
@@ -284,7 +284,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
           <td class="w-[10%] text-center text-black text-base border">${
             quantity ? quantity : ""
           }</td>
-          <td class="w-[15%] text-center text-black text-base border">${
+          <td class="w-[20%] text-center text-black text-base border">${
             unitPrice ? unitPrice : ""
           }</td>
           <td class="w-[15%] text-center text-black text-base border">${
@@ -471,10 +471,10 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
         padding: 4px;
       }
       .invoice-table th:nth-child(1), .invoice-table td:nth-child(1) { width: 5%; }
-      .invoice-table th:nth-child(2), .invoice-table td:nth-child(2) { width: 45%; }
+      .invoice-table th:nth-child(2), .invoice-table td:nth-child(2) { width: 40%; }
       .invoice-table th:nth-child(3), .invoice-table td:nth-child(3) { width: 10%; }
       .invoice-table th:nth-child(4), .invoice-table td:nth-child(4) { width: 10%; }
-      .invoice-table th:nth-child(5), .invoice-table td:nth-child(5) { width: 15%; }
+      .invoice-table th:nth-child(5), .invoice-table td:nth-child(5) { width: 20%; }
       .invoice-table th:nth-child(6), .invoice-table td:nth-child(6) { width: 15%; }
       .summary {
         display: flex;

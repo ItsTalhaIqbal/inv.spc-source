@@ -824,7 +824,7 @@ const Page: React.FC = () => {
             >
               <DialogHeader className="border-b pb-4">
                 <DialogTitle className="text-2xl font-bold">
-                  Invoice #{viewInvoice?.invoiceNumber}
+                  Invoice #{viewInvoice?.details.invoiceNumber}
                 </DialogTitle>
                 <div className="flex items-center justify-between mb-4 gap-4">
                   <p className="text-sm text-gray-500">
@@ -1003,7 +1003,7 @@ const Page: React.FC = () => {
             >
               <DialogHeader className="border-b pb-4">
                 <DialogTitle className="text-lg font-bold">
-                  Edit Invoice #{editInvoice?.invoiceNumber}
+                  Edit Invoice #{editInvoice?.details.invoiceNumber}
                 </DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit(onSubmitEdit)}>
@@ -1043,19 +1043,6 @@ const Page: React.FC = () => {
                               theme === "dark" ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"
                             }`}
                           />
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium">Currency</label>
-                          <select
-                            {...register("details.currency")}
-                            className={`mt-1 w-full rounded-md border p-2 focus:ring-2 focus:ring-blue-500 ${
-                              theme === "dark" ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"
-                            }`}
-                          >
-                            <option value="AED">AED</option>
-                            <option value="USD">USD</option>
-                            <option value="EUR">EUR</option>
-                          </select>
                         </div>
                       </div>
                     </div>

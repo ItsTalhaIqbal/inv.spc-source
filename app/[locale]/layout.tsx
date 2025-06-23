@@ -33,6 +33,7 @@ import { JSONLD, ROOTKEYWORDS } from "@/lib/seo";
 
 // Variables
 import { BASE_URL, GOOGLE_SC_VERIFICATION, LOCALES } from "@/lib/variables";
+import AuthWrapper from "@/components/authWrapper";
 
 export const metadata: Metadata = {
     title: "SPC Source",
@@ -62,48 +63,35 @@ export function generateStaticParams() {
 }
 
 export default async function LocaleLayout({
-    children,
-    params: { locale },
+  children,
+  params: { locale },
 }: {
-    children: React.ReactNode;
-    params: { locale: string };
+  children: React.ReactNode;
+  params: { locale: string };
 }) {
-    let messages;
-    try {
-        messages = (await import(`@/i18n/locales/${locale}.json`)).default;
-    } catch (error) {
-        notFound();
-    }
+  let messages;
+  try {
+    messages = (await import(`@/i18n/locales/${locale}.json`)).default;
+  } catch (error) {
+    notFound();
+  }
 
-    return (
-        <html lang={locale}>
-            <head>
-                <script
-                    type="application/ld+json"
-                    id="json-ld"
-                    dangerouslySetInnerHTML={{ __html: JSON.stringify(JSONLD) }}
-                />
-            </head>
-            <body
-                className={`${outfit.className} ${dancingScript.variable} ${parisienne.variable} ${greatVibes.variable} ${alexBrush.variable} antialiased bg-slate-100 dark:bg-slate-800`}
-                cz-shortcut-listen="true"
-            >
-                <NextIntlClientProvider locale={locale} messages={messages}>
-                    <Providers>
-                        <BaseNavbar />
-
-                        <div className="flex flex-col">{children}</div>
-
-                        {/* <BaseFooter /> */}
-
-                        {/* Toast component */}
-                        <Toaster />
-
-                        {/* Vercel analytics */}
-                        <Analytics />
-                    </Providers>
-                </NextIntlClientProvider>
-            </body>
-        </html>
-    );
+  return (
+    <html lang={locale}>
+      <body>
+        <NextIntlClientProvider locale={locale} messages={messages}>
+          <Providers>
+            <AuthWrapper>
+              <BaseNavbar />
+              <div className="flex flex-col">
+                {children}
+              </div>
+              <Toaster />
+            </AuthWrapper>
+            <Analytics />
+          </Providers>
+        </NextIntlClientProvider>
+      </body>
+    </html>
+  );
 }
