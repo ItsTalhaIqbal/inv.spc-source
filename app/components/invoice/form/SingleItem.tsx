@@ -145,7 +145,7 @@ const SingleItem = ({
     >
       <div className="flex flex-wrap justify-between">
         {itemName != "" ? (
-          <p className="font-medium">
+          <p className="font-medium text-wrap">
             #{index + 1} - {itemName}
           </p>
         ) : (
@@ -192,7 +192,7 @@ const SingleItem = ({
           label={"Item Name"}
           placeholder={"Item Name"}
           rows={1}
-          className="w-full min-h-[2.5rem] resize-y"
+          className="w-full min-h-[2.5rem] resize-y text-wrap"
         />
 
         {/* Unit Type Dropdown */}
