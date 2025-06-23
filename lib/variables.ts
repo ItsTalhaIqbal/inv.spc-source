@@ -1,4 +1,3 @@
-// Types
 import { SignatureColor, SignatureFont } from "@/types";
 
 /**
@@ -142,7 +141,7 @@ export const FORM_DEFAULT_VALUES = {
                 quantity: 0,
                 unitPrice: 0,
                 total: 0,
-                unitType: "", 
+                unitType: "pcs",
             },
         ],
         currency: "AED",
@@ -153,11 +152,11 @@ export const FORM_DEFAULT_VALUES = {
             taxID: "",
         },
         discountDetails: {
-            amount: 0 || null,
+            amount: 0,
             amountType: "amount",
         },
         shippingDetails: {
-            cost: 0 || null,
+            cost: 0,
             costType: "amount",
         },
         paymentInformation: {
@@ -196,8 +195,8 @@ export const FORM_FILL_VALUES = {
     details: {
         invoiceLogo: "",
         invoiceNumber: "INV0001",
-        invoiceDate: new Date(),
-        dueDate: new Date(),
+        invoiceDate: new Date().toISOString(),
+        dueDate: new Date().toISOString(),
         items: [
             {
                 name: "Product 1",
@@ -205,7 +204,7 @@ export const FORM_FILL_VALUES = {
                 quantity: 4,
                 unitPrice: 50,
                 total: 200,
-                unitType: "pcs", // Added unitType
+                unitType: "pcs",
             },
             {
                 name: "Product 2",
@@ -213,7 +212,7 @@ export const FORM_FILL_VALUES = {
                 quantity: 5,
                 unitPrice: 50,
                 total: 250,
-                unitType: "sqm", // Added unitType
+                unitType: "sqm",
             },
             {
                 name: "Product 3",
@@ -221,7 +220,7 @@ export const FORM_FILL_VALUES = {
                 quantity: 5,
                 unitPrice: 80,
                 total: 400,
-                unitType: "roll", // Added unitType
+                unitType: "roll",
             },
         ],
         currency: "USD",
@@ -249,8 +248,8 @@ export const FORM_FILL_VALUES = {
         signature: {
             data: "",
         },
-        subTotal: "850",
-        totalAmount: "850",
+        subTotal: 850,
+        totalAmount: 850,
         totalAmountInWords: "Eight Hundred Fifty",
         pdfTemplate: 1,
         isInvoice: false,

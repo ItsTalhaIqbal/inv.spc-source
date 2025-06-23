@@ -148,7 +148,7 @@ export const InvoiceContextProvider = ({
   );
 
   useEffect(() => {
-    reset(updatedDefaultValues);
+    reset(updatedDefaultValues as any);
   }, [reset, updatedDefaultValues]);
 
   const resetWizard = useCallback(() => {
@@ -156,7 +156,7 @@ export const InvoiceContextProvider = ({
   }, []);
 
   const newInvoice = useCallback(() => {
-    reset(updatedDefaultValues);
+    reset(updatedDefaultValues as any);
     setInvoicePdf(new Blob());
     resetWizard();
     router.refresh();
