@@ -118,7 +118,7 @@ const Items: React.FC<ItemsProps> = () => {
                             key={field.id}
                             name={ITEMS_NAME}
                             index={index}
-                            fields={fields}
+                            fields={fields }
                             field={field}
                             moveFieldUp={moveFieldUp}
                             moveFieldDown={moveFieldDown}

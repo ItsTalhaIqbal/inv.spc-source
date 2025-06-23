@@ -25,7 +25,7 @@ import { UNIT_TYPES } from "@/lib/variables";
 type SingleItemProps = {
   name: NameType;
   index: number;
-  items: ItemType[];
+  fields: FieldArrayWithId<ItemType>[]; // Renamed from items to fields
   field: FieldArrayWithId<ItemType>;
   moveFieldUp: (index: number) => void;
   moveFieldDown: (index: number) => void;
@@ -35,7 +35,7 @@ type SingleItemProps = {
 const SingleItem = ({
   name,
   index,
-  items,
+  fields, // Renamed from items to fields
   field,
   moveFieldUp,
   moveFieldDown,
@@ -167,7 +167,7 @@ const SingleItem = ({
             size={"icon"}
             tooltipLabel={"Move the item down"}
             onClick={() => moveFieldDown(index)}
-            disabled={index === items?.length - 1}
+            disabled={index === fields.length - 1} // Updated to fields
           >
             <ChevronDown />
           </BaseButton>
@@ -254,7 +254,7 @@ const SingleItem = ({
         </div>
       </div>
       <div>
-        {items?.length > 1 && (
+        {fields.length > 1 && ( // Updated to fields
           <BaseButton variant="destructive" onClick={() => removeField(index)}>
             <Trash2 />
             {"Remove Item"}
