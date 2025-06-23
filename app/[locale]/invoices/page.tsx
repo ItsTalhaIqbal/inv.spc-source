@@ -535,6 +535,23 @@ const Page: React.FC = () => {
         (showShipping ? shippingAmount : 0) -
         (showDiscount ? discountAmount : 0);
 
+      // Prevent negative total
+      if (calculatedTotal < 0) {
+        setErrorMessage("Total amount cannot be negative. Please adjust the discount or other amounts.");
+        setIsSaving(false);
+        return;
+      }
+
+      // Cap discount to prevent negative total
+      if (showDiscount && discountDetails?.amount) {
+        const maxDiscount = subTotal + (showTax ? taxAmount : 0) + (showShipping ? shippingAmount : 0);
+        if (discountAmount > maxDiscount) {
+          setErrorMessage(`Discount cannot exceed ${maxDiscount.toFixed(2)}.`);
+          setIsSaving(false);
+          return;
+        }
+      }
+
       const response = await fetch("/api/invoice/new_invoice", {
         method: "PUT",
         headers: {
@@ -903,7 +920,7 @@ const Page: React.FC = () => {
                         }
                       >
                         <div className="grid grid-cols-2 gap-4">
-                          <p className="text-sm">
+                          <p className="text-sm whitespace-pre-line">
                             <strong>Name:</strong> <span>{item.name}</span>
                           </p>
                           <p className="text-sm">
@@ -1054,11 +1071,13 @@ const Page: React.FC = () => {
                           <div className="grid grid-cols-4 gap-4">
                             <div>
                               <label className="text-sm font-medium">Name</label>
-                              <Input
+                              <textarea
                                 {...register(`details.items.${index}.name`)}
-                                className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
+                                className={`mt-1 w-full rounded-md border p-2 focus:ring-2 focus:ring-blue-500 resize-y min-h-[2.5rem] text-left ${
                                   theme === "dark" ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"
                                 }`}
+                                placeholder="Item Name"
+                                rows={2}
                               />
                             </div>
                             <div>

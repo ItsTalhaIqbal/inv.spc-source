@@ -25,7 +25,7 @@ import { UNIT_TYPES } from "@/lib/variables";
 type SingleItemProps = {
   name: NameType;
   index: number;
-  fields: FieldArrayWithId<ItemType>[]; // Renamed from items to fields
+  fields: FieldArrayWithId<ItemType>[];
   field: FieldArrayWithId<ItemType>;
   moveFieldUp: (index: number) => void;
   moveFieldDown: (index: number) => void;
@@ -35,7 +35,7 @@ type SingleItemProps = {
 const SingleItem = ({
   name,
   index,
-  fields, // Renamed from items to fields
+  fields,
   field,
   moveFieldUp,
   moveFieldDown,
@@ -86,12 +86,6 @@ const SingleItem = ({
   const handleUnitTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedUnitType = e.target.value;
     setUnitType(selectedUnitType); // Update local state
-
-    // Update itemName to include unitType in format "itemName\n(unitType)"
-    const currentItemName = itemName || "";
-    const baseName = currentItemName.split("\n")[0].trim(); // e.g., "juice"
-    const formattedName = baseName ;
-    setValue(`${name}[${index}].name`, formattedName, { shouldValidate: true });
     setValue(`${name}[${index}].unitType`, selectedUnitType, { shouldValidate: true });
   };
 
@@ -115,7 +109,7 @@ const SingleItem = ({
     : "border";
 
   const gripDragClasses = isDragging
-    ? "opacity-0 group-hover:opacity-100 transition-opacity cursor-grabbing"
+    ? "opacity-0 group-hover:opacity-100 transition-opacity duration-100 cursor-grabbing"
     : "cursor-grab";
 
   // Normalize input
@@ -135,15 +129,14 @@ const SingleItem = ({
     >
       <div className="flex flex-wrap justify-between">
         {itemName ? (
-          <p className="font-medium text-wrap font-sans text-center text-base leading-tight whitespace-pre-line">
+          <p className="font-medium text-wrap font-sans text-base leading-tight whitespace-pre-line text-left">
             #{index + 1} - {itemName}
           </p>
         ) : (
-          <p className="font-medium">#{index + 1} - Empty name</p>
+          <p className="font-medium text-left">#{index + 1} - Empty name</p>
         )}
 
         <div className="flex gap-3">
-          {/* Drag and Drop */}
           <div
             className={`${gripDragClasses} flex justify-center items-center`}
             ref={setNodeRef}
@@ -152,7 +145,6 @@ const SingleItem = ({
             <GripVertical className="hover:text-blue-600" />
           </div>
 
-          {/* Up */}
           <BaseButton
             size={"icon"}
             tooltipLabel={"Move the item up"}
@@ -162,12 +154,11 @@ const SingleItem = ({
             <ChevronUp />
           </BaseButton>
 
-          {/* Down */}
           <BaseButton
             size={"icon"}
             tooltipLabel={"Move the item down"}
             onClick={() => moveFieldDown(index)}
-            disabled={index === fields.length - 1} // Updated to fields
+            disabled={index === fields.length - 1}
           >
             <ChevronDown />
           </BaseButton>
@@ -181,10 +172,9 @@ const SingleItem = ({
           name={`${name}[${index}].name`}
           label={"Item Name"}
           placeholder={"Item Name"}
-          className="w-full min-h-[2.5rem] resize-y text-wrap font-sans text-center text-base leading-tight"
+          className="w-full min-h-[2.5rem] resize-y text-wrap font-sans text-base leading-tight text-left"
         />
 
-        {/* Unit Type Dropdown */}
         <div className="w-[8rem]">
           <Label>{"Unit Type"}</Label>
           <select
@@ -207,7 +197,6 @@ const SingleItem = ({
           </select>
         </div>
 
-        {/* Quantity */}
         <div className="w-[8rem]">
           <Label>{"Quantity"}</Label>
           <Input
@@ -229,7 +218,6 @@ const SingleItem = ({
           />
         </div>
 
-        {/* Unit Price */}
         <div className="w-[8rem]">
           <Label>
             {"Rate"} ({currency})
@@ -254,7 +242,7 @@ const SingleItem = ({
         </div>
       </div>
       <div>
-        {fields.length > 1 && ( // Updated to fields
+        {fields.length > 1 && (
           <BaseButton variant="destructive" onClick={() => removeField(index)}>
             <Trash2 />
             {"Remove Item"}

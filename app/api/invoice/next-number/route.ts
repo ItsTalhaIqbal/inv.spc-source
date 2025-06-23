@@ -11,7 +11,7 @@ export async function GET() {
     const now = new Date();
     const year = now.getFullYear().toString().slice(-2);
     const month = (now.getMonth() + 1).toString().padStart(2, '0');
-    const prefix = `QUT${year}${month}`;
+    const prefix = `QUT-${year}${month}`;
 
     const invoiceCount = await Invoice.countDocuments();
     const sequenceNumber = invoiceCount + 1;
