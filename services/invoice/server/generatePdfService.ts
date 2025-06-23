@@ -275,8 +275,8 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
           <td class="w-[5%] text-center font-bold text-black text-base border">${
             index + 1
           }</td>
-          <td class="w-[40%]  text-wrap font-sans leading-tight text-center text-black text-base border px-2 py-1" style="word-wrap: break-word; white-space: normal;"><pre> ${
-            item.name || ""                                                                   
+          <td class="w-[40%]  text-wrap font-sans leading-tight text-center text-black text-base border px-2 py-1" style="word-wrap: break-word; white-space: normal;"><pre class="text-start"> ${
+            item.name || ""
           } </pre></td>
           <td class="w-[10%] text-center text-black text-base border">${
             item.unitType || ""
@@ -606,9 +606,10 @@ ${details.invoiceNumber}
                 subtotal
               )}</span>
             </div>
-            ${taxHtml}
+           
             ${shippingHtml}
             ${discountHtml}
+             ${taxHtml}
             <div class="flex justify-between total-amount">
               <span class="text-base font-bold text-gray-800">Grand Total</span>
               <span class="text-base font-bold text-gray-800">AED ${formatNumberWithCommas(

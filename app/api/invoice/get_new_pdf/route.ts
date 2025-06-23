@@ -228,7 +228,7 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
       return `
         <tr class="border">
           <td class="w-[5%] text-center font-bold text-black text-base border border-gray-500">${index + 1}</td>
-          <td class="w-[40%] text-center text-black text-base border border-gray-500 px-2 py-1" style="word-wrap: break-word; white-space: normal;">${item.name || ""}</td>
+          <td class="w-[40%] text-center text-black text-base border border-gray-500 px-2 py-1" style="word-wrap: break-word; white-space: normal;"><pre class="text-start">${item.name || ""}</pre></td>
           <td class="w-[10%] text-center text-black text-base border border-gray-500">${item.unitType || ""}</td>
           <td class="w-[10%] text-center text-black text-base border border-gray-500">${quantity?quantity:""}</td>
           <td class="w-[20%] text-center text-black text-base border border-gray-500">${unitPrice? unitPrice:""}</td>
@@ -489,7 +489,7 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
         </div>
         <div class="invoice-info">
           <h2 class="text-xl text-right">
-            <span class="invoice-number">${details.invoiceNumber}</span>
+            <span class="invoice-number">${isInvoice?"INV-":"QUT-"}${details.invoiceNumber}</span>
           </h2>
           <p class="text-md mt-1">${new Date(details.invoiceDate || new Date()).toLocaleDateString("en-US", DATE_OPTIONS)}</p>
           ${details.dueDate ? `<p class="text-md mt-1">Due: ${new Date(details.dueDate).toLocaleDateString("en-US", DATE_OPTIONS)}</p>` : ""}
@@ -523,9 +523,10 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
               <span class="text-base text-gray-800">Subtotal</span>
               <span class="text-base text-gray-800">${details.currency || "AED"} ${formatNumberWithCommas(subtotal)}</span>
             </div>
-            ${taxHtml}
+            
             ${shippingHtml}
             ${discountHtml}
+            ${taxHtml}
             <div class="flex justify-between total-amount">
               <span class="text-base font-bold text-gray-800">Grand Total</span>
               <span class="text-base font-bold text-gray-800">${details.currency || "AED"} ${formatNumberWithCommas(grandTotal)}</span>
