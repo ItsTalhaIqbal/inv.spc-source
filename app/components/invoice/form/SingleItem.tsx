@@ -90,7 +90,7 @@ const SingleItem = ({
     // Update itemName to include unitType in format "itemName\n(unitType)"
     const currentItemName = itemName || "";
     const baseName = currentItemName.split("\n")[0].trim(); // e.g., "juice"
-    const formattedName = baseName ? `${baseName}\n(1${selectedUnitType})` : `(1${selectedUnitType})`;
+    const formattedName = baseName ;
     setValue(`${name}[${index}].name`, formattedName, { shouldValidate: true });
     setValue(`${name}[${index}].unitType`, selectedUnitType, { shouldValidate: true });
   };
