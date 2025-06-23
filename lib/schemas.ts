@@ -24,7 +24,6 @@ const fieldValidators = {
   email: z
     .string()
     .optional(),
-
   phone: z
     .string()
     .min(1, { message: "Must be between 1 and 50 characters" })
@@ -50,12 +49,12 @@ const fieldValidators = {
   stringToNumberWithMax: z.coerce.number().max(1000000),
   stringOptional: z.string().optional(),
   nonNegativeNumber: z.coerce.number().nonnegative({
-    message: "Must be a positive number",
+    message: "Total amount cannot be negative.",
   }),
   numWithCommas: z.coerce
     .number()
     .nonnegative({
-      message: "Must be a positive number",
+      message: "Total amount cannot be negative.",
     })
     .transform((value) => {
       return formatNumberWithCommas(value);
@@ -137,7 +136,7 @@ const InvoiceDetailsSchema = z.object({
   discountDetails: DiscountDetailsSchema.optional(),
   shippingDetails: ShippingDetailsSchema.optional(),
   subTotal: fieldValidators.nonNegativeNumber,
-  totalAmount: fieldValidators.nonNegativeNumber,
+  totalAmount: fieldValidators.nonNegativeNumber, // Ensures totalAmount is >= 0
   totalAmountInWords: fieldValidators.string,
   additionalNotes: fieldValidators.stringOptional,
   paymentTerms: fieldValidators.stringMin1,

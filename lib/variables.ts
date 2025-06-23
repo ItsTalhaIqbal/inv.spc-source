@@ -153,11 +153,11 @@ export const FORM_DEFAULT_VALUES = {
             taxID: "",
         },
         discountDetails: {
-            amount: 0,
+            amount: 0 || null,
             amountType: "amount",
         },
         shippingDetails: {
-            cost: 0,
+            cost: 0 || null,
             costType: "amount",
         },
         paymentInformation: {

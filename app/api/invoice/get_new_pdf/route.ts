@@ -489,7 +489,7 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
         </div>
         <div class="invoice-info">
           <h2 class="text-xl text-right">
-            <span class="invoice-number">${invoiceNumberPrefix}</span>
+            <span class="invoice-number">${details.invoiceNumber}</span>
           </h2>
           <p class="text-md mt-1">${new Date(details.invoiceDate || new Date()).toLocaleDateString("en-US", DATE_OPTIONS)}</p>
           ${details.dueDate ? `<p class="text-md mt-1">Due: ${new Date(details.dueDate).toLocaleDateString("en-US", DATE_OPTIONS)}</p>` : ""}
