@@ -53,9 +53,9 @@ const SavedInvoicesList = ({ setModalState }: SavedInvoicesListProps) => {
      *
      * @param {InvoiceType} selected - The selected invoice
      */
-    const transformDates = (selected: InvoiceType) => {
+    const transformDates = (selected: any) => {
         selected.details.dueDate = new Date(
-            selected.details.dueDate
+            selected?.details?.dueDate 
         ).toLocaleDateString("en-US", DATE_OPTIONS);
         selected.details.invoiceDate = new Date(
             selected.details.invoiceDate

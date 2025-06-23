@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { connectToDatabase } from "@/lib/mongoose";
 import { Readable } from "stream";
 import chromium from "@sparticuz/chromium-min";
 import puppeteerCore from "puppeteer-core";
 import fs from "fs";
 import path from "path";
-import { TAILWIND_CDN } from "@/lib/variables";
+import { TAILWIND_CDN, INVVariable, QUTVariable } from "@/lib/variables";
+import { connectToDatabase } from "@/lib/mongoose";
 
 interface Receiver {
   name: string;
@@ -22,11 +22,13 @@ interface Item {
   name?: string;
   quantity?: number;
   unitPrice?: number;
+  unitType?: string;
 }
 
 interface Details {
   invoiceNumber: string;
   invoiceDate?: string;
+  dueDate?: string;
   items?: Item[];
   taxDetails?: { amount: number; amountType: string; taxID?: string };
   discountDetails?: { amount: number; amountType: string };
@@ -36,6 +38,8 @@ interface Details {
   paymentTerms?: string;
   additionalNotes?: string;
   totalAmountInWords?: string;
+  currency?: string;
+  isInvoice?: boolean;
 }
 
 interface InvoiceType {
@@ -51,15 +55,93 @@ interface InvoiceType {
   details?: Details;
 }
 
+const formatPriceToString = (amount: number, currency: string): string => {
+  const numberToWords = (num: number): string => {
+    const units = ["", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"];
+    const teens = ["ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen"];
+    const tens = ["", "", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"];
+    const thousands = ["", "thousand", "million", "billion"];
+
+    if (num === 0) return "zero";
+
+    let words = "";
+    let numStr = Math.floor(num).toString();
+    let chunks: number[] = [];
+
+    while (numStr.length > 0) {
+      let chunk = parseInt(numStr.slice(-3)) || 0;
+      chunks.push(chunk);
+      numStr = numStr.slice(0, -3);
+    }
+
+    for (let i = 0; i < chunks.length; i++) {
+      let chunk = chunks[i];
+      if (chunk === 0) continue;
+
+      let chunkWords = "";
+      let hundreds = Math.floor(chunk / 100);
+      let remainder = chunk % 100;
+      let tensPart = Math.floor(remainder / 10);
+      let unitsPart = remainder % 10;
+
+      if (hundreds > 0) {
+        chunkWords += `${units[hundreds]} hundred`;
+        if (remainder > 0) chunkWords += " and ";
+      }
+
+      if (remainder >= 10 && remainder < 20) {
+        chunkWords += teens[remainder - 10];
+      } else {
+        if (tensPart > 0) {
+          chunkWords += tens[tensPart];
+          if (unitsPart > 0) chunkWords += "-";
+        }
+        if (unitsPart > 0 || remainder === 0) {
+          chunkWords += units[unitsPart];
+        }
+      }
+
+      if (chunkWords && i > 0) {
+        chunkWords += ` ${thousands[i]}`;
+      }
+
+      words = chunkWords + (words ? " " + words : "");
+    }
+
+    return words.trim();
+  };
+
+  const [integerPart, decimalPart] = amount.toFixed(2).split(".");
+  const integerNum = parseInt(integerPart);
+  const decimalNum = parseInt(decimalPart);
+
+  let result = numberToWords(integerNum);
+  if (currency === "AED") {
+    result += " Dirham";
+    if (decimalNum > 0) {
+      result += ` and ${numberToWords(decimalNum)} Fils`;
+    }
+  } else {
+    result += ` ${currency}`;
+    if (decimalNum > 0) {
+      result += ` and ${numberToWords(decimalNum)} Cents`;
+    }
+  }
+
+  return result.charAt(0).toUpperCase() + result.slice(1);
+};
+
 async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
+  console.log("Starting PDF generation for invoice:", invoiceData.details?.invoiceNumber);
+
   if (!invoiceData.details?.invoiceNumber) {
+    console.error("Invoice number missing");
     throw new Error("Invoice number is missing");
   }
 
   if (typeof invoiceData.details?.pdfTemplate !== "number") {
-    throw new Error(
-      `PDF template must be a number, received: ${invoiceData.details.pdfTemplate}`
-    );
+    console.error("Invalid PDF template:", invoiceData.details?.pdfTemplate);
+    throw new Error(`PDF template must be a number, received: ${invoiceData.details.pdfTemplate}`);
   }
 
   const senderData = invoiceData.sender || {
@@ -89,51 +171,58 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
     weekday: "long",
   } as const;
 
-  const formatNumberWithCommas = (num: number): string =>
-    num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-
-  const taxDetails = details.taxDetails || {
-    amount: 0,
-    amountType: "amount",
-    taxID: "",
-  };
-  const discountDetails = details.discountDetails || {
-    amount: 0,
-    amountType: "amount",
-  };
-  const shippingDetails = details.shippingDetails || {
-    cost: 0,
-    costType: "amount",
+  const formatNumberWithCommas = (num: number): string => {
+    const fixedNum = Number(num).toFixed(2);
+    const [integerPart, decimalPart] = fixedNum.split(".");
+    const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    return `${formattedInteger}.${decimalPart}`;
   };
 
-  const subtotal = (details.items || []).reduce((sum, item) => {
-    const quantity = item.quantity || 0;
-    const unitPrice = item.unitPrice || 0;
-    return sum + quantity * unitPrice;
-  }, 0);
+  const taxDetails = details.taxDetails || { amount: 0, amountType: "percentage", taxID: "" };
+  const discountDetails = details.discountDetails || { amount: 0, amountType: "amount" };
+  const shippingDetails = details.shippingDetails || { cost: 0, costType: "amount" };
 
-  const taxAmount =
+  console.log("Tax details:", JSON.stringify(taxDetails));
+  console.log("Discount details:", JSON.stringify(discountDetails));
+  console.log("Shipping details:", JSON.stringify(shippingDetails));
+
+  const subtotal = Number(
+    (details.items || []).reduce((sum, item) => {
+      const quantity = item.quantity || 0;
+      const unitPrice = item.unitPrice || 0;
+      return sum + quantity * unitPrice;
+    }, 0).toFixed(2)
+  );
+
+  const taxAmount = Number(
     taxDetails.amount && taxDetails.amount > 0
       ? taxDetails.amountType === "percentage"
-        ? (subtotal * taxDetails.amount) / 100
-        : taxDetails.amount
-      : 0;
+        ? ((subtotal * taxDetails.amount) / 100).toFixed(2)
+        : taxDetails.amount.toFixed(2)
+      : 0
+  );
 
-  const discountAmount =
+  const discountAmount = Number(
     discountDetails.amount && discountDetails.amount > 0
       ? discountDetails.amountType === "percentage"
-        ? (subtotal * discountDetails.amount) / 100
-        : discountDetails.amount
-      : 0;
+        ? ((subtotal * discountDetails.amount) / 100).toFixed(2)
+        : discountDetails.amount.toFixed(2)
+      : 0
+  );
 
-  const shippingAmount =
+  const shippingAmount = Number(
     shippingDetails.cost && shippingDetails.cost > 0
       ? shippingDetails.costType === "percentage"
-        ? (subtotal * shippingDetails.cost) / 100
-        : shippingDetails.cost
-      : 0;
+        ? ((subtotal * shippingDetails.cost) / 100).toFixed(2)
+        : shippingDetails.cost.toFixed(2)
+      : 0
+  );
 
-  const grandTotal = subtotal + taxAmount + shippingAmount - discountAmount;
+  const grandTotal = Number((subtotal + taxAmount + shippingAmount - discountAmount).toFixed(2));
+
+  const totalAmountInWords = formatPriceToString(grandTotal, details.currency || "AED");
+
+  console.log("Calculated amounts:", { subtotal, taxAmount, discountAmount, shippingAmount, grandTotal });
 
   const itemsHtml = (details.items || [])
     .map((item: Item, index: number) => {
@@ -143,48 +232,63 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
 
       return `
         <tr class="border">
-          <td class="w-[5%] text-center font-bold text-black text-base border">${index + 1}</td>
-          <td class="w-[50%] text-center text-black text-base border px-2 py-1" style="word-wrap: break-word; white-space: normal;">${item.name}</td>
-          <td class="w-[10%] text-center text-black text-base border">${quantity}</td>
-          <td class="w-[17%] text-center text-black text-base border">${unitPrice ? `${formatNumberWithCommas(unitPrice)}` : ""}</td>
-          <td class="w-[18%] text-center text-black text-base border">${total ? `${formatNumberWithCommas(total)}` : ""}</td>
+          <td class="w-[5%] text-center font-bold text-black text-base border border-gray-500">${index + 1}</td>
+          <td class="w-[45%] text-center text-black text-base border border-gray-500 px-2 py-1" style="word-wrap: break-word; white-space: normal;">${item.name || ""}</td>
+          <td class="w-[10%] text-center text-black text-base border border-gray-500">${item.unitType || ""}</td>
+          <td class="w-[10%] text-center text-black text-base border border-gray-500">${quantity}</td>
+          <td class="w-[15%] text-center text-black text-base border border-gray-500">${formatNumberWithCommas(unitPrice)}</td>
+          <td class="w-[15%] text-center text-black text-base border border-gray-500">${formatNumberWithCommas(total)}</td>
         </tr>
       `;
     })
     .join("");
 
-  const logoPath = path.resolve(process.cwd(), "public/assets/img/image.jpg");
+  const logoPath = path.join(process.cwd(), "public", "assets", "img", "image.jpg");
   let logoBase64 = "";
   try {
-    const logoBuffer = fs.readFileSync(logoPath);
-    logoBase64 = `data:image/jpeg;base64,${logoBuffer.toString("base64")}`;
+    console.log("Attempting to load logo from:", logoPath);
+    if (fs.existsSync(logoPath)) {
+      const logoBuffer = fs.readFileSync(logoPath);
+      logoBase64 = `data:image/jpeg;base64,${logoBuffer.toString("base64")}`;
+      console.log("Logo loaded successfully");
+    } else {
+      console.warn("Logo file not found at:", logoPath);
+    }
   } catch (error) {
-    console.warn("Could not load logo:", error);
+    console.warn("Error loading logo:", error);
   }
 
   let tailwindCss = "";
-  const localTailwindPath = path.resolve(process.cwd(), "public/tailwind.min.css");
+  const localTailwindPath = path.join(process.cwd(), "public", "tailwind.min.css");
   try {
+    console.log("Attempting to load Tailwind CSS from:", localTailwindPath);
     if (fs.existsSync(localTailwindPath)) {
       tailwindCss = fs.readFileSync(localTailwindPath, "utf8");
+      console.log("Local Tailwind CSS loaded");
     } else {
-      const response = await fetch(TAILWIND_CDN);
+      console.log("Fetching Tailwind CSS from CDN:", TAILWIND_CDN);
+      const response = await fetch(TAILWIND_CDN, { cache: "no-store" });
+      if (!response.ok) throw new Error("Failed to fetch Tailwind CSS");
       tailwindCss = await response.text();
+      console.log("Tailwind CSS fetched from CDN");
     }
   } catch (error) {
-    console.warn("Could not load Tailwind CSS:", error);
+    console.warn("Error loading Tailwind CSS:", error);
   }
 
   const hasTax = taxDetails.amount && taxDetails.amount > 0;
   const hasDiscount = discountDetails.amount && discountDetails.amount > 0;
   const hasShipping = shippingDetails.cost && shippingDetails.cost > 0;
-  const hasTotalInWords = details.totalAmountInWords && details.totalAmountInWords.trim() !== "";
+  const hasTotalInWords = totalAmountInWords && totalAmountInWords.trim() !== "";
+  const isInvoice = details.isInvoice || false;
+
+  const invoiceNumberPrefix = isInvoice && hasTax ? `TAX_INV-${details.invoiceNumber}` : isInvoice ? `INV-${details.invoiceNumber}` : `QUT-${details.invoiceNumber}`;
 
   const taxHtml = hasTax
     ? `
       <div class="flex justify-between amount-line">
-        <span class="text-base text-gray-800"> VAT ${taxDetails.amountType === "percentage" ? `(${taxDetails.amount}%)` : ""}</span>
-        <span class="text-base text-gray-800">AED ${formatNumberWithCommas(Number(taxAmount.toFixed(2)))}</span>
+        <span class="text-base text-gray-800">VAT ${taxDetails.amountType === "percentage" ? `(${taxDetails.amount}%)` : ""}</span>
+        <span class="text-base text-gray-800">${details.currency || "AED"} ${formatNumberWithCommas(taxAmount)}</span>
       </div>
     `
     : "";
@@ -193,7 +297,7 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
     ? `
       <div class="flex justify-between amount-line">
         <span class="text-base text-gray-800">Discount ${discountDetails.amountType === "percentage" ? `(${discountDetails.amount}%)` : ""}</span>
-        <span class="text-base text-gray-800">AED ${formatNumberWithCommas(Number(discountAmount.toFixed(2)))}</span>
+        <span class="text-base text-gray-800">${details.currency || "AED"} ${formatNumberWithCommas(discountAmount)}</span>
       </div>
     `
     : "";
@@ -202,7 +306,7 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
     ? `
       <div class="flex justify-between amount-line">
         <span class="text-base text-gray-800">Shipping ${shippingDetails.costType === "percentage" ? `(${shippingDetails.cost}%)` : ""}</span>
-        <span class="text-base text-gray-800">AED ${formatNumberWithCommas(Number(shippingAmount.toFixed(2)))}</span>
+        <span class="text-base text-gray-800">${details.currency || "AED"} ${formatNumberWithCommas(shippingAmount)}</span>
       </div>
     `
     : "";
@@ -210,8 +314,8 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
   const totalInWordsHtml = hasTotalInWords
     ? `
       <div class="mt-2">
-        <h2 class="font-bold text-sm">Total Amount in Words</h2>
-        <p class="font-normal text-sm">${details.totalAmountInWords}</p>
+        <h2 class="font-bold text-lg">Total Amount in Words</h2>
+        <p class="font-normal text-md">${totalAmountInWords}</p>
       </div>
     `
     : "";
@@ -219,8 +323,8 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
   const paymentTermsHtml = details.paymentTerms
     ? `
       <div class="mt-2">
-        <h2 class="font-bold text-sm">Payment Terms</h2>
-        <p class="font-normal text-sm">${details.paymentTerms}</p>
+        <h2 class="font-bold text-lg">Payment Terms</h2>
+        <p class="font-normal text-md">${details.paymentTerms}</p>
       </div>
     `
     : "";
@@ -228,8 +332,8 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
   const additionalNotesHtml = details.additionalNotes
     ? `
       <div class="mt-2">
-        <h2 class="font-bold text-sm">Additional Notes</h2>
-        <p class="font-normal text-sm">${details.additionalNotes}</p>
+        <h2 class="font-bold text-lg">Additional Notes</h2>
+        <p class="font-normal text-md">${details.additionalNotes}</p>
       </div>
     `
     : "";
@@ -272,9 +376,9 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
       .invoice-number {
         background-color: #d3d3d3;
         padding: 5px 10px;
-        border-radius: 4px;
         display: inline-block;
         font-weight: bold;
+        text-align: right;
       }
       .customer-invoice-container {
         display: flex;
@@ -293,7 +397,7 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
       }
       .invoice-table th, .invoice-table td {
         font-size: 14px;
-        border: 1px solid #000;
+        border: 1px solid #6b7280;
       }
       .invoice-table th {
         font-weight: bold;
@@ -307,10 +411,11 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
         padding: 4px;
       }
       .invoice-table th:nth-child(1), .invoice-table td:nth-child(1) { width: 5%; }
-      .invoice-table th:nth-child(2), .invoice-table td:nth-child(2) { width: 50%; }
+      .invoice-table th:nth-child(2), .invoice-table td:nth-child(2) { width: 45%; }
       .invoice-table th:nth-child(3), .invoice-table td:nth-child(3) { width: 10%; }
-      .invoice-table th:nth-child(4), .invoice-table td:nth-child(4) { width: 17%; }
-      .invoice-table th:nth-child(5), .invoice-table td:nth-child(5) { width: 18%; }
+      .invoice-table th:nth-child(4), .invoice-table td:nth-child(4) { width: 10%; }
+      .invoice-table th:nth-child(5), .invoice-table td:nth-child(5) { width: 15%; }
+      .invoice-table th:nth-child(6), .invoice-table td:nth-child(6) { width: 15%; }
       .summary {
         display: flex;
         justify-content: space-between;
@@ -322,14 +427,14 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
         break-inside: avoid;
       }
       .amounts-section {
-        width: 30%;
+        width: 35%;
       }
       .amount-line {
         margin-bottom: 4px;
       }
       .total-amount {
-        border-top: 1px solid #000;
-        border-bottom: 1px solid #000;
+        border-top: 1px solid #6b7280;
+        border-bottom: 1px solid #6b7280;
         padding: 8px 0;
         margin-top: 8px;
         font-weight: bold;
@@ -374,12 +479,16 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
     <div class="container mx-auto">
       <div class="header">
         <div class="logo">
-          <img src="${logoBase64}" alt="SPC Source Logo" />
+          ${logoBase64 ? `<img src="${logoBase64}" alt="SPC Source Logo" />` : `<p>SPC Source Logo</p>`}
         </div>
         <div class="header-details mt-4">
-          <p class="text-sm pt-1"> <span> <a href="https://api.whatsapp.com/send/?phone=971545004520&text&type=phone_number&app_absent=0" target="_blank"> +971 54 500 4520</a></span>  |  contact@spcsource.com</p>
+          <p class="text-sm pt-1">
+            <a href="https://api.whatsapp.com/send?phone=971545004520&text&type=phone_number&app_absent=0" target="_blank" rel="noopener noreferrer">
+              +971 54 500 4520
+            </a> | contact@spcsource.com
+          </p>
           <p class="text-sm pt-1"></p>
-          <p class="text-sm pt-1">www.spcsource.com  |  TRN-29484858585</p>
+          <p class="text-sm pt-1">www.spcsource.com | TRN-29484858585</p>
           <p class="text-sm pt-1">${senderData.address || "Iris Bay, Office D-43, Business Bay, Dubai, UAE."}</p>
         </div>
       </div>
@@ -390,24 +499,24 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
           <p class="text-md">${receiver.phone || ""}</p>
         </div>
         <div class="invoice-info">
-          <h2 class="text-xl">
-            <span class="invoice-number">
-              ${details.invoiceNumber || ""}
-            </span>
+          <h2 class="text-xl text-right">
+            <span class="invoice-number">${invoiceNumberPrefix}</span>
           </h2>
           <p class="text-md mt-1">${new Date(details.invoiceDate || new Date()).toLocaleDateString("en-US", DATE_OPTIONS)}</p>
+          ${details.dueDate ? `<p class="text-md mt-1">Due: ${new Date(details.dueDate).toLocaleDateString("en-US", DATE_OPTIONS)}</p>` : ""}
         </div>
       </div>
       <div class="mt-4">
-        <h3 class="text-lg font-bold">${details.invoiceNumber.includes("INV") ? `${hasTax ? "TAX " : ""}INVOICE` : `QUOTATION`}</h3>
+        <h3 class="text-lg font-bold">${isInvoice ? `${hasTax ? "TAX" : ""} INVOICE` : "QUOTATION"}</h3>
         <table class="invoice-table">
           <thead>
             <tr class="py-8">
               <th class="w-[5%] text-center">#</th>
-              <th class="w-[50%] text-center">DESCRIPTION</th>
+              <th class="w-[45%] text-center">DESCRIPTION</th>
+              <th class="w-[10%] text-center">UNIT</th>
               <th class="w-[10%] text-center">QTY</th>
-              <th class="w-[17%] text-center">UNIT PRICE</th>
-              <th class="w-[18%] text-center">AMOUNT</th>
+              <th class="w-[15%] text-center">UNIT PRICE</th>
+              <th class="w-[15%] text-center">AMOUNT</th>
             </tr>
           </thead>
           <tbody>
@@ -423,14 +532,14 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
           <div class="amounts-section">
             <div class="flex justify-between amount-line">
               <span class="text-base text-gray-800">Subtotal</span>
-              <span class="text-base text-gray-800">AED ${formatNumberWithCommas(subtotal)}.00</span>
+              <span class="text-base text-gray-800">${details.currency || "AED"} ${formatNumberWithCommas(subtotal)}</span>
             </div>
             ${taxHtml}
             ${shippingHtml}
             ${discountHtml}
             <div class="flex justify-between total-amount">
               <span class="text-base font-bold text-gray-800">Grand Total</span>
-              <span class="text-base font-bold text-gray-800">AED ${formatNumberWithCommas(Number(grandTotal.toFixed(2)))}</span>
+              <span class="text-base font-bold text-gray-800">${details.currency || "AED"} ${formatNumberWithCommas(grandTotal)}</span>
             </div>
           </div>
         </div>
@@ -448,13 +557,16 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
 
   let browser = null;
   try {
-    const launchOptions: any = {
+    console.log("Launching Puppeteer...");
+    const launchOptions:any = {
       args: [
         ...chromium.args,
         "--no-sandbox",
         "--disable-setuid-sandbox",
         "--disable-dev-shm-usage",
         "--single-process",
+        "--disable-gpu",
+        "--no-zygote",
       ],
       executablePath: await chromium.executablePath(
         "https://github.com/Sparticuz/chromium/releases/download/v133.0.0/chromium-v133.0.0-pack.tar"
@@ -462,33 +574,40 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
       headless: "new",
       defaultViewport: chromium.defaultViewport,
       ignoreHTTPSErrors: true,
+      timeout: 60000, // Increased timeout
     };
 
     browser = await puppeteerCore.launch(launchOptions);
+    console.log("Browser launched successfully");
+
     const page = await browser.newPage();
+    console.log("New page created");
 
     await page.setContent(htmlTemplate, {
-      waitUntil: "domcontentloaded",
-      timeout: 30000,
+      waitUntil: "networkidle0", // Wait until network is idle
+      timeout: 60000, // Increased timeout
     });
+    console.log("HTML content set");
 
-    const pdfBuffer: any = await page.pdf({
+    const pdfBuffer:any = await page.pdf({
       format: "A4",
       printBackground: true,
       margin: { top: "5mm", right: "5mm", bottom: "20mm", left: "5mm" },
       preferCSSPageSize: true,
     });
+    console.log("PDF generated successfully, buffer length:", pdfBuffer.length);
 
     return pdfBuffer;
   } catch (error: any) {
     console.error("Error generating PDF:", {
-      message: error.message,
-      stack: error.stack,
+      message: error.message || "Unknown error",
+      stack: error.stack || "No stack trace",
       env: process.env.NODE_ENV,
     });
     throw error;
   } finally {
     if (browser) {
+      console.log("Closing browser");
       await browser.close();
     }
   }
@@ -496,48 +615,56 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
 
 export async function POST(req: NextRequest) {
   try {
-    await connectToDatabase();
+    console.log("Received POST request");
     const body = await req.json();
     const { action, invoiceData } = body;
 
     if (!invoiceData?.details?.invoiceNumber) {
+      console.error("Missing invoice number in POST request");
       return NextResponse.json(
         { error: "Invoice number is required" },
         { status: 400 }
       );
     }
 
-    if (typeof invoiceData?.details?.pdfTemplate !== "number") {
-      return NextResponse.json(
-        { error: "PDF template must be a number" },
-        { status: 400 }
-      );
-    }
+    console.log("POST invoiceData:", JSON.stringify(invoiceData, null, 2));
 
     const pdfBuffer = await generatePdf(invoiceData);
+    console.log("PDF buffer generated for POST, length:", pdfBuffer.length);
 
-    const numericInvoiceNumber = invoiceData.details.invoiceNumber.replace(
-      /\D/g,
-      ""
-    );
-    const fileName = `invoice_${numericInvoiceNumber}.pdf`;
+    const isInvoice = invoiceData.details.isInvoice || false;
+    const hasTaxDetails = !!invoiceData.details.taxDetails;
+    const taxAmount = hasTaxDetails ? Number(invoiceData.details.taxDetails?.amount) : 0;
+    const numericInvoiceNumber = invoiceData.details.invoiceNumber.replace(/\D/g, "");
+
+    let fileName = "";
+    if (isInvoice && taxAmount > 0) {
+      fileName = `SPC_TAX_INV_${numericInvoiceNumber}.pdf`;
+    } else if (isInvoice && taxAmount <= 0) {
+      fileName = `SPC_INV_${numericInvoiceNumber}.pdf`;
+    } else {
+      fileName = `SPC_QUT_${numericInvoiceNumber}.pdf`;
+    }
+
+    console.log("POST response file name:", fileName);
 
     const headers = new Headers({
       "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="${fileName}"`,
+      "Content-Disposition": `attachment; filename="${encodeURIComponent(fileName)}"`,
       "Content-Length": pdfBuffer.length.toString(),
+      "Cache-Control": "no-cache",
+      "Access-Control-Allow-Origin": "*", // Ensure CORS compatibility
     });
 
-    const stream :any= new Readable();
-    stream.push(pdfBuffer);
-    stream.push(null);
-
-    return new NextResponse(stream, {
+    return new NextResponse(pdfBuffer, {
       status: 200,
       headers,
     });
   } catch (error: any) {
-    console.error("Error in PDF generation:", error);
+    console.error("Error in POST handler:", {
+      message: error.message || "Unknown error",
+      stack: error.stack || "No stack trace",
+    });
     return NextResponse.json(
       { error: error.message || "Failed to generate PDF" },
       { status: 500 }
@@ -547,61 +674,69 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   try {
-    await connectToDatabase();
+    console.log("Received GET request");
+    const { db } = await connectToDatabase();
     const url = new URL(req.url);
     const invoiceNumber = url.searchParams.get("invoiceNumber");
 
     if (!invoiceNumber) {
+      console.error("Missing invoice number in GET request");
       return NextResponse.json(
         { error: "Invoice number is required" },
         { status: 400 }
       );
     }
 
-    let savedInvoices: InvoiceType[] = [];
-    try {
-      const savedInvoicesJSON = fs.readFileSync(
-        path.resolve(process.cwd(), "data/savedInvoices.json"),
-        "utf8"
-      );
-      savedInvoices = JSON.parse(savedInvoicesJSON);
-    } catch (error) {
-      console.warn("Could not load saved invoices:", error);
-    }
-
-    const invoiceData = savedInvoices.find(
-      (invoice) =>
-        invoice.details?.invoiceNumber.replace(/\D/g, "") ===
-        invoiceNumber.replace(/\D/g, "")
-    );
+    const invoiceData = await db.collection("invoices").findOne({
+      "details.invoiceNumber": invoiceNumber,
+    });
 
     if (!invoiceData) {
+      console.error("Invoice not found for number:", invoiceNumber);
       return NextResponse.json(
         { error: "Invoice not found" },
         { status: 404 }
       );
     }
 
-    const pdfBuffer = await generatePdf(invoiceData);
+    console.log("GET invoiceData:", JSON.stringify(invoiceData, null, 2));
 
-    const fileName = `invoice_${invoiceNumber.replace(/\D/g, "")}.pdf`;
+    const pdfBuffer = await generatePdf(invoiceData);
+    console.log("PDF buffer generated for GET, length:", pdfBuffer.length);
+
+    const isInvoice = invoiceData.details?.isInvoice || false;
+    const hasTaxDetails = !!invoiceData.details?.taxDetails;
+    const taxAmount = hasTaxDetails ? Number(invoiceData.details?.taxDetails?.amount) : 0;
+    const numericInvoiceNumber = invoiceData.details?.invoiceNumber.replace(/\D/g, "");
+
+    let fileName = "";
+    if (isInvoice && taxAmount > 0) {
+      fileName = `SPC_TAX_INV_${numericInvoiceNumber}.pdf`;
+    } else if (isInvoice && taxAmount <= 0) {
+      fileName = `SPC_INV_${numericInvoiceNumber}.pdf`;
+    } else {
+      fileName = `SPC_QUT_${numericInvoiceNumber}.pdf`;
+    }
+
+    console.log("GET response file name:", fileName);
 
     const headers = new Headers({
       "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="${fileName}"`,
+      "Content-Disposition": `attachment; filename="${encodeURIComponent(fileName)}"`,
       "Content-Length": pdfBuffer.length.toString(),
+      "Cache-Control": "no-cache",
+      "Access-Control-Allow-Origin": "*", // Ensure CORS compatibility
     });
 
-    const stream:any = new Readable();
-    stream.push(pdfBuffer);
-    stream.push(null);
-
-    return new NextResponse(stream, {
+    return new NextResponse(pdfBuffer, {
       status: 200,
       headers,
     });
   } catch (error: any) {
-    console.error("Error in PDF regeneration:", error);
+    console.error("Error in GET handler:", {
+      message: error.message || "Unknown error",
+      stack: error.stack || "No stack trace",
+    });
     return NextResponse.json(
       { error: error.message || "Failed to regenerate PDF" },
       { status: 500 }

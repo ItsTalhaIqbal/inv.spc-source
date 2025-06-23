@@ -64,17 +64,20 @@ const CreateUserDialog = ({
   ];
 
   const handleSubmit = async () => {
-    if (!name || !address || !state || !country || !email || !phone) {
+    if (!name || !address || !state || !country  || !phone) {
       setError("All fields are required");
       setSuccess(false);
       return;
     }
 
-    if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) {
+    if(email){
+      if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) {
       setError("Invalid email address");
       setSuccess(false);
       return;
     }
+    }
+    
 
     if (!/^[0-9+\-\(\)\s]+$/.test(phone)) {
       setError("Invalid phone number");
@@ -168,13 +171,13 @@ const CreateUserDialog = ({
                 />
               </div>
               <div>
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">Email <span className="text-xs">(optional)</span></Label>
                 <Input
                   id="email"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Enter email"
+                  placeholder="Enter email (optional)"
                 />
               </div>
               <div>

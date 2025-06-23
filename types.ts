@@ -1,4 +1,4 @@
-import z from "zod";
+import { z } from "zod";
 import { FieldPath, UseFormReturn } from "react-hook-form";
 import { InvoiceSchema, ItemSchema } from "@/lib/schemas";
 
@@ -91,6 +91,7 @@ export interface InvoiceTypeExplicit {
             quantity: number;
             unitPrice: number;
             total: number;
+            unitType: string; // Added unitType
             description?: string;
         }>;
         paymentInformation?: {
@@ -122,6 +123,6 @@ export interface InvoiceTypeExplicit {
         };
         updatedAt?: string;
         pdfTemplate: number;
-        isInvoice: boolean; // Added for invoice/quotation toggle
+        isInvoice: boolean;
     };
 }

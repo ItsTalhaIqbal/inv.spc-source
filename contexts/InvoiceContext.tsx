@@ -16,6 +16,7 @@ import {
   FORM_DEFAULT_VALUES,
   SEND_PDF_API,
   SHORT_DATE_OPTIONS,
+  UNIT_TYPES,
 } from "@/lib/variables";
 import { ExportTypes, InvoiceType } from "@/types";
 
@@ -29,7 +30,7 @@ const defaultInvoiceContext = {
   newInvoiceTrigger: 0,
   generatePdf: async (data: InvoiceType) => {},
   removeFinalPdf: () => {},
-    downloadPdf: async (): Promise<void> => {},
+  downloadPdf: async (invoiceNumber: string): Promise<void> => Promise.resolve(),
   printPdf: () => {},
   previewPdfInTab: () => {},
   saveInvoice: () => {},
@@ -81,6 +82,21 @@ export const InvoiceContextProvider = ({
     return invoiceNumber.replace(/\D/g, "");
   };
 
+  // Simple number-to-words conversion for totalAmountInWords
+  const numberToWords = (num: number): string => {
+    const units = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine"];
+    const teens = ["Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen"];
+    const tens = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"];
+    
+    if (num === 0) return "Zero";
+    if (num < 10) return units[num];
+    if (num < 20) return teens[num - 10];
+    if (num < 100) return `${tens[Math.floor(num / 10)]} ${units[num % 10]}`.trim();
+    if (num < 1000) return `${units[Math.floor(num / 100)]} Hundred ${numberToWords(num % 100)}`.trim();
+    if (num < 1000000) return `${numberToWords(Math.floor(num / 1000))} Thousand ${numberToWords(num % 1000)}`.trim();
+    return "Number too large"; // Add more logic for larger numbers if needed
+  };
+
   useEffect(() => {
     try {
       if (typeof window !== "undefined") {
@@ -122,6 +138,10 @@ export const InvoiceContextProvider = ({
       details: {
         ...FORM_DEFAULT_VALUES.details,
         currency: "AED",
+        items: FORM_DEFAULT_VALUES.details.items.map((item) => ({
+          ...item,
+          unitType: item.unitType || "pcs",
+        })),
       },
     }),
     []
@@ -136,42 +156,59 @@ export const InvoiceContextProvider = ({
   }, []);
 
   const newInvoice = useCallback(() => {
-    reset(FORM_DEFAULT_VALUES);
+    reset(updatedDefaultValues);
     setInvoicePdf(new Blob());
     resetWizard();
     router.refresh();
     setNewInvoiceTrigger((prev) => prev + 1);
     newInvoiceSuccess();
-  }, [reset, router, newInvoiceSuccess, resetWizard]);
+  }, [reset, router, newInvoiceSuccess, resetWizard, updatedDefaultValues]);
 
-  const downloadPdf = useCallback(async (): Promise<any> => {
-  return new Promise<void>((resolve, reject) => {
-    if (invoicePdf instanceof Blob && invoicePdf.size > 0) {
-      try {
-        const url = window.URL.createObjectURL(invoicePdf);
-        const a = document.createElement("a");
-        const originalInvoiceNumber = getValues().details.invoiceNumber || "unknown";
-        a.href = url;
-        a.download = `invoice_${originalInvoiceNumber}.pdf`;
-        
-        a.addEventListener('click', () => {
-          setTimeout(() => {
-            window.URL.revokeObjectURL(url);
-            resolve(undefined); // Explicitly resolve with undefined
-          }, 1000);
-        });
-        
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-      } catch (error) {
-        resolve(undefined); // Explicitly resolve with undefined
-      }
-    } else {
-      resolve(undefined); // Explicitly resolve with undefined
-    }
-  });
-}, [invoicePdf, getValues]);
+  const downloadPdf = useCallback(
+    async (invoiceNumber: string): Promise<void> => {
+      return new Promise<void>((resolve, reject) => {
+        if (invoicePdf instanceof Blob && invoicePdf.size > 0) {
+          try {
+            const url = window.URL.createObjectURL(invoicePdf);
+            const a = document.createElement("a");
+            const numericInvoiceNumber = getNumericInvoiceNumber(invoiceNumber);
+            const formValues = getValues();
+            const isInvoice = formValues.details?.isInvoice || false;
+            const hasTax = formValues.details?.taxDetails?.amount && formValues.details.taxDetails.amount > 0;
+
+            let fileName = "";
+            if (isInvoice && hasTax) {
+              fileName = `SPC_TAX_INV_${numericInvoiceNumber}.pdf`;
+            } else if (isInvoice && !hasTax) {
+              fileName = `SPC_INV_${numericInvoiceNumber}.pdf`;
+            } else {
+              fileName = `SPC_QUT_${numericInvoiceNumber}.pdf`;
+            }
+
+            a.href = url;
+            a.download = fileName;
+
+            a.addEventListener('click', () => {
+              setTimeout(() => {
+                window.URL.revokeObjectURL(url);
+                resolve();
+              }, 1000);
+            });
+
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+          } catch (error) {
+            console.error("Error downloading PDF:", error);
+            resolve();
+          }
+        } else {
+          resolve();
+        }
+      });
+    },
+    [invoicePdf, getValues, getNumericInvoiceNumber]
+  );
 
   const generatePdf = useCallback(
     async (data: InvoiceType) => {
@@ -180,27 +217,78 @@ export const InvoiceContextProvider = ({
       setInvoicePdfLoading(true);
       try {
         const numericInvoiceNumber = getNumericInvoiceNumber(data.details.invoiceNumber);
+        const subTotal = (data.details.items || []).reduce(
+          (sum, item) => sum + (Number(item.quantity) * Number(item.unitPrice) || 0),
+          0
+        );
+        const taxAmount = Number(data.details.taxDetails?.amount) || 0;
+        const discountAmount = Number(data.details?.discountDetails?.amount) || 0;
+        const shippingCost = Number(data.details?.shippingDetails?.cost) || 0;
+        const totalAmount = subTotal + taxAmount - discountAmount + shippingCost;
+
         const payload = {
           invoiceNumber: data.details.invoiceNumber || "",
-          sender: data.sender,
-          receiver: data.receiver || { name: "", address: "", state: "", country: "UAE" },
+          sender: {
+            name: data.sender?.name || "SPC Source Technical Services LLC",
+            address: data.sender?.address || "Iris Bay, Office D-43, Business Bay, Dubai, UAE",
+            state: data.sender?.state || "Dubai",
+            country: data.sender?.country || "UAE",
+            email: data.sender?.email || "contact@spcsource.com",
+            phone: data.sender?.phone || "+971 54 500 4520",
+          },
+          receiver: {
+            name: data.receiver?.name || "",
+            address: data.receiver?.address || "",
+            state: data.receiver?.state || "",
+            country: data.receiver?.country || "UAE",
+            email: data.receiver?.email || undefined,
+            phone: data.receiver?.phone || "",
+          },
           details: {
-            ...data.details,
+            invoiceLogo: data.details?.invoiceLogo || "/public/assets/img/image.jpg",
             invoiceNumber: data.details.invoiceNumber || "",
-            currency: "AED",
+            invoiceDate: data.details?.invoiceDate ? new Date(data.details.invoiceDate).toISOString() : new Date().toISOString(),
+            dueDate: data.details?.dueDate ? new Date(data.details.dueDate) : new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString(),
             items: (data.details.items || []).map((item) => ({
-              ...item,
+              name: item.name || "No description provided",
               description: item.description || "No description provided",
-              unitPrice: Number(item.unitPrice) || 0,
               quantity: Number(item.quantity) || 0,
+              unitPrice: Number(item.unitPrice) || 0,
+              unitType: item.unitType || "pcs",
+              total: Number(item.quantity) * Number(item.unitPrice) || 0,
             })),
+            currency: "AED",
+            language: data.details?.language || "English",
             taxDetails: {
-              ...data.details.taxDetails,
-              amount: Number(data.details.taxDetails?.amount) || 0,
+              amount: taxAmount,
               amountType: data.details.taxDetails?.amountType === "amount" ? "fixed" : data.details.taxDetails?.amountType || "percentage",
+              taxID: data.details.taxDetails?.taxID || undefined ,
             },
+            discountDetails: data.details?.discountDetails || {
+              amount: 0,
+              amountType: "amount",
+            },
+            shippingDetails: data.details?.shippingDetails || {
+              cost: 0,
+              costType: "amount",
+            },
+            paymentInformation: {
+              bankName: data.details?.paymentInformation?.bankName || "Bank Inc.",
+              accountName: data.details?.paymentInformation?.accountName || "John Doe",
+              accountNumber: data.details?.paymentInformation?.accountNumber || "445566998877",
+            },
+            additionalNotes: data.details?.additionalNotes || "Received above items in good condition.",
+            paymentTerms: data.details?.paymentTerms || "50% advance upon confirmation of the order, 50% upon delivery or completion.",
+            signature: data.details?.signature || undefined,
+            subTotal,
+            totalAmount,
+            totalAmountInWords: `${numberToWords(totalAmount)} AED`,
+            pdfTemplate: data.details?.pdfTemplate || 2,
+            isInvoice: data.details?.isInvoice || false,
           },
         };
+
+        console.log("Payload for /api/invoice/new_invoice:", JSON.stringify(payload, null, 2));
 
         let attempts = 0;
         const maxAttempts = 3;
@@ -226,24 +314,27 @@ export const InvoiceContextProvider = ({
             if (result.size > 0) {
               setInvoicePdf(result);
               pdfGenerationSuccess();
-              
-              await downloadPdf();
-              
+              await downloadPdf(numericInvoiceNumber);
               try {
-                await fetch("/api/invoice/new_invoice", {
+                const response = await fetch("/api/invoice/new_invoice", {
                   method: "POST",
                   headers: {
                     "Content-Type": "application/json",
                   },
                   body: JSON.stringify({
-                    ...payload,
                     invoiceNumber: numericInvoiceNumber,
+                    sender: payload.sender,
+                    receiver: payload.receiver,
                     details: {
                       ...payload.details,
                       invoiceNumber: numericInvoiceNumber,
                     },
                   }),
                 });
+                if (!response.ok) {
+                  const errorText = await response.text();
+                  throw new Error(`Failed to save invoice: ${response.status} - ${errorText}`);
+                }
               } catch (error) {
                 console.error("Failed to save invoice to server:", error);
               }
@@ -269,49 +360,62 @@ export const InvoiceContextProvider = ({
     [pdfGenerationSuccess, downloadPdf, newInvoice]
   );
 
-  const saveInvoice = useCallback(() => {
-    try {
-      if (invoicePdf instanceof Blob && invoicePdf.size > 0) {
-        const formValues = getValues();
-        if (!formValues?.details?.invoiceNumber) return;
+  const saveInvoice = useCallback(
+    () => {
+      try {
+        if (invoicePdf instanceof Blob && invoicePdf.size > 0) {
+          const formValues = getValues();
+          if (!formValues?.details?.invoiceNumber) return;
 
-        const updatedDate = new Date().toLocaleDateString("en-US", SHORT_DATE_OPTIONS);
-        const numericInvoiceNumber = getNumericInvoiceNumber(formValues.details.invoiceNumber);
-        const updatedFormValues = {
-          ...formValues,
-          details: {
-            ...formValues.details,
-            invoiceNumber: numericInvoiceNumber,
-            updatedAt: updatedDate,
-          },
-        };
+          const updatedDate = new Date().toLocaleDateString("en-US", SHORT_DATE_OPTIONS);
+          const numericInvoiceNumber = getNumericInvoiceNumber(formValues.details.invoiceNumber);
+          const updatedFormValues = {
+            ...formValues,
+            details: {
+              ...formValues.details,
+              invoiceNumber: numericInvoiceNumber,
+              updatedAt: updatedDate,
+              items: formValues.details.items.map((item) => ({
+                ...item,
+                unitType: item.unitType || "pcs",
+              })),
+            },
+          };
 
-        const existingInvoiceIndex = savedInvoices.findIndex(
-          (invoice) => invoice.details.invoiceNumber === numericInvoiceNumber
-        );
+          const existingInvoiceIndex = savedInvoices.findIndex(
+            (invoice) => invoice.details.invoiceNumber === numericInvoiceNumber
+          );
 
-        let updatedInvoices = [...savedInvoices];
-        if (existingInvoiceIndex !== -1) {
-          updatedInvoices[existingInvoiceIndex] = updatedFormValues;
-          modifiedInvoiceSuccess();
-        } else {
-          updatedInvoices.push(updatedFormValues);
-          saveInvoiceSuccess();
+          let updatedInvoices = [...savedInvoices];
+          if (existingInvoiceIndex !== -1) {
+            updatedInvoices[existingInvoiceIndex] = updatedFormValues;
+            modifiedInvoiceSuccess();
+          } else {
+            updatedInvoices.push(updatedFormValues);
+            saveInvoiceSuccess();
+          }
+
+          setSavedInvoices(updatedInvoices);
+          localStorage.setItem("savedInvoices", JSON.stringify(updatedInvoices));
         }
-
-        setSavedInvoices(updatedInvoices);
-        localStorage.setItem("savedInvoices", JSON.stringify(updatedInvoices));
+      } catch (error) {
+        console.error("Error saving invoice:", error);
       }
-    } catch (error) {
-      console.error("Error saving invoice:", error);
-    }
-  }, [getValues, savedInvoices, modifiedInvoiceSuccess, saveInvoiceSuccess]);
+    },
+    [getValues, savedInvoices, modifiedInvoiceSuccess, saveInvoiceSuccess]
+  );
 
   const onFormSubmit = useCallback(
     (data: InvoiceType) => {
-      if (!data?.details?.invoiceNumber) return;
-      if (typeof data?.details?.pdfTemplate !== "number") return;
-      
+      if (!data?.details?.invoiceNumber) {
+        console.error("Invoice number is required");
+        return;
+      }
+      if (typeof data?.details?.pdfTemplate !== "number") {
+        console.error("PDF template must be a number");
+        return;
+      }
+
       generatePdf(data);
       saveInvoice();
     },
@@ -418,6 +522,10 @@ export const InvoiceContextProvider = ({
           details: {
             ...formValues.details,
             invoiceNumber: numericInvoiceNumber,
+            items: formValues.details.items.map((item) => ({
+              ...item,
+              unitType: item.unitType || "pcs",
+            })),
           },
         });
       } catch (error) {
@@ -453,10 +561,11 @@ export const InvoiceContextProvider = ({
                 ? new Date(importedData.details.invoiceDate).toISOString()
                 : new Date().toISOString(),
               items: (importedData.details.items || []).map((item) => ({
-                ...item,
-                description: item.description || "No description provided",
-                unitPrice: Number(item.unitPrice) || 0,
+                name: item.name || "No description provided",
                 quantity: Number(item.quantity) || 0,
+                unitPrice: Number(item.unitPrice) || 0,
+                unitType: item.unitType && UNIT_TYPES.includes(item.unitType) ? item.unitType : "pcs",
+                total: Number(item.quantity) * Number(item.unitPrice) || 0,
               })),
             },
           };
