@@ -91,7 +91,7 @@ export default function ChangePassword() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background text-foreground transition-colors duration-300">
-      <div className="p-8 rounded-md shadow-sm w-full max-w-md bg-card border border-border">
+      <div className=" p-8 rounded-md shadow-sm w-full max-w-md bg-gray-50 border border-border">
         <h1 className="text-2xl font-bold mb-6 text-center">Change Password</h1>
         {message && (
           <p className="text-green-500 mb-4 text-center">{message}</p>

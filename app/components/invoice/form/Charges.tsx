@@ -11,6 +11,7 @@ import { formatNumberWithCommas } from "@/lib/helpers";
 import { InvoiceType } from "@/types";
 import { SetStateAction } from "react";
 import { useTheme } from "next-themes";
+import { RotateCcw } from "lucide-react";
 
 interface ChargeInputProps {
   label: string;
@@ -60,7 +61,7 @@ const ChargeInputComponent = ({
           className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background border border-input hover:bg-accent hover:text-accent-foreground h-9 py-2 px-3"
           onClick={() => switchAmountType(type, setType)}
         >
-          {type === "percentage" ? currency : "%"}
+          <RotateCcw />
         </button>
       </div>
     </div>
