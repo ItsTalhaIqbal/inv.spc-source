@@ -201,7 +201,6 @@ const Charges = () => {
             currency={currency}
             onValueChange={handleValueChange}
             value={watch("details.taxDetails.amount")?.toString() || "0"}
-            readOnly={true}
           />
         )}
 
