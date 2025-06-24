@@ -21,6 +21,7 @@ export default function ChangePassword() {
   const [user, setUser] = useState<User | null>(null);
   const router = useRouter();
   const { theme } = useTheme();
+  const [loading, setLoading] = useState<boolean>(false);
 
   useEffect(() => {
     const currentUser = JSON.parse(localStorage.getItem("user") || "null");
@@ -32,22 +33,28 @@ export default function ChangePassword() {
   }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
+    setLoading(true);
     e.preventDefault();
     setMessage("");
     setError("");
 
     if (!user?.email) {
       setError("User not authenticated. Please log in.");
+      setLoading(false);
       return;
     }
 
     if (newPassword !== confirmPassword) {
       setError("New password and confirm password do not match");
+      setLoading(false);
+
       return;
     }
 
     if (newPassword.length < 8) {
       setError("New password must be at least 8 characters long");
+      setLoading(false);
+
       return;
     }
 
@@ -68,13 +75,13 @@ export default function ChangePassword() {
       if (res.ok) {
         setMessage(data.message);
         const basePath = getBasePath();
-        setTimeout(() => {
-          router.push(basePath || "/"); // Fallback to "/" if basePath is empty
-        }, 2000);
+          router.push(basePath||"/"); 
       } else {
         setError(data.message);
       }
     } catch (err) {
+      setLoading(false);
+
       console.error("Fetch error:", err); // Debugging
       setError("Something went wrong. Please try again.");
     }
@@ -84,11 +91,16 @@ export default function ChangePassword() {
     <div className="min-h-screen flex items-center justify-center bg-background text-foreground transition-colors duration-300">
       <div className="p-8 rounded-md shadow-sm w-full max-w-md bg-card border border-border">
         <h1 className="text-2xl font-bold mb-6 text-center">Change Password</h1>
-        {message && <p className="text-green-500 mb-4 text-center">{message}</p>}
+        {message && (
+          <p className="text-green-500 mb-4 text-center">{message}</p>
+        )}
         {error && <p className="text-red-500 mb-4 text-center">{error}</p>}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="currentPassword" className="block text-sm font-medium mb-1">
+            <label
+              htmlFor="currentPassword"
+              className="block text-sm font-medium mb-1"
+            >
               Current Password
             </label>
             <Input
@@ -101,7 +113,10 @@ export default function ChangePassword() {
             />
           </div>
           <div>
-            <label htmlFor="newPassword" className="block text-sm font-medium mb-1">
+            <label
+              htmlFor="newPassword"
+              className="block text-sm font-medium mb-1"
+            >
               New Password
             </label>
             <Input
@@ -114,7 +129,10 @@ export default function ChangePassword() {
             />
           </div>
           <div>
-            <label htmlFor="confirmPassword" className="block text-sm font-medium mb-1">
+            <label
+              htmlFor="confirmPassword"
+              className="block text-sm font-medium mb-1"
+            >
               Confirm Password
             </label>
             <Input
@@ -131,7 +149,7 @@ export default function ChangePassword() {
             className="w-full bg-gray-600 text-white hover:bg-gray-700"
             disabled={!user}
           >
-            Change Password
+           {loading?"Processing...":"Change Password"} 
           </Button>
         </form>
       </div>

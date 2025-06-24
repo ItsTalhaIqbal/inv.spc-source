@@ -535,12 +535,12 @@ const Page: React.FC = () => {
         (showShipping ? shippingAmount : 0) -
         (showDiscount ? discountAmount : 0);
 
-      if (calculatedTotal < 0  ) {
+      if (calculatedTotal < 0) {
         setErrorMessage("Total amount cannot be negative. Please adjust the discount or other amounts.");
         setIsSaving(false);
         return;
       }
-       if ( calculatedTotal == 0) {
+      if (calculatedTotal == 0) {
         setErrorMessage("Total amount cannot be zero (0).");
         setIsSaving(false);
         return;
@@ -845,7 +845,7 @@ const Page: React.FC = () => {
             >
               <DialogHeader className="border-b pb-4">
                 <DialogTitle className="text-2xl font-bold">
-                  Invoice #{viewInvoice?.details.invoiceNumber}
+                 {viewInvoice?.details.isInvoice==true?"Invoice #":"Quoation #"}{viewInvoice?.details.invoiceNumber}
                 </DialogTitle>
                 <div className="flex items-center justify-between mb-4 gap-4">
                   <p className="text-sm text-gray-500">
@@ -857,7 +857,7 @@ const Page: React.FC = () => {
               {viewInvoice && (
                 <div className="max-h-[70vh] overflow-y-auto p-4 space-y-6">
                   <div
-                    className={theme === "dark" ? "bg-gray-700 p-4 rounded-md shadow-sm" : "bg-gray-50 p-4 rounded-md shadow-sm"}
+                    className={theme === "dark" ? "bg-gray-700 p-4 rounded-md shadow-sm" : "bg-gray-200 p-4 rounded-md shadow-sm"}
                   >
                     <h3 className="text-lg font-semibold mb-2">Invoice Details</h3>
                     <div className="grid grid-cols-2 gap-4">
@@ -886,7 +886,7 @@ const Page: React.FC = () => {
                     </div>
                   </div>
                   <div
-                    className={theme === "dark" ? "bg-gray-700 p-4 rounded-md shadow-sm" : "bg-gray-50 p-4 rounded-md shadow-sm"}
+                    className={theme === "dark" ? "bg-gray-700 p-4 rounded-md shadow-sm" : "bg-gray-200 p-4 rounded-md shadow-sm"}
                   >
                     <h3 className="text-lg font-semibold mb-2">Receiver Information</h3>
                     <div className="grid grid-cols-2 gap-4">
@@ -911,7 +911,7 @@ const Page: React.FC = () => {
                     </div>
                   </div>
                   <div
-                    className={theme === "dark" ? "bg-gray-700 p-4 rounded-md shadow-sm" : "bg-gray-50 p-4 rounded-md shadow-sm"}
+                    className={theme === "dark" ? "bg-gray-700 p-4 rounded-md shadow-sm" : "bg-gray-200 p-4 rounded-md shadow-sm"}
                   >
                     <h3 className="text-lg font-semibold mb-2">Items</h3>
                     {viewInvoice.details.items.map((item, index) => (
@@ -948,7 +948,7 @@ const Page: React.FC = () => {
                     ))}
                   </div>
                   <div
-                    className={theme === "dark" ? "bg-gray-700 p-4 rounded-md shadow-sm" : "bg-gray-50 p-4 rounded-md shadow-sm"}
+                    className={theme === "dark" ? "bg-gray-700 p-4 rounded-md shadow-sm" : "bg-gray-200 p-4 rounded-md shadow-sm"}
                   >
                     <h3 className="text-lg font-semibold mb-2">Tax, Discount & Shipping Details</h3>
                     <div className="grid grid-cols-2 gap-4">
@@ -979,7 +979,7 @@ const Page: React.FC = () => {
                     </div>
                   </div>
                   <div
-                    className={theme === "dark" ? "bg-gray-700 p-4 rounded-md shadow-sm" : "bg-gray-50 p-4 rounded-md shadow-sm"}
+                    className={theme === "dark" ? "bg-gray-700 p-4 rounded-md shadow-sm" : "bg-gray-200 p-4 rounded-md shadow-sm"}
                   >
                     <h3 className="text-lg font-semibold mb-2">Payment Information</h3>
                     <div className="grid grid-cols-2 gap-4">
@@ -995,7 +995,7 @@ const Page: React.FC = () => {
                     </div>
                   </div>
                   <div
-                    className={theme === "dark" ? "bg-gray-700 p-4 rounded-md shadow-sm" : "bg-gray-50 p-4 rounded-md shadow-sm"}
+                    className={theme === "dark" ? "bg-gray-700 p-4 rounded-md shadow-sm" : "bg-gray-200 p-4 rounded-md shadow-sm"}
                   >
                     <h3 className="text-lg font-semibold mb-2">Additional Information</h3>
                     <div className="grid grid-cols-2 gap-4">
@@ -1019,18 +1019,18 @@ const Page: React.FC = () => {
           <Dialog open={editInvoiceDialog} onOpenChange={setEditInvoiceDialog}>
             <DialogContent
               className={`${
-                theme === "dark" ? "bg-gray-800 text-white border-gray-700" : "bg-white text-black border-gray-200"
+                theme === "dark" ? "bg-gray-800 text-white border-gray-700" : "bg-white text-black border-gray-200 focus:outline-none"
               } sm:max-w-[800px] shadow-lg rounded-md`}
             >
               <DialogHeader className="border-b pb-4">
                 <DialogTitle className="text-lg font-bold">
-                  Edit Invoice #{editInvoice?.details.invoiceNumber}
+                   {editInvoice?.details.isInvoice   == true ?"Invoice #":"Quoation #"}{editInvoice?.details.invoiceNumber}
                 </DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit(onSubmitEdit)}>
                 <ScrollArea className="h-[60vh] pr-4">
                   <div className="space-y-6">
-                    <div className="space-y-4 p-4 rounded-lg bg-gray-800/50">
+                    <div className={`space-y-4 p-4 rounded-lg ${theme=== "dark"? "bg-gray-800/200":"bg-gray-200"} `}>
                       <h3 className="text-lg font-semibold">Invoice Details</h3>
                       <div className="grid grid-cols-2 gap-4">
                         <div>
@@ -1068,10 +1068,10 @@ const Page: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="space-y-4 p-4 rounded-lg bg-gray-800/50">
+                    <div className={`space-y-4 p-4 rounded-lg  ${theme=== "dark"? "bg-gray-800/50":"bg-gray-200"}`}>
                       <h3 className="text-lg font-semibold">Items</h3>
                       {fields.map((item, index) => (
-                        <div key={item.id} className="border border-gray-600 p-4 rounded-md space-y-2">
+                        <div key={item.id} className="border border-gray-400 p-4 rounded-md space-y-2">
                           <div className="grid grid-cols-4 gap-4">
                             <div>
                               <label className="text-sm font-medium">Name</label>
@@ -1173,7 +1173,7 @@ const Page: React.FC = () => {
                           className={`${
                             theme === "dark"
                               ? "bg-gray-300 text-black hover:bg-gray-400 border-gray-200"
-                              : "bg-white text-black hover:bg-gray-100 border-gray-200"
+                              : "bg-gray-400  hover:bg-gray-500 border-gray-200"
                           }`}
                         >
                           Add Item
@@ -1181,7 +1181,7 @@ const Page: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="space-y-4 p-4 rounded-lg bg-gray-800/50">
+                    <div className={`space-y-4 p-4 rounded-lg  ${theme=== "dark"? "bg-gray-800/50":"bg-gray-200"}`}>
                       <div className="flex items-center space-x-2">
                         <Switch
                           id="tax-switch"
@@ -1198,7 +1198,7 @@ const Page: React.FC = () => {
                           className={`${
                             theme === "dark"
                               ? "data-[state=checked]:bg-white data-[state=unchecked]:bg-gray-600"
-                              : "data-[state=checked]:bg-white data-[state=unchecked]:bg-gray-300"
+                              : "data-[state=checked]:bg-black data-[state=unchecked]:bg-gray-400"
                           }`}
                         />
                         <Label htmlFor="tax-switch" className="text-lg font-semibold">
@@ -1249,7 +1249,7 @@ const Page: React.FC = () => {
                       )}
                     </div>
 
-                    <div className="space-y-4 p-4 rounded-lg bg-gray-800/50">
+                    <div className={`space-y-4 p-4 rounded-lg  ${theme=== "dark"? "bg-gray-800/50":"bg-gray-200"}`}>
                       <div className="flex items-center space-x-2">
                         <Switch
                           id="discount-switch"
@@ -1258,7 +1258,7 @@ const Page: React.FC = () => {
                           className={`${
                             theme === "dark"
                               ? "data-[state=checked]:bg-white data-[state=unchecked]:bg-gray-600"
-                              : "data-[state=checked]:bg-white data-[state=unchecked]:bg-gray-300"
+                              : "data-[state=checked]:bg-black data-[state=unchecked]:bg-gray-400"
                           }`}
                         />
                         <Label htmlFor="discount-switch" className="text-lg font-semibold">
@@ -1310,7 +1310,7 @@ const Page: React.FC = () => {
                       )}
                     </div>
 
-                    <div className="space-y-4 p-4 rounded-lg bg-gray-800/50">
+                    <div className={`space-y-4 p-4 rounded-lg  ${theme=== "dark"? "bg-gray-800/50":"bg-gray-200"}`}>
                       <div className="flex items-center space-x-2">
                         <Switch
                           id="shipping-switch"
@@ -1319,7 +1319,7 @@ const Page: React.FC = () => {
                           className={`${
                             theme === "dark"
                               ? "data-[state=checked]:bg-white data-[state=unchecked]:bg-gray-600"
-                              : "data-[state=checked]:bg-white data-[state=unchecked]:bg-gray-300"
+                              : "data-[state=checked]:bg-black data-[state=unchecked]:bg-gray-400"
                           }`}
                         />
                         <Label htmlFor="shipping-switch" className="text-lg font-semibold">
@@ -1370,7 +1370,7 @@ const Page: React.FC = () => {
                       )}
                     </div>
 
-                    <div className="space-y-4 p-4 rounded-lg bg-gray-800/50">
+                    <div className={`space-y-4 p-4 rounded-lg  ${theme=== "dark"? "bg-gray-800/50":"bg-gray-200"}`}>
                       <h3 className="text-lg font-semibold">Additional Information</h3>
                       <div className="grid grid-cols-1 gap-4">
                         <div>
@@ -1394,14 +1394,13 @@ const Page: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="space-y-4 p-4 rounded-lg bg-gray-800/50">
+                    <div className={`space-y-4 p-4 rounded-lg  ${theme=== "dark"? "bg-gray-800/50":"bg-gray-200"}`}>
                       <h3 className="text-lg font-semibold">Summary</h3>
                       <div className="space-y-2">
                         <div className="flex justify-between">
                           <span>Subtotal:</span>
                           <span>{subTotal.toFixed(2)}</span>
                         </div>
-                       
                         {showDiscount && (
                           <div className="flex justify-between">
                             <span>Discount:</span>
@@ -1411,15 +1410,15 @@ const Page: React.FC = () => {
                         {showShipping && (
                           <div className="flex justify-between">
                             <span>Shipping:</span>
-                            <span>{shippingAmount.toFixed(2)}</span> 
+                            <span>{shippingAmount.toFixed(2)}</span>
                           </div>
                         )}
-                         {showTax && (
+                        {showTax && (
                           <div className="flex justify-between">
                             <span>VAT:</span>
                             <span>{taxAmount.toFixed(2)}</span>
                           </div>
-                        )}    
+                        )}
                         <div className="flex justify-between font-bold border-t pt-2 border-t-gray-200">
                           <span>Grand Total:</span>
                           <span>{totalAmount.toFixed(2)}</span>
@@ -1429,7 +1428,7 @@ const Page: React.FC = () => {
                   </div>
                 </ScrollArea>
                 <DialogFooter className="border-t pt-4 flex justify-end gap-2">
-                  {errorMessage && <p className="text-red-500 text-sm    text-left">{errorMessage}</p>}
+                  {errorMessage && <p className="text-red-500 text-sm text-left">{errorMessage}</p>}
                   <Button type="button" variant="outline" onClick={() => setEditInvoiceDialog(false)}>
                     Cancel
                   </Button>

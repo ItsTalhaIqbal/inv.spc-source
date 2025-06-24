@@ -10,6 +10,7 @@ import { useTranslationContext } from "@/contexts/TranslationContext";
 import { formatNumberWithCommas } from "@/lib/helpers";
 import { InvoiceType } from "@/types";
 import { SetStateAction } from "react";
+import { useTheme } from "next-themes";
 
 interface ChargeInputProps {
   label: string;
@@ -40,6 +41,7 @@ const ChargeInputComponent = ({
       onValueChange(name, inputValue);
     }
   };
+  const {theme} = useTheme()
 
   return (
     <div className="flex justify-between items-center">
@@ -49,7 +51,7 @@ const ChargeInputComponent = ({
           type="text"
           value={value}
           onChange={handleChange}
-          className="w-20 border rounded px-2 py-1"
+          className={`w-20 border ${theme == 'dark'?"bg-gray-700":"bg-gray-50"} rounded px-2 py-1`}
           readOnly={readOnly}
         />
         <span>{type === "percentage" ? "%" : currency}</span>
@@ -184,6 +186,7 @@ const Charges = () => {
             currency={currency}
             onValueChange={handleValueChange}
             value={watch("details.discountDetails.amount")?.toString() || "0"}
+                                        
           />
         )}
 

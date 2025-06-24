@@ -22,6 +22,7 @@ import { ChevronDown } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { getBasePath } from "@/lib/utils";
+import { useTheme } from "next-themes";
 
 interface User {
   _id: string;
@@ -52,7 +53,7 @@ const CreateUserDialog = ({
   const [success, setSuccess] = useState<boolean>(false);
   const [open, setOpen] = useState<boolean>(false);
   const pathName = usePathname();
-
+const {theme}=useTheme()
   const uaeEmirates = [
     "Abu Dhabi",
     "Ajman",
@@ -138,7 +139,7 @@ const CreateUserDialog = ({
       >
         <DialogTrigger asChild>
           <Button
-            className="bg-white text-black p-2 rounded-sm rounded-r-none w-[140px] font-semibold"
+            className={`bg-white ${theme === 'dark'?"":"hover:bg-gray-50 border border-input"} text-black p-2 rounded-sm rounded-r-none w-[140px] font-semibold`}
             onClick={() => {
               setSuccess(false);
               setError(null);
@@ -242,10 +243,10 @@ const CreateUserDialog = ({
       {pathName.includes("customers") ? null : (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button
+            <Button           
               variant="ghost"
               size="sm"
-              className="bg-white text-black rounded-l-none w-10 h-10 flex items-center justify-center"
+              className={`bg-white text-black  ${theme == 'dark'?"hover:bg-gray-200":"border border-input"}  rounded-l-none w-10 h-10 flex items-center justify-center`}
             >
               <ChevronDown className="h-4 w-4 !text-black" />
             </Button>

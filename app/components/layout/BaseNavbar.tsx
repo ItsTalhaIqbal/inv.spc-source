@@ -77,7 +77,7 @@ const BaseNavbar = () => {
   }, []);
 
   const pathname = usePathname();
-  const router = useRouter()
+  const router = useRouter();
   // Prevent rendering until theme is resolved
   const [hasMounted, setHasMounted] = useState(false);
 
@@ -92,8 +92,8 @@ const BaseNavbar = () => {
   if (pathname?.includes("/login")) {
     return null;
   }
-   const isProduction = process.env.NODE_ENV === "production";
-        const homePath = isProduction ? "/en/" : "/";
+  const isProduction = process.env.NODE_ENV === "production";
+  const homePath = isProduction ? "/en/" : "/";
 
   return (
     <header className="lg:container z-[99]">
@@ -130,7 +130,7 @@ const BaseNavbar = () => {
               </Link>
             </BaseButton>
             <BaseButton
-              tooltipLabel="Cusotmers"
+              tooltipLabel="Customers"
               variant="ghost"
               size="icon"
               asChild
@@ -146,20 +146,20 @@ const BaseNavbar = () => {
             </BaseButton>
             <NewInvoiceAlert>
               <Link href={homePath}>
-              <BaseButton
-                variant="ghost"
-                size="icon"
-                tooltipLabel="Get a new invoice form"
-                disabled={invoicePdfLoading}
-                className={`relative w-8 h-8 flex items-center justify-center p-1.5 rounded-full ${
-                  resolvedTheme === "dark"
-                    ? "bg-gray-700 text-white hover:bg-gray-600"
-                    : "bg-gray-200 text-black hover:bg-gray-300"
-                }`}
-                aria-label="New Invoice"
-              >
-                <Plus className="h-[1.2rem] w-[1.2rem]" />
-              </BaseButton>
+                <BaseButton
+                  variant="ghost"
+                  size="icon"
+                  tooltipLabel="Get a new invoice form"
+                  disabled={invoicePdfLoading}
+                  className={`relative w-8 h-8 flex items-center justify-center p-1.5 rounded-full ${
+                    resolvedTheme === "dark"
+                      ? "bg-gray-700 text-white hover:bg-gray-600"
+                      : "bg-gray-200 text-black hover:bg-gray-300"
+                  }`}
+                  aria-label="New Invoice"
+                >
+                  <Plus className="h-[1.2rem] w-[1.2rem]" />
+                </BaseButton>
               </Link>
             </NewInvoiceAlert>
             <DropdownMenu>
@@ -183,33 +183,27 @@ const BaseNavbar = () => {
                     : "bg-white text-black border-gray-200"
                 }`}
               >
-                <DropdownMenuItem
-                  asChild
-                  className={
-                    resolvedTheme === "dark"
-                      ? "hover:bg-gray-700"
-                      : "hover:bg-gray-100"
-                  }
-                >
+                <DropdownMenuItem asChild>
                   <Link
                     href={`${getBasePath()}/change-password`}
-                    className="w-full text-center"
+                    className={`w-full text-center ${
+                      resolvedTheme === "dark"
+                        ? "hover:bg-gray-700 focus:bg-gray-700"
+                        : "hover:bg-gray-100 focus:bg-gray-100"
+                    }`}
                   >
                     Change Password
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem
-                  asChild
-                  className={
-                    resolvedTheme === "dark"
-                      ? "hover:bg-gray-700"
-                      : "hover:bg-gray-100"
-                  }
-                >
+                <DropdownMenuItem asChild>
                   <Link
                     href={`${getBasePath()}/login`}
                     onClick={() => logOut()}
-                    className="w-full text-center"
+                    className={`w-full text-center ${
+                      resolvedTheme === "dark"
+                        ? "hover:bg-gray-700 focus:bg-gray-700"
+                        : "hover:bg-gray-100 focus:bg-gray-100"
+                    }`}
                   >
                     Logout
                   </Link>

@@ -309,7 +309,7 @@ const Page = () => {
             <Button
               onClick={confirmEdit}
               className={
-                theme === "dark" ? "bg-blue-600 text-white hover:bg-blue-700" : "bg-blue-500 text-white hover:bg-blue-600"
+                 "bg-gray-700 text-white hover:bg-gray-600"
               }
             >
               Save
