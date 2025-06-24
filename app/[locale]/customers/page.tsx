@@ -105,9 +105,10 @@ const Page = () => {
   useEffect(() => {
     const results = users.filter(
       (user) =>
-        user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (user.email && user.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        user.phone.toLowerCase().includes(searchTerm.toLowerCase())
+        user.name.toLowerCase().includes(searchTerm.toLowerCase())
+      //  ||
+      //   (user.email && user.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      //   user.phone.toLowerCase().includes(searchTerm.toLowerCase())
     );
     setFilteredUsers(results);
   }, [searchTerm, users]);
