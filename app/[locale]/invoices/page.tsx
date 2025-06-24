@@ -753,10 +753,7 @@ const Page: React.FC = () => {
             .includes(searchTerm.toLowerCase()) ||
           invoice.sender.name
             .toLowerCase()
-            .includes(searchTerm.toLowerCase()) ||
-          invoice.receiver.email
-            .toLowerCase()
-            .includes(searchTerm.toLowerCase())
+            .includes(searchTerm.toLowerCase()) 
       )
       .sort((a: Invoice, b: Invoice) => {
         const dateA = new Date(a.createdAt || 0).getTime();
@@ -797,7 +794,7 @@ const Page: React.FC = () => {
             <div className="relative w-64">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
               <Input
-                placeholder="Search by invoice number, sender, or email..."
+                placeholder="Search by invoice number..."
                 value={searchTerm}
                 onChange={handleSearch}
                 className={`pl-10 ${
