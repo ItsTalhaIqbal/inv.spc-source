@@ -276,22 +276,73 @@ const Page = () => {
           </DialogHeader>
           {editUser && (
             <div className="space-y-4">
-              {Object.entries(editUser).map(([key, value]) => {
-                if (key === "_id" || key === "bills") return null;
-                return (
-                  <div key={key}>
-                    <label className="block text-sm font-medium capitalize">{key}</label>
-                    <Input
-                      name={key}
-                      value={value as string}
-                      onChange={handleEditChange}
-                      className={
-                        theme === "dark" ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"
-                      }
-                    />
-                  </div>
-                );
-              })}
+              <div>
+                <label className="block text-sm font-medium">Name</label>
+                <Input
+                  name="name"
+                  value={editUser.name}
+                  onChange={handleEditChange}
+                  className={
+                    theme === "dark" ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"
+                  }
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium">Email</label>
+                <Input
+                  name="email"
+                  value={editUser.email}
+                  onChange={handleEditChange}
+                  type="email"
+                  className={
+                    theme === "dark" ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"
+                  }
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium">Phone</label>
+                <Input
+                  name="phone"
+                  value={editUser.phone}
+                  onChange={handleEditChange}
+                  className={
+                    theme === "dark" ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"
+                  }
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium">Address</label>
+                <Input
+                  name="address"
+                  value={editUser.address}
+                  onChange={handleEditChange}
+                  className={
+                    theme === "dark" ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"
+                  }
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium">State</label>
+                <Input
+                  name="state"
+                  value={editUser.state}
+                  onChange={handleEditChange}
+                  className={
+                    theme === "dark" ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"
+                  }
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium">Country</label>
+                <Input
+                  name="country"
+                  value={editUser.country}
+                  onChange={handleEditChange}
+                  className={
+                    theme === "dark" ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"
+                  }
+                />
+              </div>
             </div>
           )}
           <DialogFooter>
@@ -308,9 +359,7 @@ const Page = () => {
             </Button>
             <Button
               onClick={confirmEdit}
-              className={
-                 "bg-gray-700 text-white hover:bg-gray-600"
-              }
+              className="bg-gray-700 text-white hover:bg-gray-600"
             >
               Save
             </Button>
