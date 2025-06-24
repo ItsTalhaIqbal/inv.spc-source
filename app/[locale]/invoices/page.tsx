@@ -1462,6 +1462,7 @@ const Page: React.FC = () => {
                           type="button"
                           variant="outline"
                           onClick={() =>
+                          {setErrorMessage("")
                             append({
                               name: "",
                               description: "",
@@ -1470,7 +1471,7 @@ const Page: React.FC = () => {
                               total: 0,
                               unitType: "pcs",
                             })
-                          }
+                          }}
                           className={`${
                             theme === "dark"
                               ? "bg-gray-300 text-black hover:bg-gray-400 border-gray-200"
