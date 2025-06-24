@@ -172,7 +172,7 @@ const SingleItem = ({
           name={`${name}[${index}].name`}
           label={"Item Name"}
           placeholder={"Item Name"}
-          className="w-full min-h-[2.5rem] resize-y text-wrap font-sans  leading-tight text-start"
+          className="w-full min-h-[2rem] resize-y text-wrap font-sans  leading-tight text-start"
         />
 
         <div className="w-[8rem]">

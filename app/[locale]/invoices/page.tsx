@@ -1322,7 +1322,7 @@ const Page: React.FC = () => {
                               </label>
                               <textarea
                                 {...register(`details.items.${index}.name`)}
-                                className={`mt-1 w-full rounded-md border p-2 focus:ring-2 focus:ring-blue-500 resize-y min-h-[2.5rem] text-left ${
+                                className={`mt-1 w-full rounded-md border p-2 focus:ring-2 focus:ring-blue-500 resize-y h-[50px]  text-left ${
                                   theme === "dark"
                                     ? "bg-gray-700 text-white border-gray-600"
                                     : "bg-white text-black border-gray-300"
