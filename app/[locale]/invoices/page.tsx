@@ -115,13 +115,22 @@ const Page: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [viewInvoiceDialog, setViewInvoiceDialog] = useState<boolean>(false);
   const [editInvoiceDialog, setEditInvoiceDialog] = useState<boolean>(false);
-  const [viewInvoice, setViewInvoice] = useState<Invoice | undefined>(undefined);
-  const [editInvoice, setEditInvoice] = useState<Invoice | undefined>(undefined);
+  const [viewInvoice, setViewInvoice] = useState<Invoice | undefined>(
+    undefined
+  );
+  const [editInvoice, setEditInvoice] = useState<Invoice | undefined>(
+    undefined
+  );
   const [loading, setLoading] = useState<boolean>(true);
   const [authChecked, setAuthChecked] = useState<boolean>(false);
-  const [pdfLoadingStates, setPdfLoadingStates] = useState<{ [key: string]: boolean }>({});
+  const [pdfLoadingStates, setPdfLoadingStates] = useState<{
+    [key: string]: boolean;
+  }>({});
   const [errorMessage, setErrorMessage] = useState<string>("");
-  const [toast, setToast] = useState<{ title: string; description: string } | null>(null);
+  const [toast, setToast] = useState<{
+    title: string;
+    description: string;
+  } | null>(null);
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const router = useRouter();
 
@@ -170,7 +179,8 @@ const Page: React.FC = () => {
           accountNumber: "445566998877",
         },
         additionalNotes: "Received above items in good condition.",
-        paymentTerms: "50% advance upon confirmation of the order, 50% upon delivery or completion.",
+        paymentTerms:
+          "50% advance upon confirmation of the order, 50% upon delivery or completion.",
         subTotal: 0,
         totalAmount: 0,
         totalAmountInWords: "",
@@ -178,7 +188,8 @@ const Page: React.FC = () => {
     },
   });
 
-  const { reset, handleSubmit, register, control, watch, setValue, getValues } = methods;
+  const { reset, handleSubmit, register, control, watch, setValue, getValues } =
+    methods;
   const { fields, append, remove } = useFieldArray({
     control,
     name: "details.items",
@@ -195,7 +206,10 @@ const Page: React.FC = () => {
 
   const subTotal = Number(
     items
-      .reduce((sum, item) => sum + (item.quantity || 0) * (item.unitPrice || 0), 0)
+      .reduce(
+        (sum, item) => sum + (item.quantity || 0) * (item.unitPrice || 0),
+        0
+      )
       .toFixed(2)
   );
 
@@ -237,7 +251,18 @@ const Page: React.FC = () => {
 
   const numberToWords = (num: number): string => {
     if (isNaN(num) || num === 0) return "Zero Dirham";
-    const units = ["", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"];
+    const units = [
+      "",
+      "one",
+      "two",
+      "three",
+      "four",
+      "five",
+      "six",
+      "seven",
+      "eight",
+      "nine",
+    ];
     const teens = [
       "ten",
       "eleven",
@@ -250,7 +275,18 @@ const Page: React.FC = () => {
       "eighteen",
       "nineteen",
     ];
-    const tens = ["", "", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"];
+    const tens = [
+      "",
+      "",
+      "twenty",
+      "thirty",
+      "forty",
+      "fifty",
+      "sixty",
+      "seventy",
+      "eighty",
+      "ninety",
+    ];
     const thousands = ["", "thousand", "million", "billion"];
 
     const convertLessThanOneThousand = (n: number): string => {
@@ -259,7 +295,10 @@ const Page: React.FC = () => {
       if (n < 20) return teens[n - 10];
       const tensPart = Math.floor(n / 10);
       const unitsPart = n % 10;
-      return tens[tensPart] + (unitsPart !== 0 ? (tensPart > 0 ? "-" : "") + units[unitsPart] : "");
+      return (
+        tens[tensPart] +
+        (unitsPart !== 0 ? (tensPart > 0 ? "-" : "") + units[unitsPart] : "")
+      );
     };
 
     const convert = (n: number): string => {
@@ -270,7 +309,10 @@ const Page: React.FC = () => {
         const chunk = n % 1000;
         if (chunk > 0) {
           const chunkWords = convertLessThanOneThousand(chunk);
-          words = chunkWords + (i > 0 ? ` ${thousands[i]}` : "") + (words ? " " + words : "");
+          words =
+            chunkWords +
+            (i > 0 ? ` ${thousands[i]}` : "") +
+            (words ? " " + words : "");
         }
         n = Math.floor(n / 1000);
         i++;
@@ -371,17 +413,18 @@ const Page: React.FC = () => {
         ? invoice.details.invoiceDate.split("T")[0]
         : new Date(invoice.details?.invoiceDate).toISOString().split("T")[0];
 
-    const dueDate =
-      invoice.details?.dueDate
-        ? typeof invoice.details.dueDate === "string"
-          ? invoice.details.dueDate.split("T")[0]
-          : new Date(invoice.details.dueDate).toISOString().split("T")[0]
-        : "";
+    const dueDate = invoice.details?.dueDate
+      ? typeof invoice.details.dueDate === "string"
+        ? invoice.details.dueDate.split("T")[0]
+        : new Date(invoice.details.dueDate).toISOString().split("T")[0]
+      : "";
 
     return {
       sender: {
         name: invoice.sender?.name || "SPC Source Technical Services LLC",
-        address: invoice.sender?.address || "Iris Bay, Office D-43, Business Bay, Dubai, UAE",
+        address:
+          invoice.sender?.address ||
+          "Iris Bay, Office D-43, Business Bay, Dubai, UAE",
         state: invoice.sender?.state || "Dubai",
         country: invoice.sender?.country || "UAE",
         email: invoice.sender?.email || "contact@spcsource.com",
@@ -411,7 +454,10 @@ const Page: React.FC = () => {
                 quantity: Number(item.quantity) || 0,
                 unitPrice: Number(item.unitPrice) || 0,
                 total: Number(item.total) || 0,
-                unitType: item.unitType && UNIT_TYPES.includes(item.unitType) ? item.unitType : "pcs",
+                unitType:
+                  item.unitType && UNIT_TYPES.includes(item.unitType)
+                    ? item.unitType
+                    : "pcs",
               }))
             : [
                 {
@@ -437,12 +483,17 @@ const Page: React.FC = () => {
           costType: invoice.details?.shippingDetails?.costType || "amount",
         },
         paymentInformation: {
-          bankName: invoice.details?.paymentInformation?.bankName || "Bank Inc.",
-          accountName: invoice.details?.paymentInformation?.accountName || "John Doe",
-          accountNumber: invoice.details?.paymentInformation?.accountNumber || "445566998877",
+          bankName:
+            invoice.details?.paymentInformation?.bankName || "Bank Inc.",
+          accountName:
+            invoice.details?.paymentInformation?.accountName || "John Doe",
+          accountNumber:
+            invoice.details?.paymentInformation?.accountNumber ||
+            "445566998877",
         },
         additionalNotes:
-          invoice.details?.additionalNotes || "Received above items in good condition.",
+          invoice.details?.additionalNotes ||
+          "Received above items in good condition.",
         paymentTerms:
           invoice.details?.paymentTerms ||
           "50% advance upon confirmation of the order, 50% upon delivery or completion.",
@@ -471,11 +522,16 @@ const Page: React.FC = () => {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || `HTTP error! Status: ${response.status}`);
+        throw new Error(
+          errorData.error || `HTTP error! Status: ${response.status}`
+        );
       }
 
       const blob = await response.blob();
-      const numericInvoiceNumber = formData.details.invoiceNumber.replace(/\D/g, "");
+      const numericInvoiceNumber = formData.details.invoiceNumber.replace(
+        /\D/g,
+        ""
+      );
       const isInvoice = formData.details.isInvoice || false;
       const taxAmount = formData.details.taxDetails?.amount || 0;
 
@@ -505,7 +561,9 @@ const Page: React.FC = () => {
       console.error("Error generating PDF:", error);
       setToast({
         title: "Error",
-        description: `Failed to generate PDF: ${error instanceof Error ? error.message : "Unknown error"}`,
+        description: `Failed to generate PDF: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`,
       });
     } finally {
       setPdfLoadingStates((prev) => ({ ...prev, [invoice._id!]: false }));
@@ -517,7 +575,10 @@ const Page: React.FC = () => {
     reset(formData);
     setEditInvoice(invoice);
     setEditInvoiceDialog(true);
-    setShowTax(!!invoice.details.taxDetails?.amount && invoice.details.taxDetails.amount > 0);
+    setShowTax(
+      !!invoice.details.taxDetails?.amount &&
+        invoice.details.taxDetails.amount > 0
+    );
     setShowDiscount(!!invoice.details.discountDetails?.amount);
     setShowShipping(!!invoice.details.shippingDetails?.cost);
     setErrorMessage("");
@@ -536,7 +597,9 @@ const Page: React.FC = () => {
         (showDiscount ? discountAmount : 0);
 
       if (calculatedTotal < 0) {
-        setErrorMessage("Total amount cannot be negative. Please adjust the discount or other amounts.");
+        setErrorMessage(
+          "Total amount cannot be negative. Please adjust the discount or other amounts."
+        );
         setIsSaving(false);
         return;
       }
@@ -548,7 +611,10 @@ const Page: React.FC = () => {
 
       // Cap discount to prevent negative total
       if (showDiscount && discountDetails?.amount) {
-        const maxDiscount = subTotal + (showTax ? taxAmount : 0) + (showShipping ? shippingAmount : 0);
+        const maxDiscount =
+          subTotal +
+          (showTax ? taxAmount : 0) +
+          (showShipping ? shippingAmount : 0);
         if (discountAmount > maxDiscount) {
           setErrorMessage(`Discount cannot exceed ${maxDiscount.toFixed(2)}.`);
           setIsSaving(false);
@@ -584,7 +650,10 @@ const Page: React.FC = () => {
             totalAmountInWords: numberToWords(calculatedTotal),
             items: data.details.items.map((item) => ({
               ...item,
-              unitType: item.unitType && UNIT_TYPES.includes(item.unitType) ? item.unitType : "pcs",
+              unitType:
+                item.unitType && UNIT_TYPES.includes(item.unitType)
+                  ? item.unitType
+                  : "pcs",
             })),
           },
         }),
@@ -592,7 +661,9 @@ const Page: React.FC = () => {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || `HTTP error! Status: ${response.status}`);
+        throw new Error(
+          errorData.message || `HTTP error! Status: ${response.status}`
+        );
       }
 
       setEditInvoiceDialog(false);
@@ -603,7 +674,9 @@ const Page: React.FC = () => {
       });
     } catch (error) {
       console.error("Error updating invoice:", error);
-      setErrorMessage(error instanceof Error ? error.message : "Failed to update invoice");
+      setErrorMessage(
+        error instanceof Error ? error.message : "Failed to update invoice"
+      );
     } finally {
       setIsSaving(false);
     }
@@ -661,7 +734,8 @@ const Page: React.FC = () => {
       console.error("Error fetching invoices:", error);
       setToast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to fetch invoices",
+        description:
+          error instanceof Error ? error.message : "Failed to fetch invoices",
       });
       setInvoices([]);
       setFilteredInvoices([]);
@@ -674,9 +748,15 @@ const Page: React.FC = () => {
     const results = invoices
       .filter(
         (invoice) =>
-          invoice.details.invoiceNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          invoice.sender.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          invoice.receiver.email.toLowerCase().includes(searchTerm.toLowerCase())
+          invoice.details.invoiceNumber
+            ?.toLowerCase()
+            .includes(searchTerm.toLowerCase()) ||
+          invoice.sender.name
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase()) ||
+          invoice.receiver.email
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase())
       )
       .sort((a: Invoice, b: Invoice) => {
         const dateA = new Date(a.createdAt || 0).getTime();
@@ -689,12 +769,15 @@ const Page: React.FC = () => {
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
   };
+  console.log("firlds", fields.length);
 
   if (!authChecked) {
     return (
       <div className="flex justify-center items-center h-screen">
         <Loader2
-          className={`h-8 w-8 animate-spin ${theme === "dark" ? "text-gray-300" : "text-gray-500"}`}
+          className={`h-8 w-8 animate-spin ${
+            theme === "dark" ? "text-gray-300" : "text-gray-500"
+          }`}
         />
       </div>
     );
@@ -718,7 +801,9 @@ const Page: React.FC = () => {
                 value={searchTerm}
                 onChange={handleSearch}
                 className={`pl-10 ${
-                  theme === "dark" ? "bg-gray-800 text-white border-gray-700" : "bg-white text-black border-gray-300"
+                  theme === "dark"
+                    ? "bg-gray-800 text-white border-gray-700"
+                    : "bg-white text-black border-gray-300"
                 }`}
               />
             </div>
@@ -727,40 +812,80 @@ const Page: React.FC = () => {
           {loading ? (
             <div className="flex justify-center items-center h-64">
               <Loader2
-                className={`h-8 w-8 animate-spin ${theme === "dark" ? "text-gray-300" : "text-gray-500"}`}
+                className={`h-8 w-8 animate-spin ${
+                  theme === "dark" ? "text-gray-300" : "text-gray-500"
+                }`}
               />
             </div>
           ) : filteredInvoices.length === 0 ? (
             <div
-              className={`text-center text-lg ${theme === "dark" ? "text-gray-300" : "text-gray-500"} mt-8`}
+              className={`text-center text-lg ${
+                theme === "dark" ? "text-gray-300" : "text-gray-500"
+              } mt-8`}
             >
               No invoices available
             </div>
           ) : (
-            <Table className={`${theme === "dark" ? "bg-gray-800 text-white" : "bg-white text-black"} w-full`}>
+            <Table
+              className={`${
+                theme === "dark"
+                  ? "bg-gray-800 text-white"
+                  : "bg-white text-black"
+              } w-full`}
+            >
               <TableHeader>
-                <TableRow className={theme === "dark" ? "bg-gray-700" : "bg-gray-100"}>
-                  <TableHead className={theme === "dark" ? "text-white" : "text-black"}>Invoice Number</TableHead>
-                  <TableHead className={theme === "dark" ? "text-white" : "text-black"}>Customer</TableHead>
-                  <TableHead className={theme === "dark" ? "text-white" : "text-black"}>Amount</TableHead>
-                  <TableHead className={theme === "dark" ? "text-white" : "text-black"}>Date</TableHead>
-                  <TableHead className={theme === "dark" ? "text-white" : "text-black"}>Actions</TableHead>
+                <TableRow
+                  className={theme === "dark" ? "bg-gray-700" : "bg-gray-100"}
+                >
+                  <TableHead
+                    className={theme === "dark" ? "text-white" : "text-black"}
+                  >
+                    Invoice Number
+                  </TableHead>
+                  <TableHead
+                    className={theme === "dark" ? "text-white" : "text-black"}
+                  >
+                    Customer
+                  </TableHead>
+                  <TableHead
+                    className={theme === "dark" ? "text-white" : "text-black"}
+                  >
+                    Amount
+                  </TableHead>
+                  <TableHead
+                    className={theme === "dark" ? "text-white" : "text-black"}
+                  >
+                    Date
+                  </TableHead>
+                  <TableHead
+                    className={theme === "dark" ? "text-white" : "text-black"}
+                  >
+                    Actions
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredInvoices.map((invoice) => (
                   <TableRow
                     key={invoice._id}
-                    className={theme === "dark" ? "hover:bg-gray-700" : "hover:bg-gray-50"}
+                    className={
+                      theme === "dark"
+                        ? "hover:bg-gray-700"
+                        : "hover:bg-gray-50"
+                    }
                   >
                     <TableCell>
                       {invoice.details?.isInvoice ? INVVariable : QUTVariable}
                       {invoice.details.invoiceNumber}
                     </TableCell>
                     <TableCell>{invoice.receiver.name}</TableCell>
-                    <TableCell>{Number(invoice.details.totalAmount).toFixed(2)}</TableCell>
                     <TableCell>
-                      {invoice?.createdAt ? new Date(invoice.createdAt).toLocaleDateString() : "N/A"}
+                      {Number(invoice.details.totalAmount).toFixed(2)}
+                    </TableCell>
+                    <TableCell>
+                      {invoice?.createdAt
+                        ? new Date(invoice.createdAt).toLocaleDateString()
+                        : "N/A"}
                     </TableCell>
                     <TableCell className="flex gap-2">
                       <TooltipProvider>
@@ -840,44 +965,71 @@ const Page: React.FC = () => {
           <Dialog open={viewInvoiceDialog} onOpenChange={setViewInvoiceDialog}>
             <DialogContent
               className={`${
-                theme === "dark" ? "bg-gray-800 text-white border-gray-700" : "bg-white text-black border-gray-200"
+                theme === "dark"
+                  ? "bg-gray-800 text-white border-gray-700"
+                  : "bg-white text-black border-gray-200"
               } max-w-3xl shadow-lg rounded-lg`}
             >
               <DialogHeader className="border-b pb-4">
                 <DialogTitle className="text-2xl font-bold">
-                 {viewInvoice?.details.isInvoice==true?"Invoice #":"Quoation #"}{viewInvoice?.details.invoiceNumber}
+                  {viewInvoice?.details.isInvoice == true
+                    ? "Invoice #"
+                    : "Quoation #"}
+                  {viewInvoice?.details.invoiceNumber}
                 </DialogTitle>
                 <div className="flex items-center justify-between mb-4 gap-4">
                   <p className="text-sm text-gray-500">
                     <strong>Created At:</strong>{" "}
-                    {viewInvoice?.createdAt ? new Date(viewInvoice.createdAt).toLocaleString() : "N/A"}
+                    {viewInvoice?.createdAt
+                      ? new Date(viewInvoice.createdAt).toLocaleString()
+                      : "N/A"}
                   </p>
                 </div>
               </DialogHeader>
               {viewInvoice && (
                 <div className="max-h-[70vh] overflow-y-auto p-4 space-y-6">
                   <div
-                    className={theme === "dark" ? "bg-gray-700 p-4 rounded-md shadow-sm" : "bg-gray-200 p-4 rounded-md shadow-sm"}
+                    className={
+                      theme === "dark"
+                        ? "bg-gray-700 p-4 rounded-md shadow-sm"
+                        : "bg-gray-200 p-4 rounded-md shadow-sm"
+                    }
                   >
-                    <h3 className="text-lg font-semibold mb-2">Invoice Details</h3>
+                    <h3 className="text-lg font-semibold mb-2">
+                      Invoice Details
+                    </h3>
                     <div className="grid grid-cols-2 gap-4">
                       <p className="text-sm">
-                        <strong>Invoice Number:</strong> <span>{viewInvoice.invoiceNumber}</span>
+                        <strong>Invoice Number:</strong>{" "}
+                        <span>{viewInvoice.invoiceNumber}</span>
                       </p>
                       <p className="text-sm">
                         <strong>Invoice Date:</strong>{" "}
-                        <span>{new Date(viewInvoice.details.invoiceDate).toLocaleDateString()}</span>
+                        <span>
+                          {new Date(
+                            viewInvoice.details.invoiceDate
+                          ).toLocaleDateString()}
+                        </span>
                       </p>
                       <p className="text-sm">
                         <strong>Due Date:</strong>{" "}
-                        <span>{viewInvoice.details.dueDate ? new Date(viewInvoice.details.dueDate).toLocaleDateString() : "N/A"}</span>
+                        <span>
+                          {viewInvoice.details.dueDate
+                            ? new Date(
+                                viewInvoice.details.dueDate
+                              ).toLocaleDateString()
+                            : "N/A"}
+                        </span>
                       </p>
                       <p className="text-sm">
-                        <strong>Currency:</strong> <span>{viewInvoice.details.currency}</span>
+                        <strong>Currency:</strong>{" "}
+                        <span>{viewInvoice.details.currency}</span>
                       </p>
                       <p className="text-sm">
                         <strong>Sub Total:</strong>{" "}
-                        <span>{Number(viewInvoice.details.subTotal).toFixed(2)}</span>
+                        <span>
+                          {Number(viewInvoice.details.subTotal).toFixed(2)}
+                        </span>
                       </p>
                       <p className="text-sm">
                         <strong>Total Amount in Words:</strong>{" "}
@@ -886,32 +1038,48 @@ const Page: React.FC = () => {
                     </div>
                   </div>
                   <div
-                    className={theme === "dark" ? "bg-gray-700 p-4 rounded-md shadow-sm" : "bg-gray-200 p-4 rounded-md shadow-sm"}
+                    className={
+                      theme === "dark"
+                        ? "bg-gray-700 p-4 rounded-md shadow-sm"
+                        : "bg-gray-200 p-4 rounded-md shadow-sm"
+                    }
                   >
-                    <h3 className="text-lg font-semibold mb-2">Receiver Information</h3>
+                    <h3 className="text-lg font-semibold mb-2">
+                      Receiver Information
+                    </h3>
                     <div className="grid grid-cols-2 gap-4">
                       <p className="text-sm">
-                        <strong>Name:</strong> <span>{viewInvoice.receiver.name}</span>
+                        <strong>Name:</strong>{" "}
+                        <span>{viewInvoice.receiver.name}</span>
                       </p>
                       <p className="text-sm">
-                        <strong>Address:</strong> <span>{viewInvoice.receiver.address}</span>
+                        <strong>Address:</strong>{" "}
+                        <span>{viewInvoice.receiver.address}</span>
                       </p>
                       <p className="text-sm">
-                        <strong>State:</strong> <span>{viewInvoice.receiver.state || "N/A"}</span>
+                        <strong>State:</strong>{" "}
+                        <span>{viewInvoice.receiver.state || "N/A"}</span>
                       </p>
                       <p className="text-sm">
-                        <strong>Country:</strong> <span>{viewInvoice.receiver.country}</span>
+                        <strong>Country:</strong>{" "}
+                        <span>{viewInvoice.receiver.country}</span>
                       </p>
                       <p className="text-sm">
-                        <strong>Email:</strong> <span>{viewInvoice.receiver.email}</span>
+                        <strong>Email:</strong>{" "}
+                        <span>{viewInvoice.receiver.email}</span>
                       </p>
                       <p className="text-sm">
-                        <strong>Phone:</strong> <span>{viewInvoice.receiver.phone}</span>
+                        <strong>Phone:</strong>{" "}
+                        <span>{viewInvoice.receiver.phone}</span>
                       </p>
                     </div>
                   </div>
                   <div
-                    className={theme === "dark" ? "bg-gray-700 p-4 rounded-md shadow-sm" : "bg-gray-200 p-4 rounded-md shadow-sm"}
+                    className={
+                      theme === "dark"
+                        ? "bg-gray-700 p-4 rounded-md shadow-sm"
+                        : "bg-gray-200 p-4 rounded-md shadow-sm"
+                    }
                   >
                     <h3 className="text-lg font-semibold mb-2">Items</h3>
                     {viewInvoice.details.items.map((item, index) => (
@@ -928,35 +1096,49 @@ const Page: React.FC = () => {
                             <strong>Name:</strong> <span>{item.name}</span>
                           </p>
                           <p className="text-sm">
-                            <strong>Description:</strong> <span>{item.description}</span>
+                            <strong>Description:</strong>{" "}
+                            <span>{item.description}</span>
                           </p>
                           <p className="text-sm">
-                            <strong>Quantity:</strong> <span>{item.quantity}</span>
+                            <strong>Quantity:</strong>{" "}
+                            <span>{item.quantity}</span>
                           </p>
                           <p className="text-sm">
-                            <strong>Unit Price:</strong> <span>{Number(item.unitPrice).toFixed(2)}</span>
+                            <strong>Unit Price:</strong>{" "}
+                            <span>{Number(item.unitPrice).toFixed(2)}</span>
                           </p>
                           <p className="text-sm">
-                            <strong>Unit Type:</strong> <span>{item.unitType || "pcs"}</span>
+                            <strong>Unit Type:</strong>{" "}
+                            <span>{item.unitType || "pcs"}</span>
                           </p>
                           <p className="text-sm">
                             <strong>Total:</strong>{" "}
-                            <span className="font-medium">{Number(item.total).toFixed(2)}</span>
+                            <span className="font-medium">
+                              {Number(item.total).toFixed(2)}
+                            </span>
                           </p>
                         </div>
                       </div>
                     ))}
                   </div>
                   <div
-                    className={theme === "dark" ? "bg-gray-700 p-4 rounded-md shadow-sm" : "bg-gray-200 p-4 rounded-md shadow-sm"}
+                    className={
+                      theme === "dark"
+                        ? "bg-gray-700 p-4 rounded-md shadow-sm"
+                        : "bg-gray-200 p-4 rounded-md shadow-sm"
+                    }
                   >
-                    <h3 className="text-lg font-semibold mb-2">Tax, Discount & Shipping Details</h3>
+                    <h3 className="text-lg font-semibold mb-2">
+                      Tax, Discount & Shipping Details
+                    </h3>
                     <div className="grid grid-cols-2 gap-4">
                       <p className="text-sm">
                         <strong>Tax Amount:</strong>{" "}
                         <span>
                           {viewInvoice.details.taxDetails?.amount
-                            ? Number(viewInvoice.details.taxDetails.amount).toFixed(2)
+                            ? Number(
+                                viewInvoice.details.taxDetails.amount
+                              ).toFixed(2)
                             : "0.00"}
                         </span>
                       </p>
@@ -964,7 +1146,9 @@ const Page: React.FC = () => {
                         <strong>Discount Amount:</strong>{" "}
                         <span>
                           {viewInvoice.details.discountDetails?.amount
-                            ? Number(viewInvoice.details.discountDetails.amount).toFixed(2)
+                            ? Number(
+                                viewInvoice.details.discountDetails.amount
+                              ).toFixed(2)
                             : "0.00"}
                         </span>
                       </p>
@@ -972,42 +1156,76 @@ const Page: React.FC = () => {
                         <strong>Shipping Cost:</strong>{" "}
                         <span>
                           {viewInvoice.details.shippingDetails?.cost
-                            ? Number(viewInvoice.details.shippingDetails.cost).toFixed(2)
+                            ? Number(
+                                viewInvoice.details.shippingDetails.cost
+                              ).toFixed(2)
                             : "0.00"}
                         </span>
                       </p>
                     </div>
                   </div>
                   <div
-                    className={theme === "dark" ? "bg-gray-700 p-4 rounded-md shadow-sm" : "bg-gray-200 p-4 rounded-md shadow-sm"}
+                    className={
+                      theme === "dark"
+                        ? "bg-gray-700 p-4 rounded-md shadow-sm"
+                        : "bg-gray-200 p-4 rounded-md shadow-sm"
+                    }
                   >
-                    <h3 className="text-lg font-semibold mb-2">Payment Information</h3>
+                    <h3 className="text-lg font-semibold mb-2">
+                      Payment Information
+                    </h3>
                     <div className="grid grid-cols-2 gap-4">
                       <p className="text-sm">
-                        <strong>Bank Name:</strong> <span>{viewInvoice.details.paymentInformation?.bankName}</span>
+                        <strong>Bank Name:</strong>{" "}
+                        <span>
+                          {viewInvoice.details.paymentInformation?.bankName}
+                        </span>
                       </p>
                       <p className="text-sm">
-                        <strong>Account Name:</strong> <span>{viewInvoice.details.paymentInformation?.accountName}</span>
+                        <strong>Account Name:</strong>{" "}
+                        <span>
+                          {viewInvoice.details.paymentInformation?.accountName}
+                        </span>
                       </p>
                       <p className="text-sm">
-                        <strong>Account Number:</strong> <span>{viewInvoice.details.paymentInformation?.accountNumber}</span>
+                        <strong>Account Number:</strong>{" "}
+                        <span>
+                          {
+                            viewInvoice.details.paymentInformation
+                              ?.accountNumber
+                          }
+                        </span>
                       </p>
                     </div>
                   </div>
                   <div
-                    className={theme === "dark" ? "bg-gray-700 p-4 rounded-md shadow-sm" : "bg-gray-200 p-4 rounded-md shadow-sm"}
+                    className={
+                      theme === "dark"
+                        ? "bg-gray-700 p-4 rounded-md shadow-sm"
+                        : "bg-gray-200 p-4 rounded-md shadow-sm"
+                    }
                   >
-                    <h3 className="text-lg font-semibold mb-2">Additional Information</h3>
+                    <h3 className="text-lg font-semibold mb-2">
+                      Additional Information
+                    </h3>
                     <div className="grid grid-cols-2 gap-4">
                       <p className="text-sm">
-                        <strong>Additional Notes:</strong> <span>{viewInvoice.details.additionalNotes || "N/A"}</span>
+                        <strong>Additional Notes:</strong>{" "}
+                        <span>
+                          {viewInvoice.details.additionalNotes || "N/A"}
+                        </span>
                       </p>
                       <p className="text-sm">
-                        <strong>Payment Terms:</strong> <span>{viewInvoice.details.paymentTerms}</span>
+                        <strong>Payment Terms:</strong>{" "}
+                        <span>{viewInvoice.details.paymentTerms}</span>
                       </p>
                       <p className="text-sm">
                         <strong>Signature:</strong>{" "}
-                        <span>{viewInvoice.details.signature?.data ? "Present" : "N/A"}</span>
+                        <span>
+                          {viewInvoice.details.signature?.data
+                            ? "Present"
+                            : "N/A"}
+                        </span>
                       </p>
                     </div>
                   </div>
@@ -1019,26 +1237,39 @@ const Page: React.FC = () => {
           <Dialog open={editInvoiceDialog} onOpenChange={setEditInvoiceDialog}>
             <DialogContent
               className={`${
-                theme === "dark" ? "bg-gray-800 text-white border-gray-700" : "bg-white text-black border-gray-200 focus:outline-none"
+                theme === "dark"
+                  ? "bg-gray-800 text-white border-gray-700"
+                  : "bg-white text-black border-gray-200 focus:outline-none"
               } sm:max-w-[800px] shadow-lg rounded-md`}
             >
               <DialogHeader className="border-b pb-4">
                 <DialogTitle className="text-lg font-bold">
-                   {editInvoice?.details.isInvoice   == true ?"Invoice #":"Quoation #"}{editInvoice?.details.invoiceNumber}
+                  {editInvoice?.details.isInvoice == true
+                    ? "Invoice #"
+                    : "Quoation #"}
+                  {editInvoice?.details.invoiceNumber}
                 </DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit(onSubmitEdit)}>
                 <ScrollArea className="h-[60vh] pr-4">
                   <div className="space-y-6">
-                    <div className={`space-y-4 p-4 rounded-lg ${theme=== "dark"? "bg-gray-800/200":"bg-gray-200"} `}>
+                    <div
+                      className={`space-y-4 p-4 rounded-lg ${
+                        theme === "dark" ? "bg-gray-800/200" : "bg-gray-200"
+                      } `}
+                    >
                       <h3 className="text-lg font-semibold">Invoice Details</h3>
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <label className="text-sm font-medium">Invoice Type</label>
+                          <label className="text-sm font-medium">
+                            Invoice Type
+                          </label>
                           <select
                             {...register("details.isInvoice")}
                             className={`mt-1 w-full rounded-md border p-2 focus:ring-2 focus:ring-blue-500 ${
-                              theme === "dark" ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"
+                              theme === "dark"
+                                ? "bg-gray-700 text-white border-gray-600"
+                                : "bg-white text-black border-gray-300"
                             }`}
                           >
                             <option value="true">Invoice</option>
@@ -1046,55 +1277,85 @@ const Page: React.FC = () => {
                           </select>
                         </div>
                         <div>
-                          <label className="text-sm font-medium">Invoice Date</label>
+                          <label className="text-sm font-medium">
+                            Invoice Date
+                          </label>
                           <Input
                             type="date"
                             {...register("details.invoiceDate")}
                             className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
-                              theme === "dark" ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"
+                              theme === "dark"
+                                ? "bg-gray-700 text-white border-gray-600"
+                                : "bg-white text-black border-gray-300"
                             }`}
                           />
                         </div>
                         <div>
-                          <label className="text-sm font-medium">Due Date</label>
+                          <label className="text-sm font-medium">
+                            Due Date
+                          </label>
                           <Input
                             type="date"
                             {...register("details.dueDate")}
                             className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
-                              theme === "dark" ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"
+                              theme === "dark"
+                                ? "bg-gray-700 text-white border-gray-600"
+                                : "bg-white text-black border-gray-300"
                             }`}
                           />
                         </div>
                       </div>
                     </div>
 
-                    <div className={`space-y-4 p-4 rounded-lg  ${theme=== "dark"? "bg-gray-800/50":"bg-gray-200"}`}>
+                    <div
+                      className={`space-y-4 p-4 rounded-lg  ${
+                        theme === "dark" ? "bg-gray-800/50" : "bg-gray-200"
+                      }`}
+                    >
                       <h3 className="text-lg font-semibold">Items</h3>
                       {fields.map((item, index) => (
-                        <div key={item.id} className="border border-gray-400 p-4 rounded-md space-y-2">
+                        <div
+                          key={item.id}
+                          className="border border-gray-400 p-4 rounded-md space-y-2"
+                        >
                           <div className="grid grid-cols-4 gap-4">
                             <div>
-                              <label className="text-sm font-medium">Name</label>
+                              <label className="text-sm font-medium">
+                                Name
+                              </label>
                               <textarea
                                 {...register(`details.items.${index}.name`)}
                                 className={`mt-1 w-full rounded-md border p-2 focus:ring-2 focus:ring-blue-500 resize-y min-h-[2.5rem] text-left ${
-                                  theme === "dark" ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"
+                                  theme === "dark"
+                                    ? "bg-gray-700 text-white border-gray-600"
+                                    : "bg-white text-black border-gray-300"
                                 }`}
                                 placeholder="Item Name"
                                 rows={2}
                               />
                             </div>
                             <div>
-                              <label className="text-sm font-medium">Unit Type</label>
+                              <label className="text-sm font-medium">
+                                Unit Type
+                              </label>
                               <select
-                                {...register(`details.items.${index}.unitType`, {
-                                  validate: (value) => UNIT_TYPES.includes(value) || "Please select a valid unit type",
-                                })}
+                                {...register(
+                                  `details.items.${index}.unitType`,
+                                  {
+                                    validate: (value) =>
+                                      UNIT_TYPES.includes(value) ||
+                                      "Please select a valid unit type",
+                                  }
+                                )}
                                 className={`mt-1 w-full rounded-md border p-2 focus:ring-2 focus:ring-blue-500 ${
-                                  theme === "dark" ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"
+                                  theme === "dark"
+                                    ? "bg-gray-700 text-white border-gray-600"
+                                    : "bg-white text-black border-gray-300"
                                 }`}
                               >
-                                <option value="" disabled>Select Unit</option>
+                                <option value="" disabled>
+                                  Select Unit
+                                </option>
                                 {UNIT_TYPES.map((unit) => (
                                   <option key={unit} value={unit}>
                                     {unit}
@@ -1103,44 +1364,76 @@ const Page: React.FC = () => {
                               </select>
                             </div>
                             <div>
-                              <label className="text-sm font-medium">Quantity</label>
+                              <label className="text-sm font-medium">
+                                Quantity
+                              </label>
                               <Input
                                 type="number"
                                 step="1"
-                                {...register(`details.items.${index}.quantity`, {
-                                  valueAsNumber: true,
-                                  min: 0,
-                                })}
+                                {...register(
+                                  `details.items.${index}.quantity`,
+                                  {
+                                    valueAsNumber: true,
+                                    min: 0,
+                                  }
+                                )}
                                 className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
-                                  theme === "dark" ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"
+                                  theme === "dark"
+                                    ? "bg-gray-700 text-white border-gray-600"
+                                    : "bg-white text-black border-gray-300"
                                 }`}
-                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                                onChange={(
+                                  e: React.ChangeEvent<HTMLInputElement>
+                                ) => {
                                   const value = e.target.value;
-                                  const parsedValue = value === "" ? 0 : parseInt(value.replace(/^0+/, ""));
-                                  setValue(`details.items.${index}.quantity`, parsedValue, {
-                                    shouldValidate: true,
-                                  });
+                                  const parsedValue =
+                                    value === ""
+                                      ? 0
+                                      : parseInt(value.replace(/^0+/, ""));
+                                  setValue(
+                                    `details.items.${index}.quantity`,
+                                    parsedValue,
+                                    {
+                                      shouldValidate: true,
+                                    }
+                                  );
                                 }}
                               />
                             </div>
                             <div>
-                              <label className="text-sm font-medium">Unit Price</label>
+                              <label className="text-sm font-medium">
+                                Unit Price
+                              </label>
                               <Input
                                 type="number"
                                 step="0.01"
-                                {...register(`details.items.${index}.unitPrice`, {
-                                  valueAsNumber: true,
-                                  min: 0,
-                                })}
+                                {...register(
+                                  `details.items.${index}.unitPrice`,
+                                  {
+                                    valueAsNumber: true,
+                                    min: 0,
+                                  }
+                                )}
                                 className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
-                                  theme === "dark" ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"
+                                  theme === "dark"
+                                    ? "bg-gray-700 text-white border-gray-600"
+                                    : "bg-white text-black border-gray-300"
                                 }`}
-                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                                onChange={(
+                                  e: React.ChangeEvent<HTMLInputElement>
+                                ) => {
                                   const value = e.target.value;
-                                  const parsedValue = value === "" ? 0 : parseFloat(value.replace(/^0+/, ""));
-                                  setValue(`details.items.${index}.unitPrice`, parsedValue, {
-                                    shouldValidate: true,
-                                  });
+                                  const parsedValue =
+                                    value === ""
+                                      ? 0
+                                      : parseFloat(value.replace(/^0+/, ""));
+                                  setValue(
+                                    `details.items.${index}.unitPrice`,
+                                    parsedValue,
+                                    {
+                                      shouldValidate: true,
+                                    }
+                                  );
                                 }}
                               />
                             </div>
@@ -1149,7 +1442,15 @@ const Page: React.FC = () => {
                             type="button"
                             variant="destructive"
                             size="sm"
-                            onClick={() => remove(index)}
+                            onClick={() => {
+                              if (items.length <= 1) {
+                                setErrorMessage(
+                                  "Atleast 1 item required."
+                                );
+                                return;
+                              }
+                              remove(index);
+                            }}
                             className="mt-2"
                           >
                             Remove Item
@@ -1181,7 +1482,11 @@ const Page: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className={`space-y-4 p-4 rounded-lg  ${theme=== "dark"? "bg-gray-800/50":"bg-gray-200"}`}>
+                    <div
+                      className={`space-y-4 p-4 rounded-lg  ${
+                        theme === "dark" ? "bg-gray-800/50" : "bg-gray-200"
+                      }`}
+                    >
                       <div className="flex items-center space-x-2">
                         <Switch
                           id="tax-switch"
@@ -1190,7 +1495,10 @@ const Page: React.FC = () => {
                             setShowTax(checked);
                             if (checked) {
                               setValue("details.taxDetails.amount", 5);
-                              setValue("details.taxDetails.amountType", "percentage");
+                              setValue(
+                                "details.taxDetails.amountType",
+                                "percentage"
+                              );
                             } else {
                               setValue("details.taxDetails.amount", 0);
                             }
@@ -1201,14 +1509,19 @@ const Page: React.FC = () => {
                               : "data-[state=checked]:bg-black data-[state=unchecked]:bg-gray-400"
                           }`}
                         />
-                        <Label htmlFor="tax-switch" className="text-lg font-semibold">
+                        <Label
+                          htmlFor="tax-switch"
+                          className="text-lg font-semibold"
+                        >
                           Tax Details
                         </Label>
                       </div>
                       {showTax && (
                         <div className="grid grid-cols-2 gap-4">
                           <div>
-                            <label className="text-sm font-medium">Tax Amount</label>
+                            <label className="text-sm font-medium">
+                              Tax Amount
+                            </label>
                             <Input
                               type="number"
                               step="0.01"
@@ -1217,23 +1530,38 @@ const Page: React.FC = () => {
                                 min: 0,
                               })}
                               className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
-                                theme === "dark" ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"
+                                theme === "dark"
+                                  ? "bg-gray-700 text-white border-gray-600"
+                                  : "bg-white text-black border-gray-300"
                               }`}
-                              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                              onChange={(
+                                e: React.ChangeEvent<HTMLInputElement>
+                              ) => {
                                 const value = e.target.value;
-                                const parsedValue = value === "" ? 0 : parseFloat(value.replace(/^0+/, ""));
-                                setValue("details.taxDetails.amount", parsedValue, {
-                                  shouldValidate: true,
-                                });
+                                const parsedValue =
+                                  value === ""
+                                    ? 0
+                                    : parseFloat(value.replace(/^0+/, ""));
+                                setValue(
+                                  "details.taxDetails.amount",
+                                  parsedValue,
+                                  {
+                                    shouldValidate: true,
+                                  }
+                                );
                               }}
                             />
                           </div>
                           <div>
-                            <label className="text-sm font-medium">Amount Type</label>
+                            <label className="text-sm font-medium">
+                              Amount Type
+                            </label>
                             <select
                               {...register("details.taxDetails.amountType")}
                               className={`mt-1 w-full rounded-md border p-2 focus:ring-2 focus:ring-blue-500 ${
-                                theme === "dark" ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"
+                                theme === "dark"
+                                  ? "bg-gray-700 text-white border-gray-600"
+                                  : "bg-white text-black border-gray-300"
                               }`}
                             >
                               <option value="percentage">Percentage</option>
@@ -1244,12 +1572,18 @@ const Page: React.FC = () => {
                       )}
                       {showTax && (
                         <div className="text-right">
-                          <p className="text-sm font-medium">Tax Amount: {taxAmount.toFixed(2)}</p>
+                          <p className="text-sm font-medium">
+                            Tax Amount: {taxAmount.toFixed(2)}
+                          </p>
                         </div>
                       )}
                     </div>
 
-                    <div className={`space-y-4 p-4 rounded-lg  ${theme=== "dark"? "bg-gray-800/50":"bg-gray-200"}`}>
+                    <div
+                      className={`space-y-4 p-4 rounded-lg  ${
+                        theme === "dark" ? "bg-gray-800/50" : "bg-gray-200"
+                      }`}
+                    >
                       <div className="flex items-center space-x-2">
                         <Switch
                           id="discount-switch"
@@ -1261,14 +1595,19 @@ const Page: React.FC = () => {
                               : "data-[state=checked]:bg-black data-[state=unchecked]:bg-gray-400"
                           }`}
                         />
-                        <Label htmlFor="discount-switch" className="text-lg font-semibold">
+                        <Label
+                          htmlFor="discount-switch"
+                          className="text-lg font-semibold"
+                        >
                           Discount Details
                         </Label>
                       </div>
                       {showDiscount && (
                         <div className="grid grid-cols-2 gap-4">
                           <div>
-                            <label className="text-sm font-medium">Amount</label>
+                            <label className="text-sm font-medium">
+                              Amount
+                            </label>
                             <Input
                               type="number"
                               step="0.01"
@@ -1277,23 +1616,40 @@ const Page: React.FC = () => {
                                 min: 0,
                               })}
                               className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
-                                theme === "dark" ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"
+                                theme === "dark"
+                                  ? "bg-gray-700 text-white border-gray-600"
+                                  : "bg-white text-black border-gray-300"
                               }`}
-                              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                              onChange={(
+                                e: React.ChangeEvent<HTMLInputElement>
+                              ) => {
                                 const value = e.target.value;
-                                const parsedValue = value === "" ? 0 : parseFloat(value.replace(/^0+/, ""));
-                                setValue("details.discountDetails.amount", parsedValue, {
-                                  shouldValidate: true,
-                                });
+                                const parsedValue =
+                                  value === ""
+                                    ? 0
+                                    : parseFloat(value.replace(/^0+/, ""));
+                                setValue(
+                                  "details.discountDetails.amount",
+                                  parsedValue,
+                                  {
+                                    shouldValidate: true,
+                                  }
+                                );
                               }}
                             />
                           </div>
                           <div>
-                            <label className="text-sm font-medium">Amount Type</label>
+                            <label className="text-sm font-medium">
+                              Amount Type
+                            </label>
                             <select
-                              {...register("details.discountDetails.amountType")}
+                              {...register(
+                                "details.discountDetails.amountType"
+                              )}
                               className={`mt-1 w-full rounded-md border p-2 focus:ring-2 focus:ring-blue-500 ${
-                                theme === "dark" ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"
+                                theme === "dark"
+                                  ? "bg-gray-700 text-white border-gray-600"
+                                  : "bg-white text-black border-gray-300"
                               }`}
                             >
                               <option value="percentage">Percentage</option>
@@ -1305,12 +1661,18 @@ const Page: React.FC = () => {
                       )}
                       {showDiscount && (
                         <div className="text-right">
-                          <p className="text-sm font-medium">Discount Amount: {discountAmount.toFixed(2)}</p>
+                          <p className="text-sm font-medium">
+                            Discount Amount: {discountAmount.toFixed(2)}
+                          </p>
                         </div>
                       )}
                     </div>
 
-                    <div className={`space-y-4 p-4 rounded-lg  ${theme=== "dark"? "bg-gray-800/50":"bg-gray-200"}`}>
+                    <div
+                      className={`space-y-4 p-4 rounded-lg  ${
+                        theme === "dark" ? "bg-gray-800/50" : "bg-gray-200"
+                      }`}
+                    >
                       <div className="flex items-center space-x-2">
                         <Switch
                           id="shipping-switch"
@@ -1322,7 +1684,10 @@ const Page: React.FC = () => {
                               : "data-[state=checked]:bg-black data-[state=unchecked]:bg-gray-400"
                           }`}
                         />
-                        <Label htmlFor="shipping-switch" className="text-lg font-semibold">
+                        <Label
+                          htmlFor="shipping-switch"
+                          className="text-lg font-semibold"
+                        >
                           Shipping Details
                         </Label>
                       </div>
@@ -1338,23 +1703,38 @@ const Page: React.FC = () => {
                                 min: 0,
                               })}
                               className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
-                                theme === "dark" ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"
+                                theme === "dark"
+                                  ? "bg-gray-700 text-white border-gray-600"
+                                  : "bg-white text-black border-gray-300"
                               }`}
-                              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                              onChange={(
+                                e: React.ChangeEvent<HTMLInputElement>
+                              ) => {
                                 const value = e.target.value;
-                                const parsedValue = value === "" ? 0 : parseFloat(value.replace(/^0+/, ""));
-                                setValue("details.shippingDetails.cost", parsedValue, {
-                                  shouldValidate: true,
-                                });
+                                const parsedValue =
+                                  value === ""
+                                    ? 0
+                                    : parseFloat(value.replace(/^0+/, ""));
+                                setValue(
+                                  "details.shippingDetails.cost",
+                                  parsedValue,
+                                  {
+                                    shouldValidate: true,
+                                  }
+                                );
                               }}
                             />
                           </div>
                           <div>
-                            <label className="text-sm font-medium">Cost Type</label>
+                            <label className="text-sm font-medium">
+                              Cost Type
+                            </label>
                             <select
                               {...register("details.shippingDetails.costType")}
                               className={`mt-1 w-full rounded-md border p-2 focus:ring-2 focus:ring-blue-500 ${
-                                theme === "dark" ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"
+                                theme === "dark"
+                                  ? "bg-gray-700 text-white border-gray-600"
+                                  : "bg-white text-black border-gray-300"
                               }`}
                             >
                               <option value="percentage">Percentage</option>
@@ -1365,36 +1745,56 @@ const Page: React.FC = () => {
                       )}
                       {showShipping && (
                         <div className="text-right">
-                          <p className="text-sm font-medium">Shipping Cost: {shippingAmount.toFixed(2)}</p>
+                          <p className="text-sm font-medium">
+                            Shipping Cost: {shippingAmount.toFixed(2)}
+                          </p>
                         </div>
                       )}
                     </div>
 
-                    <div className={`space-y-4 p-4 rounded-lg  ${theme=== "dark"? "bg-gray-800/50":"bg-gray-200"}`}>
-                      <h3 className="text-lg font-semibold">Additional Information</h3>
+                    <div
+                      className={`space-y-4 p-4 rounded-lg  ${
+                        theme === "dark" ? "bg-gray-800/50" : "bg-gray-200"
+                      }`}
+                    >
+                      <h3 className="text-lg font-semibold">
+                        Additional Information
+                      </h3>
                       <div className="grid grid-cols-1 gap-4">
                         <div>
-                          <label className="text-sm font-medium">Additional Notes</label>
+                          <label className="text-sm font-medium">
+                            Additional Notes
+                          </label>
                           <Input
                             {...register("details.additionalNotes")}
                             className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
-                              theme === "dark" ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"
+                              theme === "dark"
+                                ? "bg-gray-700 text-white border-gray-600"
+                                : "bg-white text-black border-gray-300"
                             }`}
                           />
                         </div>
                         <div>
-                          <label className="text-sm font-medium">Payment Terms</label>
+                          <label className="text-sm font-medium">
+                            Payment Terms
+                          </label>
                           <Input
                             {...register("details.paymentTerms")}
                             className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
-                              theme === "dark" ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"
+                              theme === "dark"
+                                ? "bg-gray-700 text-white border-gray-600"
+                                : "bg-white text-black border-gray-300"
                             }`}
                           />
                         </div>
                       </div>
                     </div>
 
-                    <div className={`space-y-4 p-4 rounded-lg  ${theme=== "dark"? "bg-gray-800/50":"bg-gray-200"}`}>
+                    <div
+                      className={`space-y-4 p-4 rounded-lg  ${
+                        theme === "dark" ? "bg-gray-800/50" : "bg-gray-200"
+                      }`}
+                    >
                       <h3 className="text-lg font-semibold">Summary</h3>
                       <div className="space-y-2">
                         <div className="flex justify-between">
@@ -1428,8 +1828,16 @@ const Page: React.FC = () => {
                   </div>
                 </ScrollArea>
                 <DialogFooter className="border-t pt-4 flex justify-end gap-2">
-                  {errorMessage && <p className="text-red-500 text-sm text-left">{errorMessage}</p>}
-                  <Button type="button" variant="outline" onClick={() => setEditInvoiceDialog(false)}>
+                  {errorMessage && (
+                    <p className="text-red-500  font-semibold text-lg mt-2 text-left">
+                      {errorMessage}
+                    </p>
+                  )}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setEditInvoiceDialog(false)}
+                  >
                     Cancel
                   </Button>
                   <Button type="submit" disabled={isSaving}>

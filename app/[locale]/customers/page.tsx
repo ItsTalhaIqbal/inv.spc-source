@@ -31,7 +31,7 @@ import { useRouter } from "next/navigation";
 
 interface Bill {
   amount: number;
-  dueDate: Date;
+  dueDate: string;
   description: string;
   paid: boolean;
 }
@@ -39,12 +39,12 @@ interface Bill {
 interface User {
   _id: string;
   name: string;
-  email: string;
+  email?: string;
   phone: string;
   address: string;
   state: string;
   country: string;
-  bills: Bill[];
+  bills: number[];
 }
 
 const Page = () => {
@@ -106,17 +106,16 @@ const Page = () => {
     const results = users.filter(
       (user) =>
         user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (user.email && user.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
         user.phone.toLowerCase().includes(searchTerm.toLowerCase())
     );
     setFilteredUsers(results);
   }, [searchTerm, users]);
 
   const handleEdit = (user: User) => {
-    setError("")
     setEditId(user._id);
     setEditName(user.name);
-    setEditEmail(user.email);
+    setEditEmail(user.email || "");
     setEditPhone(user.phone);
     setEditAddress(user.address);
     setEditState(user.state);
@@ -126,9 +125,9 @@ const Page = () => {
   };
 
   const handleDelete = (user: User) => {
-    setError("")
     setDeleteUserId(user._id);
     setDeleteUserName(user.name);
+    setError("");
     setDeleteDialogOpen(true);
   };
 
@@ -146,8 +145,10 @@ const Page = () => {
         setError("Phone Number is required");
         return;
       }
-   
-     
+      if (editEmail.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editEmail)) {
+        setError("Invalid email format");
+        return;
+      }
 
       setEditLoading(true);
       const response = await fetch("/api/invoice/customer", {
@@ -156,13 +157,14 @@ const Page = () => {
         body: JSON.stringify({
           _id: editId,
           name: editName,
-          email: editEmail,
+          email: editEmail.trim() || null,
           phone: editPhone,
           address: editAddress,
           state: editState,
           country: editCountry,
         }),
       });
+      if (!response.ok) throw new Error("Failed to update user");
       await fetchUsers();
       setEditDialogOpen(false);
       setError("");
@@ -184,6 +186,7 @@ const Page = () => {
       if (!response.ok) throw new Error("Failed to delete user");
       await fetchUsers();
       setDeleteDialogOpen(false);
+      setError("");
     } catch (error) {
       console.error("Error deleting user:", error);
       setError(error instanceof Error ? error.message : "Failed to delete user");
@@ -212,6 +215,7 @@ const Page = () => {
         />
       </div>
 
+      {error && <div className="text-sm text-red-600 mb-4">{error}</div>}
 
       {loading ? (
         <div className="flex justify-center items-center h-64">
@@ -229,7 +233,7 @@ const Page = () => {
         <Table className={theme === "dark" ? "bg-gray-800 text-white" : ""}>
           <TableHeader>
             <TableRow className={theme === "dark" ? "bg-gray-700" : "bg-gray-100"}>
-              <TableHead className={theme === "dark" ? "text olie" : ""}>Name</TableHead>
+              <TableHead className={theme === "dark" ? "text-white" : ""}>Name</TableHead>
               <TableHead className={theme === "dark" ? "text-white" : ""}>Email</TableHead>
               <TableHead className={theme === "dark" ? "text-white" : ""}>Phone</TableHead>
               <TableHead className={theme === "dark" ? "text-white" : ""}>Actions</TableHead>
@@ -242,7 +246,7 @@ const Page = () => {
                 className={theme === "dark" ? "hover:bg-gray-700" : "hover:bg-gray-50"}
               >
                 <TableCell>{user.name}</TableCell>
-                <TableCell>{user.email}</TableCell>
+                <TableCell>{user.email || ""}</TableCell>
                 <TableCell>{user.phone}</TableCell>
                 <TableCell>
                   <DropdownMenu>
@@ -295,13 +299,14 @@ const Page = () => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium">Email</label>
+              <label className="block text-sm font-medium">Email (Optional)</label>
               <Input
                 type="email"
                 value={editEmail}
                 onChange={(e) => setEditEmail(e.target.value)}
                 className={theme === "dark" ? "bg-gray-700 text-white border-gray-600" : ""}
                 disabled={editLoading}
+                placeholder="Enter email or leave empty"
               />
             </div>
             <div>
@@ -372,14 +377,16 @@ const Page = () => {
         <DialogContent className={theme === "dark" ? "bg-gray-800 text-white border-gray-700" : ""}>
           <DialogHeader>
             <DialogTitle>Delete User</DialogTitle>
-            {error && <div className="text-lg text-red-500">{error}</div>}
-
           </DialogHeader>
           <p>Are you sure you want to delete {deleteUserName}?</p>
+          {error && <div className="text-sm text-red-600 mb-2">{error}</div>}
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => setDeleteDialogOpen(false)}
+              onClick={() => {
+                setDeleteDialogOpen(false);
+                setError("");
+              }}
               className={theme === "dark" ? "bg-gray-700 text-white border-gray-600 hover:bg-gray-600" : ""}
               disabled={deleteLoading}
             >
