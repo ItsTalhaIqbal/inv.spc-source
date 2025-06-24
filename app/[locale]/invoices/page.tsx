@@ -535,9 +535,13 @@ const Page: React.FC = () => {
         (showShipping ? shippingAmount : 0) -
         (showDiscount ? discountAmount : 0);
 
-      // Prevent negative total
-      if (calculatedTotal < 0) {
+      if (calculatedTotal < 0  ) {
         setErrorMessage("Total amount cannot be negative. Please adjust the discount or other amounts.");
+        setIsSaving(false);
+        return;
+      }
+       if ( calculatedTotal == 0) {
+        setErrorMessage("Total amount cannot be zero (0).");
         setIsSaving(false);
         return;
       }
@@ -1354,7 +1358,6 @@ const Page: React.FC = () => {
                               }`}
                             >
                               <option value="percentage">Percentage</option>
-                              <option value="fixed">Fixed</option>
                               <option value="amount">Amount</option>
                             </select>
                           </div>
@@ -1398,12 +1401,7 @@ const Page: React.FC = () => {
                           <span>Subtotal:</span>
                           <span>{subTotal.toFixed(2)}</span>
                         </div>
-                        {showTax && (
-                          <div className="flex justify-between">
-                            <span>Tax:</span>
-                            <span>{taxAmount.toFixed(2)}</span>
-                          </div>
-                        )}
+                       
                         {showDiscount && (
                           <div className="flex justify-between">
                             <span>Discount:</span>
@@ -1413,9 +1411,15 @@ const Page: React.FC = () => {
                         {showShipping && (
                           <div className="flex justify-between">
                             <span>Shipping:</span>
-                            <span>{shippingAmount.toFixed(2)}</span>
+                            <span>{shippingAmount.toFixed(2)}</span> 
                           </div>
                         )}
+                         {showTax && (
+                          <div className="flex justify-between">
+                            <span>VAT:</span>
+                            <span>{taxAmount.toFixed(2)}</span>
+                          </div>
+                        )}    
                         <div className="flex justify-between font-bold border-t pt-2 border-t-gray-200">
                           <span>Grand Total:</span>
                           <span>{totalAmount.toFixed(2)}</span>
@@ -1425,7 +1429,7 @@ const Page: React.FC = () => {
                   </div>
                 </ScrollArea>
                 <DialogFooter className="border-t pt-4 flex justify-end gap-2">
-                  {errorMessage && <p className="text-red-500 text-sm">{errorMessage}</p>}
+                  {errorMessage && <p className="text-red-500 text-sm    text-left">{errorMessage}</p>}
                   <Button type="button" variant="outline" onClick={() => setEditInvoiceDialog(false)}>
                     Cancel
                   </Button>

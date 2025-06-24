@@ -48,8 +48,8 @@ const fieldValidators = {
   stringToNumber: z.coerce.number(),
   stringToNumberWithMax: z.coerce.number().max(1000000),
   stringOptional: z.string().optional(),
-  nonNegativeNumber: z.coerce.number().nonnegative({
-    message: "Total amount cannot be negative.",
+ nonNegativeNumber: z.coerce.number().positive({
+    message: "Total amount must be greater than zero.",
   }),
   numWithCommas: z.coerce
     .number()
@@ -136,7 +136,7 @@ const InvoiceDetailsSchema = z.object({
   discountDetails: DiscountDetailsSchema.optional(),
   shippingDetails: ShippingDetailsSchema.optional(),
   subTotal: fieldValidators.nonNegativeNumber,
-  totalAmount: fieldValidators.nonNegativeNumber, // Ensures totalAmount is >= 0
+  totalAmount: fieldValidators.nonNegativeNumber, 
   totalAmountInWords: fieldValidators.string,
   additionalNotes: fieldValidators.stringOptional,
   paymentTerms: fieldValidators.stringMin1,
