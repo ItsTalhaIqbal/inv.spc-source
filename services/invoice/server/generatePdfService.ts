@@ -276,7 +276,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
           <td class="w-[5%] text-center font-bold text-black text-base border">${
             index + 1
           }</td>
-          <td class="w-[40%] font-sans leading-tight text-center text-black text-base border px-2 py-1 description-cell"><pre> ${
+          <td class="w-[40%] font-sans leading-tight text-center text-black text-base border px-2 py-1 description-cell" style="word-wrap: break-word; white-space: normal;"><pre class="text-start"> ${
             item.name || ""
           }</pre></td>
           <td class="w-[10%] text-center text-black text-base border">${
