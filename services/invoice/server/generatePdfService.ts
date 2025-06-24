@@ -20,7 +20,7 @@ interface Item {
   name?: string;
   quantity?: number;
   unitPrice?: number;
-  unitType?: string; // Added unitType
+  unitType?: string;
 }
 
 interface Details {
@@ -173,6 +173,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
       `PDF template must be a number, received: ${body.details.pdfTemplate}`
     );
   }
+
   const senderData = body.sender || {
     name: "SPC Source Technical Services LLC",
     country: "UAE",
@@ -275,9 +276,9 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
           <td class="w-[5%] text-center font-bold text-black text-base border">${
             index + 1
           }</td>
-          <td class="w-[40%]  text-wrap font-sans leading-tight text-center text-black text-base border px-2 py-1" style="word-wrap: break-word; white-space: normal;"><pre class="text-start"> ${
+          <td class="w-[40%] font-sans leading-tight text-center text-black text-base border px-2 py-1 description-cell"><pre> ${
             item.name || ""
-          } </pre></td>
+          }</pre></td>
           <td class="w-[10%] text-center text-black text-base border">${
             item.unitType || ""
           }</td>
@@ -466,9 +467,16 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
         padding: 8px;
       }
       .invoice-table td {
-        word-wrap: break-word;
-        white-space: normal;
+        text-align: center;
+        vertical-align: middle;
         padding: 4px;
+      }
+      .description-cell {
+        text-align: center;
+        overflow-wrap: break-word;
+        white-space: normal;
+        hyphens: auto;
+        padding: 4px 8px;
       }
       .invoice-table th:nth-child(1), .invoice-table td:nth-child(1) { width: 5%; }
       .invoice-table th:nth-child(2), .invoice-table td:nth-child(2) { width: 40%; }
@@ -543,7 +551,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
         </div>
         <div class="header-details mt-4">
           <p class="text-sm pt-1">
-            <a href="https://api.whatsapp.com/send?phone=971545004520&text&type=phone_number&app_absent=0" target="_blank" rel="noopener noreferrer">
+            <a href="https://bit.ly/spc-whatsapp-contact" target="_blank" rel="noopener noreferrer">
               +971 54 500 4520
             </a> | contact@spcsource.com
           </p>
@@ -606,10 +614,9 @@ ${details.invoiceNumber}
                 subtotal
               )}</span>
             </div>
-           
             ${shippingHtml}
             ${discountHtml}
-             ${taxHtml}
+            ${taxHtml}
             <div class="flex justify-between total-amount">
               <span class="text-base font-bold text-gray-800">Grand Total</span>
               <span class="text-base font-bold text-gray-800">AED ${formatNumberWithCommas(

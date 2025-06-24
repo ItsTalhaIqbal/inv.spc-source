@@ -472,7 +472,7 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
         </div>
         <div class="header-details mt-4">
           <p class="text-sm pt-1">
-            <a href="https://api.whatsapp.com/send?phone=971545004520&text&type=phone_number&app_absent=0" target="_blank" rel="noopener noreferrer">
+            <a href="https://bit.ly/spc-whatsapp-contact" target="_blank" rel="noopener noreferrer">
               +971 54 500 4520
             </a> | contact@spcsource.com
           </p>
