@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
     const { name, address, state, country, email, phone } = body;
 
     // Require all fields except email
-    if (!name || !address || !state || !country || !phone) {
+    if (!name.trim() || !address.trim() || !state || !country || !phone.trim()) {
       return NextResponse.json(
         {
           error: 'Missing required fields',
@@ -168,9 +168,7 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: 'Customer ID is required' }, { status: 400 });
     }
 
-    if (email && !emailRegex.test(email)) {
-      return NextResponse.json({ error: 'Invalid email format' }, { status: 400 });
-    }
+
 
     if (name && (name.length < 2 || name.length > 100)) {
       return NextResponse.json(

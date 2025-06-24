@@ -26,7 +26,6 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Loader2, MoreHorizontal, Search } from "lucide-react";
-import CreateUserDialog from "@/components/createUserDialog";
 import { isLogin } from "@/lib/Auth";
 import { useRouter } from "next/navigation";
 
@@ -52,38 +51,42 @@ const Page = () => {
   const { theme } = useTheme();
   const [users, setUsers] = useState<User[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
-  const [searchTerm, setSearchTerm] = useState<string>("");
-  const [editUser, setEditUser] = useState<User | null>(null);
-  const [deleteUser, setDeleteUser] = useState<User | null>(null);
-  const [editDialogOpen, setEditDialogOpen] = useState<boolean>(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState<boolean>(false);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [editLoading, setEditLoading] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [editId, setEditId] = useState("");
+  const [editName, setEditName] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [editAddress, setEditAddress] = useState("");
+  const [editState, setEditState] = useState("");
+  const [editCountry, setEditCountry] = useState("");
+  const [deleteUserId, setDeleteUserId] = useState("");
+  const [deleteUserName, setDeleteUserName] = useState("");
+  const [error, setError] = useState("");
   const router = useRouter();
 
   const fetchUsers = async () => {
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5-second timeout
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
       const response = await fetch("/api/invoice/customer", {
         method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         signal: controller.signal,
       });
       clearTimeout(timeoutId);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch users: ${response.statusText}`);
-      }
+      if (!response.ok) throw new Error("Failed to fetch users");
       const data = await response.json();
-      if (!Array.isArray(data)) {
-        throw new Error("Invalid data format received");
-      }
+      if (!Array.isArray(data)) throw new Error("Invalid data format");
       setUsers(data);
       setFilteredUsers(data);
     } catch (error) {
-      console.error("Error fetching users:", error, error instanceof Error ? error.stack : "");
-      alert(error instanceof Error ? error.message : "Failed to fetch users");
+      console.error("Error fetching users:", error);
+      setError(error instanceof Error ? error.message : "Failed to fetch users");
       setUsers([]);
       setFilteredUsers([]);
     } finally {
@@ -109,69 +112,83 @@ const Page = () => {
     setFilteredUsers(results);
   }, [searchTerm, users]);
 
-  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(e.target.value);
-  };
-
   const handleEdit = (user: User) => {
-    setEditUser(user);
+    setError("")
+    setEditId(user._id);
+    setEditName(user.name);
+    setEditEmail(user.email);
+    setEditPhone(user.phone);
+    setEditAddress(user.address);
+    setEditState(user.state);
+    setEditCountry(user.country);
+    setError("");
     setEditDialogOpen(true);
   };
 
   const handleDelete = (user: User) => {
-    setDeleteUser(user);
+    setError("")
+    setDeleteUserId(user._id);
+    setDeleteUserName(user.name);
     setDeleteDialogOpen(true);
   };
 
   const confirmEdit = async () => {
-    if (!editUser) return;
     try {
-      const response = await fetch(`/api/invoice/customer`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(editUser),
-      });
-      if (!response.ok) {
-        throw new Error("Failed to update user");
+      if (!editName.trim()) {
+        setError("Name is required");
+        return;
       }
+      if (!editAddress.trim()) {
+        setError("Address is required");
+        return;
+      }
+      if (!editPhone.trim()) {
+        setError("Phone Number is required");
+        return;
+      }
+   
+     
+
+      setEditLoading(true);
+      const response = await fetch("/api/invoice/customer", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          _id: editId,
+          name: editName,
+          email: editEmail,
+          phone: editPhone,
+          address: editAddress,
+          state: editState,
+          country: editCountry,
+        }),
+      });
       await fetchUsers();
       setEditDialogOpen(false);
-      setEditUser(null);
+      setError("");
     } catch (error) {
       console.error("Error updating user:", error);
-      alert(error instanceof Error ? error.message : "Failed to update user");
+      setError(error instanceof Error ? error.message : "Failed to update user");
+    } finally {
+      setEditLoading(false);
     }
   };
 
   const confirmDelete = async () => {
-    if (!deleteUser) return;
     try {
-      const response = await fetch(`/api/invoice/customer?id=${deleteUser._id}`, {
+      setDeleteLoading(true);
+      const response = await fetch(`/api/invoice/customer?id=${deleteUserId}`, {
         method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
       });
-      if (!response.ok) {
-        throw new Error("Failed to delete user");
-      }
+      if (!response.ok) throw new Error("Failed to delete user");
       await fetchUsers();
       setDeleteDialogOpen(false);
-      setDeleteUser(null);
     } catch (error) {
       console.error("Error deleting user:", error);
-      alert(error instanceof Error ? error.message : "Failed to delete user");
-    }
-  };
-
-  const handleEditChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (editUser) {
-      setEditUser({
-        ...editUser,
-        [e.target.name]: e.target.value,
-      });
+      setError(error instanceof Error ? error.message : "Failed to delete user");
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -179,44 +196,43 @@ const Page = () => {
     <div
       className={`p-6 max-w-6xl mx-auto ${
         theme === "dark" ? "bg-gray-900 text-white" : "bg-white text-black"
-      } transition-colors duration-300`}
+      }`}
     >
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-bold">Customer Management</h1>
+      <h1 className="text-2xl font-bold mb-4">Customer Management</h1>
+
+      <div className="relative w-64 mb-4">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
+        <Input
+          placeholder="Search customers..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className={`pl-10 ${
+            theme === "dark" ? "bg-gray-800 text-white border-gray-700" : ""
+          }`}
+        />
       </div>
 
-      <div className="flex items-center justify-between mb-4">
-        <div className="relative w-64">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
-          <Input
-            placeholder="Search customers..."
-            value={searchTerm}
-            onChange={handleSearch}
-            className={`pl-10 ${
-              theme === "dark" ? "bg-gray-800 text-white border-gray-700" : "bg-white text-black border-gray-300"
-            }`}
-          />
-        </div>
-      </div>
 
       {loading ? (
         <div className="flex justify-center items-center h-64">
           <Loader2
-            className={`h-8 w-8 animate-spin ${theme === "dark" ? "text-gray-300" : "text-gray-500"}`}
+            className={`h-8 w-8 animate-spin ${theme === "dark" ? "text-gray-300" : ""}`}
           />
         </div>
       ) : filteredUsers.length === 0 ? (
-        <div className={`text-center text-lg ${theme === "dark" ? "text-gray-300" : "text-gray-500"} mt-8`}>
+        <div
+          className={`text-center text-lg ${theme === "dark" ? "text-gray-300" : "text-gray-500"} mt-8`}
+        >
           No customers available
         </div>
       ) : (
-        <Table className={`${theme === "dark" ? "bg-gray-800 text-white" : "bg-white text-black"} w-full`}>
+        <Table className={theme === "dark" ? "bg-gray-800 text-white" : ""}>
           <TableHeader>
             <TableRow className={theme === "dark" ? "bg-gray-700" : "bg-gray-100"}>
-              <TableHead className={theme === "dark" ? "text-white" : "text-black"}>Name</TableHead>
-              <TableHead className={theme === "dark" ? "text-white" : "text-black"}>Email</TableHead>
-              <TableHead className={theme === "dark" ? "text-white" : "text-black"}>Phone</TableHead>
-              <TableHead className={theme === "dark" ? "text-white" : "text-black"}>Actions</TableHead>
+              <TableHead className={theme === "dark" ? "text olie" : ""}>Name</TableHead>
+              <TableHead className={theme === "dark" ? "text-white" : ""}>Email</TableHead>
+              <TableHead className={theme === "dark" ? "text-white" : ""}>Phone</TableHead>
+              <TableHead className={theme === "dark" ? "text-white" : ""}>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -234,27 +250,21 @@ const Page = () => {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className={
-                          theme === "dark"
-                            ? "bg-gray-600 text-white hover:bg-gray-500"
-                            : "bg-gray-200 text-black hover:bg-gray-300"
-                        }
+                        className={theme === "dark" ? "bg-gray-600 text-white hover:bg-gray-500" : ""}
                       >
                         <MoreHorizontal className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent
-                      className={theme === "dark" ? "bg-gray-800 text-white border-gray-700" : "bg-white text-black border-gray-200"}
-                    >
+                    <DropdownMenuContent className={theme === "dark" ? "bg-gray-800 text-white" : ""}>
                       <DropdownMenuItem
                         onClick={() => handleEdit(user)}
-                        className={theme === "dark" ? "hover:bg-gray-700" : "hover:bg-gray-100"}
+                        className={theme === "dark" ? "hover:bg-gray-700" : ""}
                       >
                         Edit
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         onClick={() => handleDelete(user)}
-                        className={theme === "dark" ? "hover:bg-gray-700" : "hover:bg-gray-100"}
+                        className={theme === "dark" ? "hover:bg-gray-700" : ""}
                       >
                         Delete
                       </DropdownMenuItem>
@@ -268,133 +278,124 @@ const Page = () => {
       )}
 
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent
-          className={theme === "dark" ? "bg-gray-800 text-white border-gray-700" : "bg-white text-black border-gray-200"}
-        >
+        <DialogContent className={theme === "dark" ? "bg-gray-800 text-white border-gray-700" : ""}>
           <DialogHeader>
             <DialogTitle>Edit User</DialogTitle>
+            {error && <div className="text-lg text-red-500">{error}</div>}
+
           </DialogHeader>
-          {editUser && (
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium">Name</label>
-                <Input
-                  name="name"
-                  value={editUser.name}
-                  onChange={handleEditChange}
-                  className={
-                    theme === "dark" ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"
-                  }
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium">Email</label>
-                <Input
-                  name="email"
-                  value={editUser.email}
-                  onChange={handleEditChange}
-                  type="email"
-                  className={
-                    theme === "dark" ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"
-                  }
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium">Phone</label>
-                <Input
-                  name="phone"
-                  value={editUser.phone}
-                  onChange={handleEditChange}
-                  className={
-                    theme === "dark" ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"
-                  }
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium">Address</label>
-                <Input
-                  name="address"
-                  value={editUser.address}
-                  onChange={handleEditChange}
-                  className={
-                    theme === "dark" ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"
-                  }
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium">State</label>
-                <Input
-                  name="state"
-                  value={editUser.state}
-                  onChange={handleEditChange}
-                  className={
-                    theme === "dark" ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"
-                  }
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium">Country</label>
-                <Input
-                  name="country"
-                  value={editUser.country}
-                  onChange={handleEditChange}
-                  className={
-                    theme === "dark" ? "bg-gray-700 text-white border-gray-600" : "bg-white text-black border-gray-300"
-                  }
-                />
-              </div>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium">Name</label>
+              <Input
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                className={theme === "dark" ? "bg-gray-700 text-white border-gray-600" : ""}
+                disabled={editLoading}
+              />
             </div>
-          )}
+            <div>
+              <label className="block text-sm font-medium">Email</label>
+              <Input
+                type="email"
+                value={editEmail}
+                onChange={(e) => setEditEmail(e.target.value)}
+                className={theme === "dark" ? "bg-gray-700 text-white border-gray-600" : ""}
+                disabled={editLoading}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium">Phone</label>
+              <Input
+                value={editPhone}
+                onChange={(e) => setEditPhone(e.target.value)}
+                className={theme === "dark" ? "bg-gray-700 text-white border-gray-600" : ""}
+                disabled={editLoading}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium">Address</label>
+              <Input
+                value={editAddress}
+                onChange={(e) => setEditAddress(e.target.value)}
+                className={theme === "dark" ? "bg-gray-700 text-white border-gray-600" : ""}
+                disabled={editLoading}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium">State</label>
+              <Input
+                value={editState}
+                onChange={(e) => setEditState(e.target.value)}
+                className={theme === "dark" ? "bg-gray-700 text-white border-gray-600" : ""}
+                disabled={editLoading}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium">Country</label>
+              <Input
+                value={editCountry}
+                onChange={(e) => setEditCountry(e.target.value)}
+                className={theme === "dark" ? "bg-gray-700 text-white border-gray-600" : ""}
+                disabled={editLoading}
+              />
+            </div>
+          </div>
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => setEditDialogOpen(false)}
-              className={
-                theme === "dark"
-                  ? "bg-gray-700 text-white border-gray-600 hover:bg-gray-600"
-                  : "bg-white text-black border-gray-300 hover:bg-gray-100"
-              }
+              onClick={() => {
+                setEditDialogOpen(false);
+                setError("");
+              }}
+              className={theme === "dark" ? "bg-gray-700 text-white border-gray-600 hover:bg-gray-600" : ""}
+              disabled={editLoading}
             >
               Cancel
             </Button>
             <Button
               onClick={confirmEdit}
               className="bg-gray-700 text-white hover:bg-gray-600"
+              disabled={editLoading}
             >
-              Save
+              {editLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                "Save"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent
-          className={theme === "dark" ? "bg-gray-800 text-white border-gray-700" : "bg-white text-black border-gray-200"}
-        >
+        <DialogContent className={theme === "dark" ? "bg-gray-800 text-white border-gray-700" : ""}>
           <DialogHeader>
             <DialogTitle>Delete User</DialogTitle>
+            {error && <div className="text-lg text-red-500">{error}</div>}
+
           </DialogHeader>
-          <p>Are you sure you want to delete {deleteUser?.name}?</p>
+          <p>Are you sure you want to delete {deleteUserName}?</p>
           <DialogFooter>
             <Button
               variant="outline"
               onClick={() => setDeleteDialogOpen(false)}
-              className={
-                theme === "dark"
-                  ? "bg-gray-700 text-white border-gray-600 hover:bg-gray-600"
-                  : "bg-white text-black border-gray-300 hover:bg-gray-100"
-              }
+              className={theme === "dark" ? "bg-gray-700 text-white border-gray-600 hover:bg-gray-600" : ""}
+              disabled={deleteLoading}
             >
               Cancel
             </Button>
             <Button
               variant="destructive"
               onClick={confirmDelete}
-              className={
-                theme === "dark" ? "bg-red-600 text-white hover:bg-red-700" : "bg-red-500 text-white hover:bg-red-600"
-              }
+              className={theme === "dark" ? "bg-red-600 text-white hover:bg-red-700" : ""}
+              disabled={deleteLoading}
             >
-              Delete
+              {deleteLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                "Delete"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
