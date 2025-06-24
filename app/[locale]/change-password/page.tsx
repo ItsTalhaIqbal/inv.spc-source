@@ -75,7 +75,9 @@ export default function ChangePassword() {
       if (res.ok) {
         setMessage(data.message);
         const basePath = getBasePath();
-          router.push(basePath||"/"); 
+        setTimeout(() => {
+          router.push(basePath|| "/"); // Fallback to "/" if basePath is empty
+        }, 2000);
       } else {
         setError(data.message);
       }
