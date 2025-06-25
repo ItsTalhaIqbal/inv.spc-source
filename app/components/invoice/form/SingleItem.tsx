@@ -111,14 +111,14 @@ const SingleItem = ({
           className="w-full min-h-[2rem] resize-y text-wrap font-sans leading-tight text-start"
         />
         <div className="w-[8rem]">
-          <Label>{"Unit Type"}</Label>
+          <Label className={unitTypeError?"text-red-500":""}>{"Unit Type"}</Label>
           <select
             {...register(`${name}[${index}].unitType`, {
               validate: (value) => value !== "" || "Unit type is required"
             })}
             onChange={handleUnitTypeChange}
             value={unitType}
-            className={`flex h-10 mt-2 w-full rounded-md border ${unitTypeError ? 'border-red-500' : 'border-input'} bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50`}
+            className={`flex h-10 mt-2 w-full rounded-md border border-inout bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50`}
           >
             <option value="">{"Select Unit"}</option>
             {UNIT_TYPES.map((unit) => (
