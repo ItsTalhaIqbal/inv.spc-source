@@ -1350,7 +1350,7 @@ const Page: React.FC = () => {
                                   `details.items.${index}.unitType`,
                                   {
                                     validate: (value) =>
-                                      UNIT_TYPES.includes(value) ||
+                                      UNIT_TYPES.includes(value as any) ||
                                       "Please select a valid unit type",
                                   }
                                 )}
