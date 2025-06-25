@@ -1,26 +1,14 @@
 "use client";
-import { useEffect, useState } from "react";
-
-// RHF
-import { FieldArrayWithId, useFormContext, useWatch } from "react-hook-form";
-
-// DnD
+import { useFormContext, useWatch, FieldArrayWithId } from "react-hook-form";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-
-// ShadCn
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-
-// Components
 import { BaseButton, FormTextarea } from "@/app/components";
-
-// Icons
 import { ChevronDown, ChevronUp, GripVertical, Trash2 } from "lucide-react";
-
-// Types and Variables
 import { ItemType, NameType } from "@/types";
 import { UNIT_TYPES } from "@/lib/variables";
+import { useEffect, useState } from "react";
 
 type SingleItemProps = {
   name: NameType;
@@ -41,38 +29,16 @@ const SingleItem = ({
   moveFieldDown,
   removeField,
 }: SingleItemProps) => {
-  const { control, setValue, register } = useFormContext();
+  const { control, setValue, register, formState: { errors } } = useFormContext();
 
-  // Watch form values
-  const itemName = useWatch({
-    name: `${name}[${index}].name`,
-    control,
-  });
+  const itemName = useWatch({ name: `${name}[${index}].name`, control });
+  const rate = useWatch({ name: `${name}[${index}].unitPrice`, control });
+  const quantity = useWatch({ name: `${name}[${index}].quantity`, control });
+  const currency = useWatch({ name: `details.currency`, control });
+  const formUnitType = useWatch({ name: `${name}[${index}].unitType`, control });
 
-  const rate = useWatch({
-    name: `${name}[${index}].unitPrice`,
-    control,
-  });
-
-  const quantity = useWatch({
-    name: `${name}[${index}].quantity`,
-    control,
-  });
-
-  const currency = useWatch({
-    name: `details.currency`,
-    control,
-  });
-
-  const formUnitType = useWatch({
-    name: `${name}[${index}].unitType`,
-    control,
-  });
-
-  // State for unitType, initialized with form value
   const [unitType, setUnitType] = useState<string>(formUnitType || "");
 
-  // Calculate total
   useEffect(() => {
     if (rate !== undefined && quantity !== undefined) {
       const calculatedTotal = Number(rate) * Number(quantity);
@@ -82,22 +48,13 @@ const SingleItem = ({
     }
   }, [rate, quantity, setValue, name, index]);
 
-  // Handle unitType change
   const handleUnitTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedUnitType = e.target.value;
-    setUnitType(selectedUnitType); // Update local state
+    setUnitType(selectedUnitType);
     setValue(`${name}[${index}].unitType`, selectedUnitType, { shouldValidate: true });
   };
 
-  // DnD
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: field.id });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: field.id });
 
   const style = {
     transition,
@@ -112,14 +69,13 @@ const SingleItem = ({
     ? "opacity-0 group-hover:opacity-100 transition-opacity duration-100 cursor-grabbing"
     : "cursor-grab";
 
-  // Normalize input
-  const normalizeNumber = (
-    value: string | number | undefined
-  ): number | undefined => {
+  const normalizeNumber = (value: string | number | undefined): number | undefined => {
     if (value === undefined || value === "") return undefined;
     const num = parseFloat(value.toString());
     return isNaN(num) ? undefined : num;
   };
+
+  const unitTypeError = (errors as any)?.details?.items?.[index]?.unitType?.message;
 
   return (
     <div
@@ -135,68 +91,46 @@ const SingleItem = ({
         ) : (
           <p className="font-medium text-left">#{index + 1} - Empty name</p>
         )}
-
         <div className="flex gap-3">
-          <div
-            className={`${gripDragClasses} flex justify-center items-center`}
-            ref={setNodeRef}
-            {...listeners}
-          >
+          <div className={`${gripDragClasses} flex justify-center items-center`} ref={setNodeRef} {...listeners}>
             <GripVertical className="hover:text-blue-600" />
           </div>
-
-          <BaseButton
-            size={"icon"}
-            tooltipLabel={"Move the item up"}
-            onClick={() => moveFieldUp(index)}
-            disabled={index === 0}
-          >
+          <BaseButton size={"icon"} tooltipLabel={"Move the item up"} onClick={() => moveFieldUp(index)} disabled={index === 0}>
             <ChevronUp />
           </BaseButton>
-
-          <BaseButton
-            size={"icon"}
-            tooltipLabel={"Move the item down"}
-            onClick={() => moveFieldDown(index)}
-            disabled={index === fields.length - 1}
-          >
+          <BaseButton size={"icon"} tooltipLabel={"Move the item down"} onClick={() => moveFieldDown(index)} disabled={index === fields.length - 1}>
             <ChevronDown />
           </BaseButton>
         </div>
       </div>
-      <div
-        className="flex flex-wrap justify-between gap-y-5 gap-x-2"
-        key={index}
-      >
+      <div className="flex flex-wrap justify-between gap-y-5 gap-x-2" key={index}>
         <FormTextarea
           name={`${name}[${index}].name`}
           label={"Item Name"}
           placeholder={"Item Name"}
-          className="w-full min-h-[2rem] resize-y text-wrap font-sans  leading-tight text-start"
+          className="w-full min-h-[2rem] resize-y text-wrap font-sans leading-tight text-start"
         />
-
         <div className="w-[8rem]">
           <Label>{"Unit Type"}</Label>
           <select
             {...register(`${name}[${index}].unitType`, {
-              validate: (value) =>
-                UNIT_TYPES.includes(value) || "Please select a valid unit type",
+              validate: (value) => value !== "" || "Unit type is required"
             })}
             onChange={handleUnitTypeChange}
             value={unitType}
-            className="flex h-10 mt-2 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+            className={`flex h-10 mt-2 w-full rounded-md border ${unitTypeError ? 'border-red-500' : 'border-input'} bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50`}
           >
-            <option value="" disabled>
-              {"Select Unit"}
-            </option>
+            <option value="">{"Select Unit"}</option>
             {UNIT_TYPES.map((unit) => (
               <option key={unit} value={unit}>
                 {unit}
               </option>
             ))}
           </select>
+          {unitTypeError && (
+            <p className="text-red-500 text-sm mt-1">{unitTypeError}</p>
+          )}
         </div>
-
         <div className="w-[8rem]">
           <Label>{"Quantity"}</Label>
           <Input
@@ -211,17 +145,12 @@ const SingleItem = ({
             defaultValue={0}
             onChange={(e) => {
               const value = normalizeNumber(e.target.value);
-              setValue(`${name}[${index}].quantity`, value, {
-                shouldValidate: true,
-              });
+              setValue(`${name}[${index}].quantity`, value, { shouldValidate: true });
             }}
           />
         </div>
-
         <div className="w-[8rem]">
-          <Label>
-            {"Rate"} ({currency})
-          </Label>
+          <Label>{"Rate"} ({currency})</Label>
           <Input
             type="number"
             {...register(`${name}[${index}].unitPrice`, {
@@ -234,9 +163,7 @@ const SingleItem = ({
             defaultValue={0}
             onChange={(e) => {
               const value = normalizeNumber(e.target.value);
-              setValue(`${name}[${index}].unitPrice`, value, {
-                shouldValidate: true,
-              });
+              setValue(`${name}[${index}].unitPrice`, value, { shouldValidate: true });
             }}
           />
         </div>

@@ -158,7 +158,7 @@ const Page = () => {
         body: JSON.stringify({
           _id: editId,
           name: editName,
-          email: editEmail.trim() || null,
+          email: editEmail.trim() || "",
           phone: editPhone,
           address: editAddress,
           state: editState,

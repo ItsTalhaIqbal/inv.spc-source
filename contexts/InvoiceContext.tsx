@@ -140,7 +140,7 @@ export const InvoiceContextProvider = ({
         currency: "AED",
         items: FORM_DEFAULT_VALUES.details.items.map((item) => ({
           ...item,
-          unitType: item.unitType || "pcs",
+          unitType: item.unitType ,
         })),
       },
     }),
@@ -254,7 +254,7 @@ export const InvoiceContextProvider = ({
               description: item.description || "No description provided",
               quantity: Number(item.quantity) || 0,
               unitPrice: Number(item.unitPrice) || 0,
-              unitType: item.unitType || "pcs",
+              unitType: item.unitType || "",
               total: Number(item.quantity) * Number(item.unitPrice) || 0,
             })),
             currency: "AED",
@@ -376,7 +376,7 @@ export const InvoiceContextProvider = ({
               updatedAt: updatedDate,
               items: formValues.details.items.map((item) => ({
                 ...item,
-                unitType: item.unitType || "pcs",
+                unitType: item.unitType || "",
               })),
             },
           };
@@ -523,7 +523,7 @@ export const InvoiceContextProvider = ({
             invoiceNumber: numericInvoiceNumber,
             items: formValues.details.items.map((item) => ({
               ...item,
-              unitType: item.unitType || "pcs",
+              unitType: item.unitType || "",
             })),
           },
         });
@@ -563,7 +563,7 @@ export const InvoiceContextProvider = ({
                 name: item.name || "No description provided",
                 quantity: Number(item.quantity) || 0,
                 unitPrice: Number(item.unitPrice) || 0,
-                unitType: item.unitType && UNIT_TYPES.includes(item.unitType) ? item.unitType : "pcs",
+                unitType: item.unitType && UNIT_TYPES.includes(item.unitType) ? item.unitType :"",
                 total: Number(item.quantity) * Number(item.unitPrice) || 0,
               })),
             },

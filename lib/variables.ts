@@ -141,7 +141,7 @@ export const FORM_DEFAULT_VALUES = {
                 quantity: 0,
                 unitPrice: 0,
                 total: 0,
-                unitType: "pcs",
+                unitType: "",
             },
         ],
         currency: "AED",

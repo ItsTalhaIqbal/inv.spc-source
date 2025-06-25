@@ -55,7 +55,7 @@ const createData = {
   address,
   state,
   country,
-  email: email && email?.trim()  || undefined, // Convert empty string to undefined
+  email: email && email?.trim()  || "", // Convert empty string to undefined
   phone,
 };
 
@@ -67,7 +67,7 @@ const createData = {
       address: userDoc.address,
       state: userDoc.state,
       country: userDoc.country,
-      email: userDoc.email || undefined,
+      email: userDoc.email || "",
       phone: userDoc.phone,
     };
 
@@ -195,7 +195,7 @@ export async function PUT(req: NextRequest) {
     if (address) updateData.address = address;
     if (state) updateData.state = state;
     if (country) updateData.country = country;
-    if (email !== undefined) updateData.email = email;
+    if (email !== "") updateData.email = email;
     if (phone) updateData.phone = phone;
 
     const user = await Customer.findByIdAndUpdate(_id, updateData, {
