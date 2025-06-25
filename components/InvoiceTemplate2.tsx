@@ -75,12 +75,12 @@ const InvoiceTemplate2: React.FC<InvoiceType> = (data: InvoiceType) => {
               <dt className="col-span-3 font-semibold text-gray-800">
                 Invoice date:
               </dt>
-              <dd className="col-span-3 text-gray-500">
+              {/* <dd className="col-span-3 text-gray-500">
                 {new Date(details.invoiceDate).toLocaleDateString(
                   "en-US",
                   DATE_OPTIONS
                 )}
-              </dd>
+              </dd> */}
             </dl>
             <dl className="grid sm:grid-cols-6 gap-x-3">
               <dt className="col-span-3 font-semibold text-gray-800">

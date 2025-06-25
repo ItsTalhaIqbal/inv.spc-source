@@ -16,48 +16,39 @@ interface UserInput {
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function POST(req: NextRequest) {
-  let body: any  = null; // Declare body at top scope
+  let body: any = null;
   try {
     await connectToDatabase();
-
     body = await req.json();
 
     const { name, address, state, country, email, phone } = body;
 
-    // Require all fields except email
     if (!name.trim() || !address.trim() || !state || !country || !phone.trim()) {
       return NextResponse.json(
-        {
-          error: 'Missing required fields',
-          missing: { name, address, state, country, phone },
-        },
+        { error: 'Missing required fields', missing: { name, address, state, country, phone } },
         { status: 400 }
       );
     }
 
-    // Validate email only if provided and not empty
     if (email && !emailRegex.test(email)) {
       return NextResponse.json({ error: 'Invalid email format' }, { status: 400 });
     }
 
-    // Check for existing email only if provided
     if (email) {
       const existingEmail = await Customer.findOne({ email });
       if (existingEmail) {
         return NextResponse.json({ error: 'Email already exists' }, { status: 409 });
       }
-    } else {
     }
 
- // In your POST handler, modify the createData section:
-const createData = {
-  name,
-  address,
-  state,
-  country,
-  email: email && email?.trim()  || "", // Convert empty string to undefined
-  phone,
-};
+    const createData = {
+      name,
+      address,
+      state,
+      country,
+      email: email && email.trim() || "",
+      phone,
+    };
 
     const userDoc = await Customer.create(createData);
 
@@ -79,21 +70,16 @@ const createData = {
     console.error('Error in POST /api/invoice/customer:', {
       message: error.message,
       stack: error.stack,
-      body, // Now accessible
+      body,
       errorDetails: error.errors ? JSON.stringify(error.errors) : null,
     });
     return NextResponse.json(
-      {
-        error: 'Internal server error',
-        details: error.message,
-        stack: error.stack,
-      },
+      { error: 'Internal server error', details: error.message },
       { status: 500 }
     );
   }
 }
 
-// Keep other handlers unchanged
 export async function OPTIONS(req: NextRequest) {
   return NextResponse.json(
     {},
@@ -125,7 +111,7 @@ export async function GET(req: NextRequest) {
         address: user.address,
         state: user.state,
         country: user.country,
-        email: user.email,
+        email: user.email || "",
         phone: user.phone,
       };
       return NextResponse.json(userResponse, {
@@ -140,7 +126,7 @@ export async function GET(req: NextRequest) {
         address: user.address,
         state: user.state,
         country: user.country,
-        email: user.email,
+        email: user.email || "",
         phone: user.phone,
       }));
       return NextResponse.json(userResponses, {
@@ -168,16 +154,23 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: 'Customer ID is required' }, { status: 400 });
     }
 
-
-
-    if (name && (name.length < 2 || name.length > 100)) {
-      return NextResponse.json(
-        { error: 'Name must be between 2 and 100 characters' },
-        { status: 400 }
-      );
+    if (!name.trim()) {
+      return NextResponse.json({ error: 'Name is required' }, { status: 400 });
     }
 
-    if (email) {
+    if (!address.trim()) {
+      return NextResponse.json({ error: 'Address is required' }, { status: 400 });
+    }
+
+    if (!phone.trim()) {
+      return NextResponse.json({ error: 'Phone is required' }, { status: 400 });
+    }
+
+    if (email && !emailRegex.test(email)) {
+      return NextResponse.json({ error: 'Invalid email format' }, { status: 400 });
+    }
+
+    if (email && email.trim()) {
       const existingEmail = await Customer.findOne({
         email,
         _id: { $ne: _id },
@@ -191,12 +184,12 @@ export async function PUT(req: NextRequest) {
     }
 
     const updateData: Partial<ICustomer> = {};
-    if (name) updateData.name = name;
-    if (address) updateData.address = address;
-    if (state) updateData.state = state;
-    if (country) updateData.country = country;
-    if (email !== "") updateData.email = email;
-    if (phone) updateData.phone = phone;
+    if (name) updateData.name = name.trim();
+    if (address) updateData.address = address.trim();
+    if (state) updateData.state = state.trim();
+    if (country) updateData.country = country.trim();
+    updateData.email = email !== undefined ? email.trim() : ""; // Handle empty email explicitly
+    if (phone) updateData.phone = phone.trim();
 
     const user = await Customer.findByIdAndUpdate(_id, updateData, {
       new: true,
@@ -205,7 +198,17 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: 'Customer not found' }, { status: 404 });
     }
 
-    return NextResponse.json(true, {
+    const userResponse: any = {
+      _id: user._id.toString(),
+      name: user.name,
+      address: user.address,
+      state: user.state,
+      country: user.country,
+      email: user.email || "",
+      phone: user.phone,
+    };
+
+    return NextResponse.json(userResponse, {
       status: 200,
       headers: { 'Access-Control-Allow-Origin': '*' },
     });

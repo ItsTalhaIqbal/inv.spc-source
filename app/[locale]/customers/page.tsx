@@ -95,20 +95,29 @@ const Page = () => {
   };
 
   useEffect(() => {
-    if (!isLogin()) {
-      router.push("/login");
-      return;
-    }
-    fetchUsers();
+    const checkAuth = async () => {
+      try {
+        const loggedIn = await isLogin();
+        if (!loggedIn) {
+          const isProduction = process.env.NODE_ENV === "production";
+          const loginPath = isProduction ? "/en/login" : "/login";
+          router.push(loginPath);
+          return;
+        }
+        await fetchUsers();
+      } catch (error) {
+        console.error("Authentication error:", error);
+        const isProduction = process.env.NODE_ENV === "production";
+        const loginPath = isProduction ? "/en/login" : "/login";
+        router.push(loginPath);
+      }
+    };
+    checkAuth();
   }, [router]);
 
   useEffect(() => {
-    const results = users.filter(
-      (user) =>
-        user.name.toLowerCase().includes(searchTerm.toLowerCase())
-      //  ||
-      //   (user.email && user.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      //   user.phone.toLowerCase().includes(searchTerm.toLowerCase())
+    const results = users.filter((user) =>
+      user.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
     setFilteredUsers(results);
   }, [searchTerm, users]);
@@ -157,15 +166,18 @@ const Page = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           _id: editId,
-          name: editName,
-          email: editEmail.trim() || "",
-          phone: editPhone,
-          address: editAddress,
-          state: editState,
-          country: editCountry,
+          name: editName.trim(),
+          email: editEmail.trim(),
+          phone: editPhone.trim(),
+          address: editAddress.trim(),
+          state: editState.trim(),
+          country: editCountry.trim(),
         }),
       });
-      if (!response.ok) throw new Error("Failed to update user");
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to update user");
+      }
       await fetchUsers();
       setEditDialogOpen(false);
       setError("");
@@ -211,7 +223,7 @@ const Page = () => {
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className={`pl-10 ${
-            theme === "dark" ? "bg-gray-800 text-white border-gray-700" : ""
+            theme === "dark" ? "bg-gray-800 text-white border-gray-700" : "bg-white text-black border-gray-300"
           }`}
         />
       </div>
@@ -221,7 +233,7 @@ const Page = () => {
       {loading ? (
         <div className="flex justify-center items-center h-64">
           <Loader2
-            className={`h-8 w-8 animate-spin ${theme === "dark" ? "text-gray-300" : ""}`}
+            className={`h-8 w-8 animate-spin ${theme === "dark" ? "text-gray-300" : "text-gray-500"}`}
           />
         </div>
       ) : filteredUsers.length === 0 ? (
@@ -231,13 +243,13 @@ const Page = () => {
           No customers available
         </div>
       ) : (
-        <Table className={theme === "dark" ? "bg-gray-800 text-white" : ""}>
+        <Table className={theme === "dark" ? "bg-gray-800 text-white" : "bg-white text-black"}>
           <TableHeader>
             <TableRow className={theme === "dark" ? "bg-gray-700" : "bg-gray-100"}>
-              <TableHead className={theme === "dark" ? "text-white" : ""}>Name</TableHead>
-              <TableHead className={theme === "dark" ? "text-white" : ""}>Email</TableHead>
-              <TableHead className={theme === "dark" ? "text-white" : ""}>Phone</TableHead>
-              <TableHead className={theme === "dark" ? "text-white" : ""}>Actions</TableHead>
+              <TableHead className={theme === "dark" ? "text-white" : "text-black"}>Name</TableHead>
+              <TableHead className={theme === "dark" ? "text-white" : "text-black"}>Email</TableHead>
+              <TableHead className={theme === "dark" ? "text-white" : "text-black"}>Phone</TableHead>
+              <TableHead className={theme === "dark" ? "text-white" : "text-black"}>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -255,21 +267,21 @@ const Page = () => {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className={theme === "dark" ? "bg-gray-600 text-white hover:bg-gray-500" : ""}
+                        className={theme === "dark" ? "bg-gray-600 text-white hover:bg-gray-500" : "bg-gray-200 text-black hover:bg-gray-300"}
                       >
                         <MoreHorizontal className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent className={theme === "dark" ? "bg-gray-800 text-white" : ""}>
+                    <DropdownMenuContent className={theme === "dark" ? "bg-gray-800 text-white" : "bg-white text-black"}>
                       <DropdownMenuItem
                         onClick={() => handleEdit(user)}
-                        className={theme === "dark" ? "hover:bg-gray-700" : ""}
+                        className={theme === "dark" ? "hover:bg-gray-700" : "hover:bg-gray-50"}
                       >
                         Edit
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         onClick={() => handleDelete(user)}
-                        className={theme === "dark" ? "hover:bg-gray-700" : ""}
+                        className={theme === "dark" ? "hover:bg-gray-700" : "hover:bg-gray-50"}
                       >
                         Delete
                       </DropdownMenuItem>
@@ -283,11 +295,10 @@ const Page = () => {
       )}
 
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className={theme === "dark" ? "bg-gray-800 text-white border-gray-700" : ""}>
+        <DialogContent className={theme === "dark" ? "bg-gray-800 text-white border-gray-700" : "bg-white text-black border-gray-200"}>
           <DialogHeader>
-            <DialogTitle>Edit User</DialogTitle>
+            <DialogTitle>Edit Customer</DialogTitle>
             {error && <div className="text-lg text-red-500">{error}</div>}
-
           </DialogHeader>
           <div className="space-y-4">
             <div>
@@ -295,8 +306,9 @@ const Page = () => {
               <Input
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
-                className={theme === "dark" ? "bg-gray-700 text-white border-gray-600" : ""}
+                className={theme === "dark" ? "bg-gray-700 text-white border-gray-600 focus:ring-blue-500" : "bg-white text-black border-gray-300 focus:ring-blue-500"}
                 disabled={editLoading}
+                placeholder="Enter name"
               />
             </div>
             <div>
@@ -305,7 +317,7 @@ const Page = () => {
                 type="email"
                 value={editEmail}
                 onChange={(e) => setEditEmail(e.target.value)}
-                className={theme === "dark" ? "bg-gray-700 text-white border-gray-600" : ""}
+                className={theme === "dark" ? "bg-gray-700 text-white border-gray-600 focus:ring-blue-500" : "bg-white text-black border-gray-300 focus:ring-blue-500"}
                 disabled={editLoading}
                 placeholder="Enter email or leave empty"
               />
@@ -315,8 +327,9 @@ const Page = () => {
               <Input
                 value={editPhone}
                 onChange={(e) => setEditPhone(e.target.value)}
-                className={theme === "dark" ? "bg-gray-700 text-white border-gray-600" : ""}
+                className={theme === "dark" ? "bg-gray-700 text-white border-gray-600 focus:ring-blue-500" : "bg-white text-black border-gray-300 focus:ring-blue-500"}
                 disabled={editLoading}
+                placeholder="Enter phone number"
               />
             </div>
             <div>
@@ -324,8 +337,9 @@ const Page = () => {
               <Input
                 value={editAddress}
                 onChange={(e) => setEditAddress(e.target.value)}
-                className={theme === "dark" ? "bg-gray-700 text-white border-gray-600" : ""}
+                className={theme === "dark" ? "bg-gray-700 text-white border-gray-600 focus:ring-blue-500" : "bg-white text-black border-gray-300 focus:ring-blue-500"}
                 disabled={editLoading}
+                placeholder="Enter address"
               />
             </div>
             <div>
@@ -333,8 +347,9 @@ const Page = () => {
               <Input
                 value={editState}
                 onChange={(e) => setEditState(e.target.value)}
-                className={theme === "dark" ? "bg-gray-700 text-white border-gray-600" : ""}
+                className={theme === "dark" ? "bg-gray-700 text-white border-gray-600 focus:ring-blue-500" : "bg-white text-black border-gray-300 focus:ring-blue-500"}
                 disabled={editLoading}
+                placeholder="Enter state"
               />
             </div>
             <div>
@@ -342,8 +357,9 @@ const Page = () => {
               <Input
                 value={editCountry}
                 onChange={(e) => setEditCountry(e.target.value)}
-                className={theme === "dark" ? "bg-gray-700 text-white border-gray-600" : ""}
+                className={theme === "dark" ? "bg-gray-700 text-white border-gray-600 focus:ring-blue-500" : "bg-white text-black border-gray-300 focus:ring-blue-500"}
                 disabled={editLoading}
+                placeholder="Enter country"
               />
             </div>
           </div>
@@ -354,14 +370,14 @@ const Page = () => {
                 setEditDialogOpen(false);
                 setError("");
               }}
-              className={theme === "dark" ? "bg-gray-700 text-white border-gray-600 hover:bg-gray-600" : ""}
+              className={theme === "dark" ? "bg-gray-700 text-white border-gray-600 hover:bg-gray-600" : "bg-gray-200 text-black border-gray-300 hover:bg-gray-300"}
               disabled={editLoading}
             >
               Cancel
             </Button>
             <Button
               onClick={confirmEdit}
-              className="bg-gray-700 text-white hover:bg-gray-600"
+              className={theme === "dark" ? "bg-gray-700 text-white hover:bg-gray-600" : "bg-gray-200 text-black hover:bg-gray-300"}
               disabled={editLoading}
             >
               {editLoading ? (
@@ -375,9 +391,9 @@ const Page = () => {
       </Dialog>
 
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent className={theme === "dark" ? "bg-gray-800 text-white border-gray-700" : ""}>
+        <DialogContent className={theme === "dark" ? "bg-gray-800 text-white border-gray-700" : "bg-white text-black border-gray-200"}>
           <DialogHeader>
-            <DialogTitle>Delete User</DialogTitle>
+            <DialogTitle>Delete Customer</DialogTitle>
           </DialogHeader>
           <p>Are you sure you want to delete {deleteUserName}?</p>
           {error && <div className="text-sm text-red-600 mb-2">{error}</div>}
@@ -388,7 +404,7 @@ const Page = () => {
                 setDeleteDialogOpen(false);
                 setError("");
               }}
-              className={theme === "dark" ? "bg-gray-700 text-white border-gray-600 hover:bg-gray-600" : ""}
+              className={theme === "dark" ? "bg-gray-700 text-white border-gray-600 hover:bg-gray-600" : "bg-gray-200 text-black border-gray-300 hover:bg-gray-300"}
               disabled={deleteLoading}
             >
               Cancel
@@ -396,7 +412,7 @@ const Page = () => {
             <Button
               variant="destructive"
               onClick={confirmDelete}
-              className={theme === "dark" ? "bg-red-600 text-white hover:bg-red-700" : ""}
+              className={theme === "dark" ? "bg-red-600 text-white hover:bg-red-700" : "bg-red-500 text-white hover:bg-red-600"}
               disabled={deleteLoading}
             >
               {deleteLoading ? (
