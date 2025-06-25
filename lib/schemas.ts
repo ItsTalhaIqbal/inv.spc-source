@@ -88,7 +88,7 @@ const ItemSchema = z.object({
   quantity: fieldValidators.quantity,
   unitPrice: fieldValidators.unitPrice,
   total: fieldValidators.stringToNumber,
-  unitType: fieldValidators.stringMin1, // Changed to require non-empty string
+  unitType:z.string().optional(), // Changed to require non-empty string
 });
 
 const PaymentInformationSchema = z.object({
