@@ -8,7 +8,7 @@ interface UserInput {
   address: string;
   state: string;
   country: string;
-  email?: string; // Optional
+  email?: string;
   phone: string;
 }
 
@@ -16,14 +16,13 @@ interface UserInput {
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function POST(req: NextRequest) {
-  let body: any = null;
   try {
     await connectToDatabase();
-    body = await req.json();
+    const body: UserInput = await req.json();
 
     const { name, address, state, country, email, phone } = body;
 
-    if (!name.trim() || !address.trim() || !state || !country || !phone.trim()) {
+    if (!name.trim() || !address.trim() || !state.trim() || !country.trim() || !phone.trim()) {
       return NextResponse.json(
         { error: 'Missing required fields', missing: { name, address, state, country, phone } },
         { status: 400 }
@@ -34,21 +33,24 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid email format' }, { status: 400 });
     }
 
-    if (email) {
+    if (email && email.trim()) {
       const existingEmail = await Customer.findOne({ email });
       if (existingEmail) {
         return NextResponse.json({ error: 'Email already exists' }, { status: 409 });
       }
     }
 
-    const createData = {
-      name,
-      address,
-      state,
-      country,
-      email: email && email.trim() || "",
-      phone,
+    const createData: Partial<ICustomer> = {
+      name: name.trim(),
+      address: address.trim(),
+      state: state.trim(),
+      country: country.trim(),
+      phone: phone.trim(),
     };
+
+    if (email && email.trim()) {
+      createData.email = email.trim();
+    }
 
     const userDoc = await Customer.create(createData);
 
@@ -70,7 +72,6 @@ export async function POST(req: NextRequest) {
     console.error('Error in POST /api/invoice/customer:', {
       message: error.message,
       stack: error.stack,
-      body,
       errorDetails: error.errors ? JSON.stringify(error.errors) : null,
     });
     return NextResponse.json(
@@ -183,15 +184,23 @@ export async function PUT(req: NextRequest) {
       }
     }
 
-    const updateData: Partial<ICustomer> = {};
-    if (name) updateData.name = name.trim();
-    if (address) updateData.address = address.trim();
-    if (state) updateData.state = state.trim();
-    if (country) updateData.country = country.trim();
-    updateData.email = email !== undefined ? email.trim() : ""; // Handle empty email explicitly
-    if (phone) updateData.phone = phone.trim();
+    const updateData: Partial<ICustomer> = {
+      name: name.trim(),
+      address: address.trim(),
+      state: state.trim(),
+      country: country.trim(),
+      phone: phone.trim(),
+    };
 
-    const user = await Customer.findByIdAndUpdate(_id, updateData, {
+    // Use $set for fields to update and $unset for email if null or undefined
+    const updateQuery: any = { $set: updateData };
+    if (email === null || email === undefined) {
+      updateQuery.$unset = { email: "" };
+    } else if (email && email.trim()) {
+      updateData.email = email.trim();
+    }
+
+    const user = await Customer.findByIdAndUpdate(_id, updateQuery, {
       new: true,
     }).select('-password');
     if (!user) {

@@ -1,14 +1,11 @@
 import mongoose, { Schema, Document } from 'mongoose';
-import { string } from 'zod';
-
-// Clear Mongoose cache (temporary for debugging)
 
 export interface ICustomer extends Document {
   name: string;
   address: string;
   state: string;
   country: string;
-  email?: string; // Optional
+  email?: string;
   phone: string;
 }
 
@@ -18,19 +15,16 @@ const CustomerSchema: Schema = new Schema(
     address: { type: String, required: true },
     state: { type: String, required: true },
     country: { type: String, default: 'UAE' },
-   email: { 
+    email: {
       type: String,
       required: false,
       unique: true,
-      sparse: true,  // This allows multiple null values
-      default: undefined // Better than null
+      sparse: true,
     },
     phone: { type: String, required: true },
   },
   { timestamps: true }
 );
-
-// Log schema definition
 
 const CustomerModel = mongoose.models.Customer || mongoose.model<ICustomer>('Customer', CustomerSchema);
 

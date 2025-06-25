@@ -47,6 +47,16 @@ interface User {
   bills: number[];
 }
 
+interface UserInput {
+  _id: string;
+  name: string;
+  address: string;
+  state: string;
+  country: string;
+  email?: string | null;
+  phone: string;
+}
+
 const Page = () => {
   const { theme } = useTheme();
   const [users, setUsers] = useState<User[]>([]);
@@ -161,18 +171,20 @@ const Page = () => {
       }
 
       setEditLoading(true);
+      const updateData: UserInput = {
+        _id: editId,
+        name: editName.trim(),
+        phone: editPhone.trim(),
+        address: editAddress.trim(),
+        state: editState.trim(),
+        country: editCountry.trim(),
+        email: editEmail.trim() || null,
+      };
+
       const response = await fetch("/api/invoice/customer", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          _id: editId,
-          name: editName.trim(),
-          email: editEmail.trim(),
-          phone: editPhone.trim(),
-          address: editAddress.trim(),
-          state: editState.trim(),
-          country: editCountry.trim(),
-        }),
+        body: JSON.stringify(updateData),
       });
       if (!response.ok) {
         const errorData = await response.json();
@@ -223,7 +235,9 @@ const Page = () => {
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className={`pl-10 ${
-            theme === "dark" ? "bg-gray-800 text-white border-gray-700" : "bg-white text-black border-gray-300"
+            theme === "dark"
+              ? "bg-gray-800 text-white border-gray-700"
+              : "bg-white text-black border-gray-300"
           }`}
         />
       </div>
@@ -233,23 +247,37 @@ const Page = () => {
       {loading ? (
         <div className="flex justify-center items-center h-64">
           <Loader2
-            className={`h-8 w-8 animate-spin ${theme === "dark" ? "text-gray-300" : "text-gray-500"}`}
+            className={`h-8 w-8 animate-spin ${
+              theme === "dark" ? "text-gray-300" : "text-gray-500"
+            }`}
           />
         </div>
       ) : filteredUsers.length === 0 ? (
         <div
-          className={`text-center text-lg ${theme === "dark" ? "text-gray-300" : "text-gray-500"} mt-8`}
+          className={`text-center text-lg ${
+            theme === "dark" ? "text-gray-300" : "text-gray-500"
+          } mt-8`}
         >
           No customers available
         </div>
       ) : (
-        <Table className={theme === "dark" ? "bg-gray-800 text-white" : "bg-white text-black"}>
+        <Table
+          className={theme === "dark" ? "bg-gray-800 text-white" : "bg-white text-black"}
+        >
           <TableHeader>
             <TableRow className={theme === "dark" ? "bg-gray-700" : "bg-gray-100"}>
-              <TableHead className={theme === "dark" ? "text-white" : "text-black"}>Name</TableHead>
-              <TableHead className={theme === "dark" ? "text-white" : "text-black"}>Email</TableHead>
-              <TableHead className={theme === "dark" ? "text-white" : "text-black"}>Phone</TableHead>
-              <TableHead className={theme === "dark" ? "text-white" : "text-black"}>Actions</TableHead>
+              <TableHead className={theme === "dark" ? "text-white" : "text-black"}>
+                Name
+              </TableHead>
+              <TableHead className={theme === "dark" ? "text-white" : "text-black"}>
+                Email
+              </TableHead>
+              <TableHead className={theme === "dark" ? "text-white" : "text-black"}>
+                Phone
+              </TableHead>
+              <TableHead className={theme === "dark" ? "text-white" : "text-black"}>
+                Actions
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -267,12 +295,18 @@ const Page = () => {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className={theme === "dark" ? "bg-gray-600 text-white hover:bg-gray-500" : "bg-gray-200 text-black hover:bg-gray-300"}
+                        className={
+                          theme === "dark"
+                            ? "bg-gray-600 text-white hover:bg-gray-500"
+                            : "bg-gray-200 text-black hover:bg-gray-300"
+                        }
                       >
                         <MoreHorizontal className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent className={theme === "dark" ? "bg-gray-800 text-white" : "bg-white text-black"}>
+                    <DropdownMenuContent
+                      className={theme === "dark" ? "bg-gray-800 text-white" : "bg-white text-black"}
+                    >
                       <DropdownMenuItem
                         onClick={() => handleEdit(user)}
                         className={theme === "dark" ? "hover:bg-gray-700" : "hover:bg-gray-50"}
@@ -295,7 +329,13 @@ const Page = () => {
       )}
 
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className={theme === "dark" ? "bg-gray-800 text-white border-gray-700" : "bg-white text-black border-gray-200"}>
+        <DialogContent
+          className={
+            theme === "dark"
+              ? "bg-gray-800 text-white border-gray-700"
+              : "bg-white text-black border-gray-200"
+          }
+        >
           <DialogHeader>
             <DialogTitle>Edit Customer</DialogTitle>
             {error && <div className="text-lg text-red-500">{error}</div>}
@@ -306,7 +346,11 @@ const Page = () => {
               <Input
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
-                className={theme === "dark" ? "bg-gray-700 text-white border-gray-600 focus:ring-blue-500" : "bg-white text-black border-gray-300 focus:ring-blue-500"}
+                className={
+                  theme === "dark"
+                    ? "bg-gray-700 text-white border-gray-600 focus:ring-blue-500"
+                    : "bg-white text-black border-gray-300 focus:ring-blue-500"
+                }
                 disabled={editLoading}
                 placeholder="Enter name"
               />
@@ -317,7 +361,11 @@ const Page = () => {
                 type="email"
                 value={editEmail}
                 onChange={(e) => setEditEmail(e.target.value)}
-                className={theme === "dark" ? "bg-gray-700 text-white border-gray-600 focus:ring-blue-500" : "bg-white text-black border-gray-300 focus:ring-blue-500"}
+                className={
+                  theme === "dark"
+                    ? "bg-gray-700 text-white border-gray-600 focus:ring-blue-500"
+                    : "bg-white text-black border-gray-300 focus:ring-blue-500"
+                }
                 disabled={editLoading}
                 placeholder="Enter email or leave empty"
               />
@@ -327,7 +375,11 @@ const Page = () => {
               <Input
                 value={editPhone}
                 onChange={(e) => setEditPhone(e.target.value)}
-                className={theme === "dark" ? "bg-gray-700 text-white border-gray-600 focus:ring-blue-500" : "bg-white text-black border-gray-300 focus:ring-blue-500"}
+                className={
+                  theme === "dark"
+                    ? "bg-gray-700 text-white border-gray-600 focus:ring-blue-500"
+                    : "bg-white text-black border-gray-300 focus:ring-blue-500"
+                }
                 disabled={editLoading}
                 placeholder="Enter phone number"
               />
@@ -337,7 +389,11 @@ const Page = () => {
               <Input
                 value={editAddress}
                 onChange={(e) => setEditAddress(e.target.value)}
-                className={theme === "dark" ? "bg-gray-700 text-white border-gray-600 focus:ring-blue-500" : "bg-white text-black border-gray-300 focus:ring-blue-500"}
+                className={
+                  theme === "dark"
+                    ? "bg-gray-700 text-white border-gray-600 focus:ring-blue-500"
+                    : "bg-white text-black border-gray-300 focus:ring-blue-500"
+                }
                 disabled={editLoading}
                 placeholder="Enter address"
               />
@@ -347,7 +403,11 @@ const Page = () => {
               <Input
                 value={editState}
                 onChange={(e) => setEditState(e.target.value)}
-                className={theme === "dark" ? "bg-gray-700 text-white border-gray-600 focus:ring-blue-500" : "bg-white text-black border-gray-300 focus:ring-blue-500"}
+                className={
+                  theme === "dark"
+                    ? "bg-gray-700 text-white border-gray-600 focus:ring-blue-500"
+                    : "bg-white text-black border-gray-300 focus:ring-blue-500"
+                }
                 disabled={editLoading}
                 placeholder="Enter state"
               />
@@ -357,7 +417,11 @@ const Page = () => {
               <Input
                 value={editCountry}
                 onChange={(e) => setEditCountry(e.target.value)}
-                className={theme === "dark" ? "bg-gray-700 text-white border-gray-600 focus:ring-blue-500" : "bg-white text-black border-gray-300 focus:ring-blue-500"}
+                className={
+                  theme === "dark"
+                    ? "bg-gray-700 text-white border-gray-600 focus:ring-blue-500"
+                    : "bg-white text-black border-gray-300 focus:ring-blue-500"
+                }
                 disabled={editLoading}
                 placeholder="Enter country"
               />
@@ -370,28 +434,38 @@ const Page = () => {
                 setEditDialogOpen(false);
                 setError("");
               }}
-              className={theme === "dark" ? "bg-gray-700 text-white border-gray-600 hover:bg-gray-600" : "bg-gray-200 text-black border-gray-300 hover:bg-gray-300"}
+              className={
+                theme === "dark"
+                  ? "bg-gray-700 text-white border-gray-600 hover:bg-gray-600"
+                  : "bg-gray-200 text-black border-gray-300 hover:bg-gray-300"
+              }
               disabled={editLoading}
             >
               Cancel
             </Button>
             <Button
               onClick={confirmEdit}
-              className={theme === "dark" ? "bg-gray-700 text-white hover:bg-gray-600" : "bg-gray-200 text-black hover:bg-gray-300"}
+              className={
+                theme === "dark"
+                  ? "bg-gray-700 text-white hover:bg-gray-600"
+                  : "bg-gray-200 text-black hover:bg-gray-300"
+              }
               disabled={editLoading}
             >
-              {editLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                "Save"
-              )}
+              {editLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent className={theme === "dark" ? "bg-gray-800 text-white border-gray-700" : "bg-white text-black border-gray-200"}>
+        <DialogContent
+          className={
+            theme === "dark"
+              ? "bg-gray-800 text-white border-gray-700"
+              : "bg-white text-black border-gray-200"
+          }
+        >
           <DialogHeader>
             <DialogTitle>Delete Customer</DialogTitle>
           </DialogHeader>
@@ -404,7 +478,11 @@ const Page = () => {
                 setDeleteDialogOpen(false);
                 setError("");
               }}
-              className={theme === "dark" ? "bg-gray-700 text-white border-gray-600 hover:bg-gray-600" : "bg-gray-200 text-black border-gray-300 hover:bg-gray-300"}
+              className={
+                theme === "dark"
+                  ? "bg-gray-700 text-white border-gray-600 hover:bg-gray-600"
+                  : "bg-gray-200 text-black border-gray-300 hover:bg-gray-300"
+              }
               disabled={deleteLoading}
             >
               Cancel
@@ -412,14 +490,14 @@ const Page = () => {
             <Button
               variant="destructive"
               onClick={confirmDelete}
-              className={theme === "dark" ? "bg-red-600 text-white hover:bg-red-700" : "bg-red-500 text-white hover:bg-red-600"}
+              className={
+                theme === "dark"
+                  ? "bg-red-600 text-white hover:bg-red-700"
+                  : "bg-red-500 text-white hover:bg-red-600"
+              }
               disabled={deleteLoading}
             >
-              {deleteLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                "Delete"
-              )}
+              {deleteLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Delete"}
             </Button>
           </DialogFooter>
         </DialogContent>
