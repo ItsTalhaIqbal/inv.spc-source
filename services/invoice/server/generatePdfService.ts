@@ -265,36 +265,24 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
     details.currency || "AED"
   );
 
-  const itemsHtml = (details.items || [])
-    .map((item: Item, index: number) => {
-      const quantity = item.quantity || 0;
-      const unitPrice = item.unitPrice || 0;
-      const total = quantity * unitPrice;
+const itemsHtml = (details.items || [])
+  .map((item: Item, index: number) => {
+    const quantity = item.quantity || 0;
+    const unitPrice = item.unitPrice || 0;
+    const total = quantity * unitPrice;
 
-      return `
-        <tr class="border">
-          <td class="w-[5%] text-center font-bold text-black text-base border">${
-            index + 1
-          }</td>
-          <td class="w-[40%] text-center text-black text-base border border-gray-500 px-2 py-1" style="word-wrap: break-word; white-space: normal;"><pre class="text-start"> ${
-            item.name?.trim() || ""
-          }</pre></td>
-          <td class="w-[10%] text-center text-black text-base border">${
-            item.unitType || ""
-          }</td>
-          <td class="w-[10%] text-center text-black text-base border">${
-            quantity ? quantity : ""
-          }</td>
-          <td class="w-[20%] text-center text-black text-base border">${
-            unitPrice ? unitPrice : ""
-          }</td>
-          <td class="w-[15%] text-center text-black text-base border">${
-            total ? total : ""
-          }</td>
-        </tr>
-      `;
-    })
-    .join("");
+    return `
+      <tr class="border">
+        <td class="w-[5%] text-center font-bold text-black text-base border">${index + 1}</td>
+        <td class="w-[40%] text-center text-black text-base border px-2 py-1">${item.name?.trim() || ""}</td>
+        <td class="w-[10%] text-center text-black text-base border">${item.unitType || ""}</td>
+        <td class="w-[10%] text-center text-black text-base border">${quantity ? quantity : ""}</td>
+        <td class="w-[20%] text-center text-black text-base border">${unitPrice ? unitPrice : ""}</td>
+        <td class="w-[15%] text-center text-black text-base border">${total ? total : ""}</td>
+      </tr>
+    `;
+  })
+  .join("");
 
   const logoPath = path.resolve(process.cwd(), "public/assets/img/image.jpg");
   let logoBase64 = "";
