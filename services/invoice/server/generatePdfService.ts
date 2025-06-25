@@ -274,7 +274,7 @@ const itemsHtml = (details.items || [])
     return `
       <tr class="border">
         <td class="w-[5%] text-center font-bold text-black text-base border">${index + 1}</td>
-        <td class="w-[40%] text-center text-black text-base border px-2 py-1">${item.name?.trim() || ""}</td>
+        <td class="w-[40%] text-center text-black text-base border px-2 py-1"><pre>${item.name?.trim() || ""}</pre></td>
         <td class="w-[10%] text-center text-black text-base border">${item.unitType || ""}</td>
         <td class="w-[10%] text-center text-black text-base border">${quantity ? quantity : ""}</td>
         <td class="w-[20%] text-center text-black text-base border">${unitPrice ? unitPrice : ""}</td>

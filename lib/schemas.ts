@@ -155,7 +155,7 @@ const InvoiceDetailsSchema = z.object({
     return true; // Pass if dueDate is not provided
   },
   {
-    message: "Due date must be on or after the invoice date.",
+    message: "Due date can't before the invoice date.",
     path: ["dueDate"],
   }
 );
