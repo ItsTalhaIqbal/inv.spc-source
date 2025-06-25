@@ -167,7 +167,7 @@ const Page: React.FC = () => {
             quantity: 0,
             unitPrice: 0,
             total: 0,
-            unitType: "pcs",
+            unitType: "",
           },
         ],
         taxDetails: { amount: 0, amountType: "percentage" },
@@ -448,17 +448,20 @@ const Page: React.FC = () => {
         language: invoice.details?.language || "en",
         items:
           invoice.details?.items?.length > 0
-            ? invoice.details.items.map((item) => ({
-                name: item.name || "",
-                description: item.description || "",
-                quantity: Number(item.quantity) || 0,
-                unitPrice: Number(item.unitPrice) || 0,
-                total: Number(item.total) || 0,
-                unitType:
-                  item.unitType && UNIT_TYPES.includes(item.unitType)
-                    ? item.unitType
-                    : "pcs",
-              }))
+            ? invoice.details.items.map((item) => {
+                const mappedItem = {
+                  name: item.name || "",
+                  description: item.description || "",
+                  quantity: Number(item.quantity) || 0,
+                  unitPrice: Number(item.unitPrice) || 0,
+                  total: Number(item.total) || 0,
+                  unitType:
+                    item.unitType && UNIT_TYPES.includes(item.unitType)
+                      ? item.unitType
+                      : "",
+                };
+                return mappedItem;
+              })
             : [
                 {
                   name: "",
@@ -466,7 +469,7 @@ const Page: React.FC = () => {
                   quantity: 0,
                   unitPrice: 0,
                   total: 0,
-                  unitType: "pcs",
+                  unitType: "",
                 },
               ],
         taxDetails: {
@@ -584,113 +587,109 @@ const Page: React.FC = () => {
     setErrorMessage("");
   };
 
- const onSubmitEdit = async (data: InvoiceType) => {
-  if (!editInvoice?._id) return;
+  const onSubmitEdit = async (data: InvoiceType) => {
+    if (!editInvoice?._id) return;
 
-  setIsSaving(true);
-  try {
-    setErrorMessage("");
-    const calculatedTotal =
-      subTotal +
-      (showTax ? taxAmount : 0) +
-      (showShipping ? shippingAmount : 0) -
-      (showDiscount ? discountAmount : 0);
-
-    // Validate due date is not before invoice date
-    const invoiceDate = new Date(data?.details?.invoiceDate as any);
-    const dueDate = data.details.dueDate ? new Date(data.details.dueDate) : null;
-
-    if (dueDate && dueDate < invoiceDate) {
-      setErrorMessage("Due date cannot be before the invoice date.");
-      setIsSaving(false);
-      return;
-    }
-
-    if (calculatedTotal < 0) {
-      setErrorMessage(
-        "Total amount cannot be negative. Please adjust the discount or other amounts."
-      );
-      setIsSaving(false);
-      return;
-    }
-    if (calculatedTotal === 0) {
-      setErrorMessage("Total amount cannot be zero (0).");
-      setIsSaving(false);
-      return;
-    }
-
-    // Cap discount to prevent negative total
-    if (showDiscount && discountDetails?.amount) {
-      const maxDiscount =
+    setIsSaving(true);
+    try {
+      setErrorMessage("");
+      const calculatedTotal =
         subTotal +
         (showTax ? taxAmount : 0) +
-        (showShipping ? shippingAmount : 0);
-      if (discountAmount > maxDiscount) {
-        setErrorMessage(`Discount cannot exceed ${maxDiscount.toFixed(2)}.`);
+        (showShipping ? shippingAmount : 0) -
+        (showDiscount ? discountAmount : 0);
+
+      // Validate due date is not before invoice date
+      const invoiceDate = new Date(data?.details?.invoiceDate as any);
+      const dueDate = data.details.dueDate ? new Date(data.details.dueDate) : null;
+
+      if (dueDate && dueDate < invoiceDate) {
+        setErrorMessage("Due date cannot be before the invoice date.");
         setIsSaving(false);
         return;
       }
-    }
 
-    const response = await fetch("/api/invoice/new_invoice", {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        ...data,
-        _id: editInvoice._id,
-        invoiceNumber: editInvoice.invoiceNumber,
-        details: {
-          ...data.details,
-          pdfTemplate: data.details.pdfTemplate || 2,
-          currency: data.details.currency || "AED",
-          language: data.details.language || "en",
-          taxDetails: showTax
-            ? data.details.taxDetails
-            : { amount: 0, amountType: "percentage" },
-          discountDetails: showDiscount
-            ? data.details.discountDetails
-            : { amount: 0, amountType: "amount" },
-          shippingDetails: showShipping
-            ? data.details.shippingDetails
-            : { cost: 0, costType: "amount" },
-          subTotal: Number(subTotal.toFixed(2)),
-          totalAmount: Number(calculatedTotal.toFixed(2)),
-          totalAmountInWords: numberToWords(calculatedTotal),
-          items: data.details.items.map((item) => ({
-            ...item,
-            unitType:
-              item.unitType && UNIT_TYPES.includes(item.unitType)
-                ? item.unitType
-                : "pcs",
-          })),
+      if (calculatedTotal < 0) {
+        setErrorMessage(
+          "Total amount cannot be negative. Please adjust the discount or other amounts."
+        );
+        setIsSaving(false);
+        return;
+      }
+      if (calculatedTotal === 0) {
+        setErrorMessage("Total amount cannot be zero (0).");
+        setIsSaving(false);
+        return;
+      }
+
+      // Cap discount to prevent negative total
+      if (showDiscount && discountDetails?.amount) {
+        const maxDiscount =
+          subTotal +
+          (showTax ? taxAmount : 0) +
+          (showShipping ? shippingAmount : 0);
+        if (discountAmount > maxDiscount) {
+          setErrorMessage(`Discount cannot exceed ${maxDiscount.toFixed(2)}.`);
+          setIsSaving(false);
+          return;
+        }
+      }
+
+      const response = await fetch("/api/invoice/new_invoice", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
         },
-      }),
-    });
+        body: JSON.stringify({
+          ...data,
+          _id: editInvoice._id,
+          invoiceNumber: editInvoice.invoiceNumber,
+          details: {
+            ...data.details,
+            pdfTemplate: data.details.pdfTemplate || 2,
+            currency: data.details.currency || "AED",
+            language: data.details.language || "en",
+            taxDetails: showTax
+              ? data.details.taxDetails
+              : { amount: 0, amountType: "percentage" },
+            discountDetails: showDiscount
+              ? data.details.discountDetails
+              : { amount: 0, amountType: "amount" },
+            shippingDetails: showShipping
+              ? data.details.shippingDetails
+              : { cost: 0, costType: "amount" },
+            subTotal: Number(subTotal.toFixed(2)),
+            totalAmount: Number(calculatedTotal.toFixed(2)),
+            totalAmountInWords: numberToWords(calculatedTotal),
+            items: data.details.items.map((item) => ({
+              ...item,
+            })),
+          },
+        }),
+      });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(
-        errorData.message || `HTTP error! Status: ${response.status}`
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(
+          errorData.message || `HTTP error! Status: ${response.status}`
+        );
+      }
+
+      setEditInvoiceDialog(false);
+      fetchInvoices();
+      setToast({
+        title: "Success",
+        description: "Invoice updated successfully",
+      });
+    } catch (error) {
+      console.error("Error updating invoice:", error);
+      setErrorMessage(
+        error instanceof Error ? error.message : "Failed to update invoice"
       );
+    } finally {
+      setIsSaving(false);
     }
-
-    setEditInvoiceDialog(false);
-    fetchInvoices();
-    setToast({
-      title: "Success",
-      description: "Invoice updated successfully",
-    });
-  } catch (error) {
-    console.error("Error updating invoice:", error);
-    setErrorMessage(
-      error instanceof Error ? error.message : "Failed to update invoice"
-    );
-  } finally {
-    setIsSaving(false);
-  }
-};
+  };
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -763,7 +762,7 @@ const Page: React.FC = () => {
             .includes(searchTerm.toLowerCase()) ||
           invoice.sender.name
             .toLowerCase()
-            .includes(searchTerm.toLowerCase()) 
+            .includes(searchTerm.toLowerCase())
       )
       .sort((a: Invoice, b: Invoice) => {
         const dateA = new Date(a.createdAt || 0).getTime();
@@ -776,7 +775,6 @@ const Page: React.FC = () => {
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
   };
-  console.log("firlds", fields.length);
 
   if (!authChecked) {
     return (
@@ -981,7 +979,7 @@ const Page: React.FC = () => {
                 <DialogTitle className="text-2xl font-bold">
                   {viewInvoice?.details.isInvoice == true
                     ? "Invoice #"
-                    : "Quoation #"}
+                    : "Quotation #"}
                   {viewInvoice?.details.invoiceNumber}
                 </DialogTitle>
                 <div className="flex items-center justify-between mb-4 gap-4">
@@ -1116,7 +1114,7 @@ const Page: React.FC = () => {
                           </p>
                           <p className="text-sm">
                             <strong>Unit Type:</strong>{" "}
-                            <span>{item.unitType || "pcs"}</span>
+                            <span>{item.unitType || "None"}</span>
                           </p>
                           <p className="text-sm">
                             <strong>Total:</strong>{" "}
@@ -1253,7 +1251,7 @@ const Page: React.FC = () => {
                 <DialogTitle className="text-lg font-bold">
                   {editInvoice?.details.isInvoice == true
                     ? "Invoice #"
-                    : "Quoation #"}
+                    : "Quotation #"}
                   {editInvoice?.details.invoiceNumber}
                 </DialogTitle>
               </DialogHeader>
@@ -1315,7 +1313,7 @@ const Page: React.FC = () => {
                     </div>
 
                     <div
-                      className={`space-y-4 p-4 rounded-lg  ${
+                      className={`space-y-4 p-4 rounded-lg ${
                         theme === "dark" ? "bg-gray-800/50" : "bg-gray-200"
                       }`}
                     >
@@ -1332,7 +1330,7 @@ const Page: React.FC = () => {
                               </label>
                               <textarea
                                 {...register(`details.items.${index}.name`)}
-                                className={`mt-1 w-full rounded-md border p-2 focus:ring-2 focus:ring-blue-500 resize-y h-[50px]  text-left ${
+                                className={`mt-1 w-full rounded-md border p-2 focus:ring-2 focus:ring-blue-500 resize-y h-[50px] text-left ${
                                   theme === "dark"
                                     ? "bg-gray-700 text-white border-gray-600"
                                     : "bg-white text-black border-gray-300"
@@ -1346,26 +1344,22 @@ const Page: React.FC = () => {
                                 Unit Type
                               </label>
                               <select
-                                {...register(
-                                  `details.items.${index}.unitType`,
-                                  {
-                                    validate: (value) =>
-                                      UNIT_TYPES.includes(value as any) ||
-                                      "Please select a valid unit type",
-                                  }
-                                )}
+                                {...register(`details.items.${index}.unitType`, {
+                                  validate: (value) =>
+                                    value === "" ||
+                                    UNIT_TYPES.includes(value as any) ||
+                                    "Please select a valid unit type",
+                                })}
                                 className={`mt-1 w-full rounded-md border p-2 focus:ring-2 focus:ring-blue-500 ${
                                   theme === "dark"
                                     ? "bg-gray-700 text-white border-gray-600"
                                     : "bg-white text-black border-gray-300"
                                 }`}
                               >
-                                <option value="" disabled>
-                                  Select Unit
-                                </option>
+                                <option value="">Select Unit</option>
                                 {UNIT_TYPES.map((unit) => (
                                   <option key={unit} value={unit}>
-                                    {unit}
+                                    {unit || "None"}
                                   </option>
                                 ))}
                               </select>
@@ -1377,13 +1371,10 @@ const Page: React.FC = () => {
                               <Input
                                 type="number"
                                 step="1"
-                                {...register(
-                                  `details.items.${index}.quantity`,
-                                  {
-                                    valueAsNumber: true,
-                                    min: 0,
-                                  }
-                                )}
+                                {...register(`details.items.${index}.quantity`, {
+                                  valueAsNumber: true,
+                                  min: 0,
+                                })}
                                 className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
                                   theme === "dark"
                                     ? "bg-gray-700 text-white border-gray-600"
@@ -1414,13 +1405,10 @@ const Page: React.FC = () => {
                               <Input
                                 type="number"
                                 step="0.01"
-                                {...register(
-                                  `details.items.${index}.unitPrice`,
-                                  {
-                                    valueAsNumber: true,
-                                    min: 0,
-                                  }
-                                )}
+                                {...register(`details.items.${index}.unitPrice`, {
+                                  valueAsNumber: true,
+                                  min: 0,
+                                })}
                                 className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
                                   theme === "dark"
                                     ? "bg-gray-700 text-white border-gray-600"
@@ -1451,9 +1439,7 @@ const Page: React.FC = () => {
                             size="sm"
                             onClick={() => {
                               if (items.length <= 1) {
-                                setErrorMessage(
-                                  "Atleast 1 item required."
-                                );
+                                setErrorMessage("At least 1 item required.");
                                 return;
                               }
                               remove(index);
@@ -1468,21 +1454,21 @@ const Page: React.FC = () => {
                         <Button
                           type="button"
                           variant="outline"
-                          onClick={() =>
-                          {setErrorMessage("")
+                          onClick={() => {
+                            setErrorMessage("");
                             append({
                               name: "",
                               description: "",
                               quantity: 0,
                               unitPrice: 0,
                               total: 0,
-                              unitType: "pcs",
-                            })
+                              unitType: "",
+                            });
                           }}
                           className={`${
                             theme === "dark"
                               ? "bg-gray-300 text-black hover:bg-gray-400 border-gray-200"
-                              : "bg-gray-400  hover:bg-gray-500 border-gray-200"
+                              : "bg-gray-400 hover:bg-gray-500 border-gray-200"
                           }`}
                         >
                           Add Item
@@ -1491,7 +1477,7 @@ const Page: React.FC = () => {
                     </div>
 
                     <div
-                      className={`space-y-4 p-4 rounded-lg  ${
+                      className={`space-y-4 p-4 rounded-lg ${
                         theme === "dark" ? "bg-gray-800/50" : "bg-gray-200"
                       }`}
                     >
@@ -1588,7 +1574,7 @@ const Page: React.FC = () => {
                     </div>
 
                     <div
-                      className={`space-y-4 p-4 rounded-lg  ${
+                      className={`space-y-4 p-4 rounded-lg ${
                         theme === "dark" ? "bg-gray-800/50" : "bg-gray-200"
                       }`}
                     >
@@ -1651,9 +1637,7 @@ const Page: React.FC = () => {
                               Amount Type
                             </label>
                             <select
-                              {...register(
-                                "details.discountDetails.amountType"
-                              )}
+                              {...register("details.discountDetails.amountType")}
                               className={`mt-1 w-full rounded-md border p-2 focus:ring-2 focus:ring-blue-500 ${
                                 theme === "dark"
                                   ? "bg-gray-700 text-white border-gray-600"
@@ -1677,7 +1661,7 @@ const Page: React.FC = () => {
                     </div>
 
                     <div
-                      className={`space-y-4 p-4 rounded-lg  ${
+                      className={`space-y-4 p-4 rounded-lg ${
                         theme === "dark" ? "bg-gray-800/50" : "bg-gray-200"
                       }`}
                     >
@@ -1761,7 +1745,7 @@ const Page: React.FC = () => {
                     </div>
 
                     <div
-                      className={`space-y-4 p-4 rounded-lg  ${
+                      className={`space-y-4 p-4 rounded-lg ${
                         theme === "dark" ? "bg-gray-800/50" : "bg-gray-200"
                       }`}
                     >
@@ -1799,7 +1783,7 @@ const Page: React.FC = () => {
                     </div>
 
                     <div
-                      className={`space-y-4 p-4 rounded-lg  ${
+                      className={`space-y-4 p-4 rounded-lg ${
                         theme === "dark" ? "bg-gray-800/50" : "bg-gray-200"
                       }`}
                     >
@@ -1837,7 +1821,7 @@ const Page: React.FC = () => {
                 </ScrollArea>
                 <DialogFooter className="border-t pt-4 flex justify-end gap-2">
                   {errorMessage && (
-                    <p className="text-red-500  font-semibold text-lg mt-2 text-left">
+                    <p className="text-red-500 font-semibold text-lg mt-2 text-left">
                       {errorMessage}
                     </p>
                   )}
