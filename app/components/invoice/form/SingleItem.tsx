@@ -158,7 +158,7 @@ const SingleItem = ({
             })}
             placeholder={"Rate"}
             className="w-full mt-2"
-            step="0.01"
+            step="1"
             min="0"
             defaultValue={0}
             onChange={(e) => {
