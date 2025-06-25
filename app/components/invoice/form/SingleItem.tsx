@@ -4,12 +4,11 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { BaseButton } from "@/app/components";
+import { BaseButton, FormTextarea } from "@/app/components";
 import { ChevronDown, ChevronUp, GripVertical, Trash2 } from "lucide-react";
 import { ItemType, NameType } from "@/types";
 import { UNIT_TYPES } from "@/lib/variables";
 import { useEffect, useState } from "react";
-import { useTheme } from "next-themes";
 
 type SingleItemProps = {
   name: NameType;
@@ -31,7 +30,6 @@ const SingleItem = ({
   removeField,
 }: SingleItemProps) => {
   const { control, setValue, register, formState: { errors } } = useFormContext();
-  const { theme } = useTheme();
 
   const itemName = useWatch({ name: `${name}[${index}].name`, control });
   const rate = useWatch({ name: `${name}[${index}].unitPrice`, control });
@@ -106,21 +104,14 @@ const SingleItem = ({
         </div>
       </div>
       <div className="flex flex-wrap justify-between gap-y-5 gap-x-2" key={index}>
-        <div className="w-full">
-          <Label>Item Name</Label>
-          <textarea
-            {...register(`${name}[${index}].name`)}
-            className={`mt-1 w-full rounded-md border p-2 focus:ring-2 focus:ring-blue-500 resize-y h-[50px] text-left ${
-              theme === "dark"
-                ? "bg-gray-700 text-white border-gray-600"
-                : "bg-white text-black border-gray-300"
-            }`}
-            placeholder="Item Name"
-            rows={2}
-          />
-        </div>
+        <FormTextarea
+          name={`${name}[${index}].name`}
+          label={"Item Name"}
+          placeholder={"Item Name"}
+          className="w-full min-h-[2rem] resize-y text-wrap font-sans leading-tight text-start"
+        />
         <div className="w-[8rem]">
-          <Label>Unit Type</Label>
+          <Label>{"Unit Type"}</Label>
           <select
             {...register(`${name}[${index}].unitType`, {
               validate: (value) => value !== "" || "Unit type is required"
@@ -129,7 +120,7 @@ const SingleItem = ({
             value={unitType}
             className={`flex h-10 mt-2 w-full rounded-md border ${unitTypeError ? 'border-red-500' : 'border-input'} bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50`}
           >
-            <option value="">Select Unit</option>
+            <option value="">{"Select Unit"}</option>
             {UNIT_TYPES.map((unit) => (
               <option key={unit} value={unit}>
                 {unit}
@@ -141,13 +132,13 @@ const SingleItem = ({
           )}
         </div>
         <div className="w-[8rem]">
-          <Label>Quantity</Label>
+          <Label>{"Quantity"}</Label>
           <Input
             type="number"
             {...register(`${name}[${index}].quantity`, {
               setValueAs: (value) => normalizeNumber(value),
             })}
-            placeholder="Quantity"
+            placeholder={"Quantity"}
             className="w-full mt-2"
             step="1"
             min="0"
@@ -159,13 +150,13 @@ const SingleItem = ({
           />
         </div>
         <div className="w-[8rem]">
-          <Label>Rate ({currency})</Label>
+          <Label>{"Rate"} ({currency})</Label>
           <Input
             type="number"
             {...register(`${name}[${index}].unitPrice`, {
               setValueAs: (value) => normalizeNumber(value),
             })}
-            placeholder="Rate"
+            placeholder={"Rate"}
             className="w-full mt-2"
             step="0.01"
             min="0"
@@ -181,7 +172,7 @@ const SingleItem = ({
         {fields.length > 1 && (
           <BaseButton variant="destructive" onClick={() => removeField(index)}>
             <Trash2 />
-            Remove Item
+            {"Remove Item"}
           </BaseButton>
         )}
       </div>

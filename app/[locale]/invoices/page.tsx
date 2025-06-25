@@ -584,103 +584,113 @@ const Page: React.FC = () => {
     setErrorMessage("");
   };
 
-  const onSubmitEdit = async (data: InvoiceType) => {
-    if (!editInvoice?._id) return;
+ const onSubmitEdit = async (data: InvoiceType) => {
+  if (!editInvoice?._id) return;
 
-    setIsSaving(true);
-    try {
-      setErrorMessage("");
-      const calculatedTotal =
+  setIsSaving(true);
+  try {
+    setErrorMessage("");
+    const calculatedTotal =
+      subTotal +
+      (showTax ? taxAmount : 0) +
+      (showShipping ? shippingAmount : 0) -
+      (showDiscount ? discountAmount : 0);
+
+    // Validate due date is not before invoice date
+    const invoiceDate = new Date(data?.details?.invoiceDate as any);
+    const dueDate = data.details.dueDate ? new Date(data.details.dueDate) : null;
+
+    if (dueDate && dueDate < invoiceDate) {
+      setErrorMessage("Due date cannot be before the invoice date.");
+      setIsSaving(false);
+      return;
+    }
+
+    if (calculatedTotal < 0) {
+      setErrorMessage(
+        "Total amount cannot be negative. Please adjust the discount or other amounts."
+      );
+      setIsSaving(false);
+      return;
+    }
+    if (calculatedTotal === 0) {
+      setErrorMessage("Total amount cannot be zero (0).");
+      setIsSaving(false);
+      return;
+    }
+
+    // Cap discount to prevent negative total
+    if (showDiscount && discountDetails?.amount) {
+      const maxDiscount =
         subTotal +
         (showTax ? taxAmount : 0) +
-        (showShipping ? shippingAmount : 0) -
-        (showDiscount ? discountAmount : 0);
-
-      if (calculatedTotal < 0) {
-        setErrorMessage(
-          "Total amount cannot be negative. Please adjust the discount or other amounts."
-        );
+        (showShipping ? shippingAmount : 0);
+      if (discountAmount > maxDiscount) {
+        setErrorMessage(`Discount cannot exceed ${maxDiscount.toFixed(2)}.`);
         setIsSaving(false);
         return;
       }
-      if (calculatedTotal == 0) {
-        setErrorMessage("Total amount cannot be zero (0).");
-        setIsSaving(false);
-        return;
-      }
-
-      // Cap discount to prevent negative total
-      if (showDiscount && discountDetails?.amount) {
-        const maxDiscount =
-          subTotal +
-          (showTax ? taxAmount : 0) +
-          (showShipping ? shippingAmount : 0);
-        if (discountAmount > maxDiscount) {
-          setErrorMessage(`Discount cannot exceed ${maxDiscount.toFixed(2)}.`);
-          setIsSaving(false);
-          return;
-        }
-      }
-
-      const response = await fetch("/api/invoice/new_invoice", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ...data,
-          _id: editInvoice._id,
-          invoiceNumber: editInvoice.invoiceNumber,
-          details: {
-            ...data.details,
-            pdfTemplate: data.details.pdfTemplate || 2,
-            currency: data.details.currency || "AED",
-            language: data.details.language || "en",
-            taxDetails: showTax
-              ? data.details.taxDetails
-              : { amount: 0, amountType: "percentage" },
-            discountDetails: showDiscount
-              ? data.details.discountDetails
-              : { amount: 0, amountType: "amount" },
-            shippingDetails: showShipping
-              ? data.details.shippingDetails
-              : { cost: 0, costType: "amount" },
-            subTotal: Number(subTotal.toFixed(2)),
-            totalAmount: Number(calculatedTotal.toFixed(2)),
-            totalAmountInWords: numberToWords(calculatedTotal),
-            items: data.details.items.map((item) => ({
-              ...item,
-              unitType:
-                item.unitType && UNIT_TYPES.includes(item.unitType)
-                  ? item.unitType
-                  : "pcs",
-            })),
-          },
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(
-          errorData.message || `HTTP error! Status: ${response.status}`
-        );
-      }
-
-      setEditInvoiceDialog(false);
-      fetchInvoices();
-      setToast({
-        title: "Success",
-        description: "Invoice updated successfully",
-      });
-    } catch (error) {
-      console.error("Error updating invoice:", error);
-      setErrorMessage(
-        error instanceof Error ? error.message : "Failed to update invoice"
-      );
-    } finally {
-      setIsSaving(false);
     }
-  };
+
+    const response = await fetch("/api/invoice/new_invoice", {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        ...data,
+        _id: editInvoice._id,
+        invoiceNumber: editInvoice.invoiceNumber,
+        details: {
+          ...data.details,
+          pdfTemplate: data.details.pdfTemplate || 2,
+          currency: data.details.currency || "AED",
+          language: data.details.language || "en",
+          taxDetails: showTax
+            ? data.details.taxDetails
+            : { amount: 0, amountType: "percentage" },
+          discountDetails: showDiscount
+            ? data.details.discountDetails
+            : { amount: 0, amountType: "amount" },
+          shippingDetails: showShipping
+            ? data.details.shippingDetails
+            : { cost: 0, costType: "amount" },
+          subTotal: Number(subTotal.toFixed(2)),
+          totalAmount: Number(calculatedTotal.toFixed(2)),
+          totalAmountInWords: numberToWords(calculatedTotal),
+          items: data.details.items.map((item) => ({
+            ...item,
+            unitType:
+              item.unitType && UNIT_TYPES.includes(item.unitType)
+                ? item.unitType
+                : "pcs",
+          })),
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(
+        errorData.message || `HTTP error! Status: ${response.status}`
+      );
+    }
+
+    setEditInvoiceDialog(false);
+    fetchInvoices();
+    setToast({
+      title: "Success",
+      description: "Invoice updated successfully",
+    });
+  } catch (error) {
+    console.error("Error updating invoice:", error);
+    setErrorMessage(
+      error instanceof Error ? error.message : "Failed to update invoice"
+    );
+  } finally {
+    setIsSaving(false);
+  }
+};
 
   useEffect(() => {
     const checkAuth = async () => {

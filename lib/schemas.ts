@@ -41,7 +41,7 @@ const fieldValidators = {
     .union([z.coerce.number(), z.literal("")])
     .transform((val) => (val === "" || val == null ? undefined : Number(val))),
   string: z.string(),
-  stringMin1: z.string().min(1, { message: "Unit is required." }),
+  stringMin1: z.string().min(1, { message: "Required field." }),
   stringToNumber: z.coerce.number(),
   stringToNumberWithMax: z.coerce.number().max(1000000),
   stringOptional: z.string().optional(),
