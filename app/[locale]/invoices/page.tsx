@@ -823,8 +823,7 @@ const Page: React.FC = () => {
         title: "Success",
         description: "Quotation converted to invoice successfully",
       });
-      setInvoices((prev) => [response.data, ...prev]); 
-      setFilteredInvoices((prev) => [response.data, ...prev]); 
+      fetchInvoices()
       setEditInvoice(undefined);
       setEditInvoiceDialog(false);
       setConvertConfirm(false);
@@ -864,7 +863,7 @@ const Page: React.FC = () => {
           <h1 className="text-2xl font-bold mb-4">Invoice Management</h1>
 
           <div className="flex items-center justify-between mb-4">
-            <div className="relative w-64">
+            <div className="relative w-64 gap-4">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
               <Input
                 placeholder="Search by invoice number or sender name..."
@@ -972,102 +971,101 @@ const Page: React.FC = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredInvoices.map((invoice) => (
-                  <TableRow
-                    key={invoice._id}
-                    className={
-                      theme === "dark"
-                        ? "hover:bg-gray-700"
-                        : "hover:bg-gray-50"
-                    }
-                  >
-                    <TableCell>
-                      {invoice.details?.isInvoice ? INVVariable : QUTVariable}
-                      {invoice.details.invoiceNumber}
-                    </TableCell>
-                    <TableCell>{invoice.receiver.name}</TableCell>
-                    <TableCell>{invoice.receiver.phone}</TableCell>
-
-                    <TableCell>
-                      {Number(invoice.details.totalAmount).toFixed(2)}
-                    </TableCell>
-                    <TableCell>
-                      {invoice?.createdAt
-                        ? new Date(invoice.createdAt).toLocaleDateString()
-                        : "N/A"}
-                    </TableCell>
-                    <TableCell className="flex gap-2">
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className={
-                                theme === "dark"
-                                  ? "bg-gray-600 text-white hover:bg-gray-500"
-                                  : "bg-gray-200 text-black hover:bg-gray-300"
-                              }
-                              onClick={() => {
-                                setViewInvoiceDialog(true);
-                                setViewInvoice(invoice);
-                              }}
-                            >
-                              <EyeIcon className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>View Invoice</p>
-                          </TooltipContent>
-                        </Tooltip>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className={
-                                theme === "dark"
-                                  ? "bg-gray-600 text-white hover:bg-gray-500"
-                                  : "bg-gray-200 text-black hover:bg-gray-300"
-                              }
-                              onClick={() => onGeneratePdf(invoice)}
-                              disabled={pdfLoadingStates[invoice._id!]}
-                            >
-                              {pdfLoadingStates[invoice._id!] ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <DownloadIcon className="h-4 w-4" />
-                              )}
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Download PDF</p>
-                          </TooltipContent>
-                        </Tooltip>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className={
-                                theme === "dark"
-                                  ? "bg-gray-600 text-white hover:bg-gray-500"
-                                  : "bg-gray-200 text-black hover:bg-gray-300"
-                              }
-                              onClick={() => onEditInvoice(invoice)}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Edit Invoice</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
+                  {currentInvoices.map((invoice) => (
+                    <TableRow
+                      key={invoice._id}
+                      className={
+                        theme === "dark"
+                          ? "hover:bg-gray-700"
+                          : "hover:bg-gray-50"
+                      }
+                    >
+                      <TableCell>
+                        {invoice.details?.isInvoice ? INVVariable : QUTVariable}
+                        {invoice.details.invoiceNumber}
+                      </TableCell>
+                      <TableCell>{invoice.receiver.name}</TableCell>
+                      <TableCell>{invoice.receiver.phone}</TableCell>
+                      <TableCell>
+                        {Number(invoice.details.totalAmount).toFixed(2)}
+                      </TableCell>
+                      <TableCell>
+                        {invoice?.createdAt
+                          ? new Date(invoice.createdAt).toLocaleDateString()
+                          : "N/A"}
+                      </TableCell>
+                      <TableCell className="flex gap-2">
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className={
+                                  theme === "dark"
+                                    ? "bg-gray-600 text-white hover:bg-gray-500"
+                                    : "bg-gray-200 text-black hover:bg-gray-300"
+                                }
+                                onClick={() => {
+                                  setViewInvoiceDialog(true);
+                                  setViewInvoice(invoice);
+                                }}
+                              >
+                                <EyeIcon className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>View Invoice</p>
+                            </TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className={
+                                  theme === "dark"
+                                    ? "bg-gray-600 text-white hover:bg-gray-500"
+                                    : "bg-gray-200 text-black hover:bg-gray-300"
+                                }
+                                onClick={() => onGeneratePdf(invoice)}
+                                disabled={pdfLoadingStates[invoice._id!]}
+                              >
+                                {pdfLoadingStates[invoice._id!] ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <DownloadIcon className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Download PDF</p>
+                            </TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className={
+                                  theme === "dark"
+                                    ? "bg-gray-600 text-white hover:bg-gray-500"
+                                    : "bg-gray-200 text-black hover:bg-gray-300"
+                                }
+                                onClick={() => onEditInvoice(invoice)}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Edit Invoice</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
               <Pagination
                 totalItems={filteredInvoices.length}
                 itemsPerPage={itemsPerPage}

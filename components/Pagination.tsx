@@ -17,21 +17,18 @@ const Pagination: React.FC<PaginationProps> = ({
 }) => {
   const { theme } = useTheme();
   const totalPages = Math.ceil(totalItems / itemsPerPage);
-  const maxVisiblePages = 5; // Number of page buttons to show at once
+  const maxVisiblePages = 5; 
 
-  // Calculate the range of pages to display
   const getPageNumbers = () => {
     const half = Math.floor(maxVisiblePages / 2);
     let start = Math.max(1, currentPage - half);
     let end = Math.min(totalPages, start + maxVisiblePages - 1);
 
-    // Adjust start if end is at the maximum
     start = Math.max(1, end - maxVisiblePages + 1);
 
     return Array.from({ length: end - start + 1 }, (_, i) => start + i);
   };
 
-  // Handle navigation to previous page
   const handlePrevious = () => {
     if (currentPage > 1) {
       onPageChange(currentPage - 1);
