@@ -1,0 +1,101 @@
+import React from "react";
+import { useTheme } from "next-themes";
+import { Button } from "@/components/ui/button";
+
+interface PaginationProps {
+  totalItems: number;
+  itemsPerPage: number;
+  currentPage: number;
+  onPageChange: (page: number) => void;
+}
+
+const Pagination: React.FC<PaginationProps> = ({
+  totalItems,
+  itemsPerPage,
+  currentPage,
+  onPageChange,
+}) => {
+  const { theme } = useTheme();
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const maxVisiblePages = 5; // Number of page buttons to show at once
+
+  // Calculate the range of pages to display
+  const getPageNumbers = () => {
+    const half = Math.floor(maxVisiblePages / 2);
+    let start = Math.max(1, currentPage - half);
+    let end = Math.min(totalPages, start + maxVisiblePages - 1);
+
+    // Adjust start if end is at the maximum
+    start = Math.max(1, end - maxVisiblePages + 1);
+
+    return Array.from({ length: end - start + 1 }, (_, i) => start + i);
+  };
+
+  // Handle navigation to previous page
+  const handlePrevious = () => {
+    if (currentPage > 1) {
+      onPageChange(currentPage - 1);
+    }
+  };
+
+  // Handle navigation to next page
+  const handleNext = () => {
+    if (currentPage < totalPages) {
+      onPageChange(currentPage + 1);
+    }
+  };
+
+  return (
+    <div className="flex items-center justify-center gap-2 mt-4">
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={handlePrevious}
+        disabled={currentPage === 1}
+        className={`${
+          theme === "dark"
+            ? "bg-gray-800 text-white border-gray-700 hover:bg-gray-700"
+            : "bg-white text-black border-gray-300 hover:bg-gray-100"
+        } disabled:opacity-50`}
+      >
+        Previous
+      </Button>
+
+      {getPageNumbers().map((page) => (
+        <Button
+          key={page}
+          variant={currentPage === page ? "default" : "outline"}
+          size="sm"
+          onClick={() => onPageChange(page)}
+          className={`${
+            currentPage === page
+              ? theme === "dark"
+                ? "bg-white text-black"
+                : "bg-black text-white"
+              : theme === "dark"
+              ? "bg-gray-800 text-white border-gray-700 hover:bg-gray-700"
+              : "bg-white text-black border-gray-300 hover:bg-gray-100"
+          }`}
+        >
+          {page}
+        </Button>
+      ))}
+
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={handleNext}
+        disabled={currentPage === totalPages}
+        className={`${
+          theme === "dark"
+            ? "bg-gray-800 text-white border-gray-700 hover:bg-gray-700"
+            : "bg-white text-black border-gray-300 hover:bg-gray-100"
+        } disabled:opacity-50`}
+      >
+        Next
+      </Button>
+    </div>
+  );
+};
+
+export default Pagination;

@@ -41,6 +41,14 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import axios from "axios";
+import Pagination from "@/components/Pagination";
 
 interface Invoice {
   _id?: string;
@@ -113,6 +121,7 @@ const Page: React.FC = () => {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [filteredInvoices, setFilteredInvoices] = useState<Invoice[]>([]);
   const [searchTerm, setSearchTerm] = useState<string>("");
+  const [filterType, setFilterType] = useState<string>("all"); // New state for dropdown filter
   const [viewInvoiceDialog, setViewInvoiceDialog] = useState<boolean>(false);
   const [editInvoiceDialog, setEditInvoiceDialog] = useState<boolean>(false);
   const [viewInvoice, setViewInvoice] = useState<Invoice | undefined>(
@@ -198,11 +207,17 @@ const Page: React.FC = () => {
   const [showTax, setShowTax] = useState<boolean>(false);
   const [showDiscount, setShowDiscount] = useState<boolean>(false);
   const [showShipping, setShowShipping] = useState<boolean>(false);
-
+  const [convertInvoice, setConvertInvoice] = useState<any>(null);
+  const [convertConfirm, setConvertConfirm] = useState<boolean>(false);
+ const [currentPage, setCurrentPage] = useState<number>(1); // New state for current page
+  const [itemsPerPage] = useState<number>(10); // Number of items per page
   const items = watch("details.items") || [];
   const taxDetails = watch("details.taxDetails");
   const discountDetails = watch("details.discountDetails");
   const shippingDetails = watch("details.shippingDetails");
+    const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentInvoices = filteredInvoices.slice(indexOfFirstItem, indexOfLastItem);
 
   const subTotal = Number(
     items
@@ -334,7 +349,7 @@ const Page: React.FC = () => {
   };
 
   useEffect(() => {
-    const subscription = watch((value, { name }) => {
+    const subscription = watch((value: any, { name }) => {
       if (
         name &&
         (name.startsWith("details.items") ||
@@ -347,8 +362,8 @@ const Page: React.FC = () => {
           (name.includes("quantity") || name.includes("unitPrice"))
         ) {
           const index = parseInt(name.split(".")[2]);
-          const quantity = value.details?.items?.[index]?.quantity || 0;
-          const unitPrice = value.details?.items?.[index]?.unitPrice || 0;
+          const quantity = value.details?.items?.[index].quantity || 0;
+          const unitPrice = value.details?.items?.[index].unitPrice || 0;
           const newTotal = Number((quantity * unitPrice).toFixed(2));
           const currentTotal = getValues(`details.items.${index}.total`);
           if (newTotal !== currentTotal) {
@@ -601,7 +616,9 @@ const Page: React.FC = () => {
 
       // Validate due date is not before invoice date
       const invoiceDate = new Date(data?.details?.invoiceDate as any);
-      const dueDate = data.details.dueDate ? new Date(data.details.dueDate) : null;
+      const dueDate = data.details.dueDate
+        ? new Date(data.details.dueDate)
+        : null;
 
       if (dueDate && dueDate < invoiceDate) {
         setErrorMessage("Due date cannot be before the invoice date.");
@@ -757,12 +774,18 @@ const Page: React.FC = () => {
     const results = invoices
       .filter(
         (invoice) =>
-          invoice.details.invoiceNumber
+          (invoice.details.invoiceNumber
             ?.toLowerCase()
             .includes(searchTerm.toLowerCase()) ||
-          invoice.sender.name
-            .toLowerCase()
-            .includes(searchTerm.toLowerCase())
+            invoice.sender.name
+              .toLowerCase()
+              .includes(searchTerm.toLowerCase()) ||
+            invoice.receiver.phone
+              .toLowerCase()
+              .includes(searchTerm.toLowerCase())) &&
+          (filterType === "all" ||
+            (filterType === "invoices" && invoice.details.isInvoice) ||
+            (filterType === "quotations" && !invoice.details.isInvoice))
       )
       .sort((a: Invoice, b: Invoice) => {
         const dateA = new Date(a.createdAt || 0).getTime();
@@ -770,12 +793,54 @@ const Page: React.FC = () => {
         return dateB - dateA;
       });
     setFilteredInvoices(results);
-  }, [searchTerm, invoices]);
+  }, [searchTerm, invoices, filterType]);
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
   };
+ const handleConvert = async () => {
+  setLoading(true);
+  try {
+    const res = await axios.get("/api/invoice/next-number");
+    const { data } = res;
+    const invNumber = data.invoiceNumber.replace(/^QUT-/, "");
 
+    const { _id, ...invoiceWithoutId } = convertInvoice || {};
+    const payload = {
+      ...invoiceWithoutId,
+      invoiceNumber: invNumber,
+      details: {
+        ...invoiceWithoutId?.details,
+        invoiceNumber: invNumber,
+        isInvoice: true,
+      },
+    };
+
+    const response = await axios.post("/api/invoice/new_invoice", payload);
+    console.log(response.data);
+    if (response.status === 200 || response.status === 201) {
+      setToast({
+        title: "Success",
+        description: "Quotation converted to invoice successfully",
+      });
+      setInvoices((prev) => [response.data, ...prev]); 
+      setFilteredInvoices((prev) => [response.data, ...prev]); 
+      setEditInvoice(undefined);
+      setEditInvoiceDialog(false);
+      setConvertConfirm(false);
+      fetchInvoices();
+    }
+  } catch (error) {
+    console.error("Error converting quotation to invoice:", error);
+    setToast({
+      title: "Error",
+      description:
+        error instanceof Error ? error.message : "Failed to convert quotation",
+    });
+  } finally {
+    setLoading(false);
+  }
+};
   if (!authChecked) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -792,7 +857,7 @@ const Page: React.FC = () => {
     <FormProvider {...methods}>
       <ToastProvider>
         <div
-          className={`p-6 max-w-6xl mx-auto ${
+          className={`p-6 w-6xl mt-4 mx-auto ${
             theme === "dark" ? "bg-gray-900 text-white" : "bg-white text-black"
           } transition-colors duration-300`}
         >
@@ -802,7 +867,7 @@ const Page: React.FC = () => {
             <div className="relative w-64">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
               <Input
-                placeholder="Search by invoice number..."
+                placeholder="Search by invoice number or sender name..."
                 value={searchTerm}
                 onChange={handleSearch}
                 className={`pl-10 ${
@@ -811,6 +876,37 @@ const Page: React.FC = () => {
                     : "bg-white text-black border-gray-300"
                 }`}
               />
+            </div>
+            <div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={`${
+                      theme === "light"
+                        ? "bg-gray-800 text-white border-gray-700"
+                        : "bg-white text-black border-gray-300"
+                    } w-[100px]`}
+                  >
+                    {filterType === "all"
+                      ? "All"
+                      : filterType === "invoices"
+                      ? "Invoices"
+                      : "Quotations"}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem onClick={() => setFilterType("all")}>
+                    All
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setFilterType("invoices")}>
+                    Invoices
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setFilterType("quotations")}>
+                    Quotations
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
 
@@ -828,7 +924,8 @@ const Page: React.FC = () => {
                 theme === "dark" ? "text-gray-300" : "text-gray-500"
               } mt-8`}
             >
-              No invoices available
+              No {filterType === "all" ? "invoices or quotations" : filterType}{" "}
+              available
             </div>
           ) : (
             <Table
@@ -851,6 +948,11 @@ const Page: React.FC = () => {
                     className={theme === "dark" ? "text-white" : "text-black"}
                   >
                     Customer
+                  </TableHead>
+                  <TableHead
+                    className={theme === "dark" ? "text-white" : "text-black"}
+                  >
+                    Phone
                   </TableHead>
                   <TableHead
                     className={theme === "dark" ? "text-white" : "text-black"}
@@ -884,6 +986,8 @@ const Page: React.FC = () => {
                       {invoice.details.invoiceNumber}
                     </TableCell>
                     <TableCell>{invoice.receiver.name}</TableCell>
+                    <TableCell>{invoice.receiver.phone}</TableCell>
+
                     <TableCell>
                       {Number(invoice.details.totalAmount).toFixed(2)}
                     </TableCell>
@@ -964,6 +1068,12 @@ const Page: React.FC = () => {
                   </TableRow>
                 ))}
               </TableBody>
+              <Pagination
+                totalItems={filteredInvoices.length}
+                itemsPerPage={itemsPerPage}
+                currentPage={currentPage}
+                onPageChange={setCurrentPage}
+              />
             </Table>
           )}
 
@@ -1248,11 +1358,21 @@ const Page: React.FC = () => {
               } sm:max-w-[800px] shadow-lg rounded-md`}
             >
               <DialogHeader className="border-b pb-4">
-                <DialogTitle className="text-lg font-bold">
+                <DialogTitle className="text-lg font-bold flex justify-between mt-6">
                   {editInvoice?.details.isInvoice == true
                     ? "Invoice #"
                     : "Quotation #"}
                   {editInvoice?.details.invoiceNumber}
+                  {editInvoice?.details.isInvoice == false ? (
+                    <Button
+                      onClick={() => {
+                        setConvertInvoice(editInvoice);
+                        setConvertConfirm(true);
+                      }}
+                    >
+                      Convert Into Invoice
+                    </Button>
+                  ) : null}
                 </DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit(onSubmitEdit)}>
@@ -1344,12 +1464,15 @@ const Page: React.FC = () => {
                                 Unit Type
                               </label>
                               <select
-                                {...register(`details.items.${index}.unitType`, {
-                                  validate: (value) =>
-                                    value === "" ||
-                                    UNIT_TYPES.includes(value as any) ||
-                                    "Please select a valid unit type",
-                                })}
+                                {...register(
+                                  `details.items.${index}.unitType`,
+                                  {
+                                    validate: (value) =>
+                                      value === "" ||
+                                      UNIT_TYPES.includes(value as any) ||
+                                      "Please select a valid unit type",
+                                  }
+                                )}
                                 className={`mt-1 w-full rounded-md border p-2 focus:ring-2 focus:ring-blue-500 ${
                                   theme === "dark"
                                     ? "bg-gray-700 text-white border-gray-600"
@@ -1371,10 +1494,13 @@ const Page: React.FC = () => {
                               <Input
                                 type="number"
                                 step="1"
-                                {...register(`details.items.${index}.quantity`, {
-                                  valueAsNumber: true,
-                                  min: 0,
-                                })}
+                                {...register(
+                                  `details.items.${index}.quantity`,
+                                  {
+                                    valueAsNumber: true,
+                                    min: 0,
+                                  }
+                                )}
                                 className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
                                   theme === "dark"
                                     ? "bg-gray-700 text-white border-gray-600"
@@ -1405,10 +1531,13 @@ const Page: React.FC = () => {
                               <Input
                                 type="number"
                                 step="0.01"
-                                {...register(`details.items.${index}.unitPrice`, {
-                                  valueAsNumber: true,
-                                  min: 0,
-                                })}
+                                {...register(
+                                  `details.items.${index}.unitPrice`,
+                                  {
+                                    valueAsNumber: true,
+                                    min: 0,
+                                  }
+                                )}
                                 className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
                                   theme === "dark"
                                     ? "bg-gray-700 text-white border-gray-600"
@@ -1637,7 +1766,9 @@ const Page: React.FC = () => {
                               Amount Type
                             </label>
                             <select
-                              {...register("details.discountDetails.amountType")}
+                              {...register(
+                                "details.discountDetails.amountType"
+                              )}
                               className={`mt-1 w-full rounded-md border p-2 focus:ring-2 focus:ring-blue-500 ${
                                 theme === "dark"
                                   ? "bg-gray-700 text-white border-gray-600"
@@ -1844,6 +1975,35 @@ const Page: React.FC = () => {
                   </Button>
                 </DialogFooter>
               </form>
+            </DialogContent>
+          </Dialog>
+          <Dialog open={convertConfirm} onOpenChange={setConvertConfirm}>
+            <DialogContent
+              className={`${
+                theme === "dark"
+                  ? "bg-gray-800 text-white border-gray-700"
+                  : "bg-white text-black border-gray-200"
+              } w-full shadow-lg rounded-lg`}
+            >
+              <DialogTitle></DialogTitle>
+              <div className=" mb-4 gap-4">
+                <div className="text-center">
+                  <h2>Are You Sure ?</h2>
+                  <p className="text-md text-gray-400">
+                    Want to convert this quoation into invoice?
+                  </p>
+                </div>
+              </div>
+              <div className="flex justify-center gap-4">
+                <Button className="bg-red-600 text-white">Cancel</Button>
+                <Button
+                  onClick={() => {
+                    handleConvert();
+                  }}
+                >
+                  {loading ? "Converting..." : "Convert"}
+                </Button>
+              </div>
             </DialogContent>
           </Dialog>
         </div>
