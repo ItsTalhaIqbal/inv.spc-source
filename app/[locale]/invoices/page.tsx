@@ -209,16 +209,26 @@ const Page: React.FC = () => {
   const [showShipping, setShowShipping] = useState<boolean>(false);
   const [convertInvoice, setConvertInvoice] = useState<any>(null);
   const [convertConfirm, setConvertConfirm] = useState<boolean>(false);
- const [currentPage, setCurrentPage] = useState<number>(1); // New state for current page
-  const [itemsPerPage] = useState<number>(10); // Number of items per page
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [itemsPerPage] = useState<number>(10);
   const items = watch("details.items") || [];
   const taxDetails = watch("details.taxDetails");
   const discountDetails = watch("details.discountDetails");
   const shippingDetails = watch("details.shippingDetails");
-    const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentInvoices = filteredInvoices.slice(indexOfFirstItem, indexOfLastItem);
-
+  const currentInvoices = filteredInvoices.slice(
+    indexOfFirstItem,
+    indexOfLastItem
+  );
+  useEffect(() => {
+    const totalPages = Math.ceil(filteredInvoices.length / itemsPerPage);
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(totalPages);
+    } else if (filteredInvoices.length === 0 || totalPages === 0) {
+      setCurrentPage(1);
+    }
+  }, [filteredInvoices, itemsPerPage, currentPage]);
   const subTotal = Number(
     items
       .reduce(
@@ -749,13 +759,55 @@ const Page: React.FC = () => {
       if (!Array.isArray(data)) {
         throw new Error("Invalid data format received");
       }
+
+      // Log raw data to inspect createdAt values
+      console.log(
+        "Raw API Data:",
+        data.map((inv: Invoice) => ({
+          _id: inv._id,
+          invoiceNumber: inv.details.invoiceNumber,
+          createdAt: inv.createdAt,
+        }))
+      );
+
+      // Sort invoices by createdAt in descending order (newest first)
       const sortedInvoices = data.sort((a: Invoice, b: Invoice) => {
-        const dateA = new Date(a.createdAt || 0).getTime();
-        const dateB = new Date(b.createdAt || 0).getTime();
-        return dateB - dateA;
+        const dateA = a.createdAt
+          ? new Date(a.createdAt).getTime()
+          : Number.MIN_SAFE_INTEGER;
+        const dateB = b.createdAt
+          ? new Date(b.createdAt).getTime()
+          : Number.MIN_SAFE_INTEGER;
+        console.log(
+          "Sorting:",
+          {
+            id: a._id,
+            createdAt: a.createdAt,
+            dateA,
+            invoiceNumber: a.details.invoiceNumber,
+          },
+          {
+            id: b._id,
+            createdAt: b.createdAt,
+            dateB,
+            invoiceNumber: b.details.invoiceNumber,
+          }
+        );
+        return dateA - dateB; 
       });
+
+      console.log(
+        "Sorted Invoices:",
+        sortedInvoices.map((inv: Invoice) => ({
+          _id: inv._id,
+          invoiceNumber: inv.invoiceNumber,
+          createdAt: inv.createdAt,
+        }))
+      );
+
       setInvoices(sortedInvoices);
       setFilteredInvoices(sortedInvoices);
+      setCurrentPage(1); // Reset to first page to show newest invoices
     } catch (error) {
       console.error("Error fetching invoices:", error);
       setToast({
@@ -798,48 +850,50 @@ const Page: React.FC = () => {
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
   };
- const handleConvert = async () => {
-  setLoading(true);
-  try {
-    const res = await axios.get("/api/invoice/next-number");
-    const { data } = res;
-    const invNumber = data.invoiceNumber.replace(/^QUT-/, "");
+  const handleConvert = async () => {
+    setLoading(true);
+    try {
+      const res = await axios.get("/api/invoice/next-number");
+      const { data } = res;
+      const invNumber = data.invoiceNumber.replace(/^QUT-/, "");
 
-    const { _id, ...invoiceWithoutId } = convertInvoice || {};
-    const payload = {
-      ...invoiceWithoutId,
-      invoiceNumber: invNumber,
-      details: {
-        ...invoiceWithoutId?.details,
+      const { _id, ...invoiceWithoutId } = convertInvoice || {};
+      const payload = {
+        ...invoiceWithoutId,
         invoiceNumber: invNumber,
-        isInvoice: true,
-      },
-    };
+        details: {
+          ...invoiceWithoutId?.details,
+          invoiceNumber: invNumber,
+          isInvoice: true,
+        },
+      };
 
-    const response = await axios.post("/api/invoice/new_invoice", payload);
-    console.log(response.data);
-    if (response.status === 200 || response.status === 201) {
+      const response = await axios.post("/api/invoice/new_invoice", payload);
+      console.log(response.data);
+      if (response.status === 200 || response.status === 201) {
+        setToast({
+          title: "Success",
+          description: "Quotation converted to invoice successfully",
+        });
+        setEditInvoice(undefined);
+        setEditInvoiceDialog(false);
+        setConvertConfirm(false);
+        setCurrentPage(1);
+        fetchInvoices();
+      }
+    } catch (error) {
+      console.error("Error converting quotation to invoice:", error);
       setToast({
-        title: "Success",
-        description: "Quotation converted to invoice successfully",
+        title: "Error",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Failed to convert quotation",
       });
-      fetchInvoices()
-      setEditInvoice(undefined);
-      setEditInvoiceDialog(false);
-      setConvertConfirm(false);
-      fetchInvoices();
+    } finally {
+      setLoading(false);
     }
-  } catch (error) {
-    console.error("Error converting quotation to invoice:", error);
-    setToast({
-      title: "Error",
-      description:
-        error instanceof Error ? error.message : "Failed to convert quotation",
-    });
-  } finally {
-    setLoading(false);
-  }
-};
+  };
   if (!authChecked) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -971,101 +1025,101 @@ const Page: React.FC = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                  {currentInvoices.map((invoice) => (
-                    <TableRow
-                      key={invoice._id}
-                      className={
-                        theme === "dark"
-                          ? "hover:bg-gray-700"
-                          : "hover:bg-gray-50"
-                      }
-                    >
-                      <TableCell>
-                        {invoice.details?.isInvoice ? INVVariable : QUTVariable}
-                        {invoice.details.invoiceNumber}
-                      </TableCell>
-                      <TableCell>{invoice.receiver.name}</TableCell>
-                      <TableCell>{invoice.receiver.phone}</TableCell>
-                      <TableCell>
-                        {Number(invoice.details.totalAmount).toFixed(2)}
-                      </TableCell>
-                      <TableCell>
-                        {invoice?.createdAt
-                          ? new Date(invoice.createdAt).toLocaleDateString()
-                          : "N/A"}
-                      </TableCell>
-                      <TableCell className="flex gap-2">
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className={
-                                  theme === "dark"
-                                    ? "bg-gray-600 text-white hover:bg-gray-500"
-                                    : "bg-gray-200 text-black hover:bg-gray-300"
-                                }
-                                onClick={() => {
-                                  setViewInvoiceDialog(true);
-                                  setViewInvoice(invoice);
-                                }}
-                              >
-                                <EyeIcon className="h-4 w-4" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>View Invoice</p>
-                            </TooltipContent>
-                          </Tooltip>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className={
-                                  theme === "dark"
-                                    ? "bg-gray-600 text-white hover:bg-gray-500"
-                                    : "bg-gray-200 text-black hover:bg-gray-300"
-                                }
-                                onClick={() => onGeneratePdf(invoice)}
-                                disabled={pdfLoadingStates[invoice._id!]}
-                              >
-                                {pdfLoadingStates[invoice._id!] ? (
-                                  <Loader2 className="h-4 w-4 animate-spin" />
-                                ) : (
-                                  <DownloadIcon className="h-4 w-4" />
-                                )}
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Download PDF</p>
-                            </TooltipContent>
-                          </Tooltip>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className={
-                                  theme === "dark"
-                                    ? "bg-gray-600 text-white hover:bg-gray-500"
-                                    : "bg-gray-200 text-black hover:bg-gray-300"
-                                }
-                                onClick={() => onEditInvoice(invoice)}
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Edit Invoice</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
+                {currentInvoices.map((invoice) => (
+                  <TableRow
+                    key={invoice._id}
+                    className={
+                      theme === "dark"
+                        ? "hover:bg-gray-700"
+                        : "hover:bg-gray-50"
+                    }
+                  >
+                    <TableCell>
+                      {invoice.details?.isInvoice ? INVVariable : QUTVariable}
+                      {invoice.details.invoiceNumber}
+                    </TableCell>
+                    <TableCell>{invoice.receiver.name}</TableCell>
+                    <TableCell>{invoice.receiver.phone}</TableCell>
+                    <TableCell>
+                      {Number(invoice.details.totalAmount).toFixed(2)}
+                    </TableCell>
+                    <TableCell>
+                      {invoice?.createdAt
+                        ? new Date(invoice.createdAt).toLocaleDateString()
+                        : "N/A"}
+                    </TableCell>
+                    <TableCell className="flex gap-2">
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className={
+                                theme === "dark"
+                                  ? "bg-gray-600 text-white hover:bg-gray-500"
+                                  : "bg-gray-200 text-black hover:bg-gray-300"
+                              }
+                              onClick={() => {
+                                setViewInvoiceDialog(true);
+                                setViewInvoice(invoice);
+                              }}
+                            >
+                              <EyeIcon className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>View Invoice</p>
+                          </TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className={
+                                theme === "dark"
+                                  ? "bg-gray-600 text-white hover:bg-gray-500"
+                                  : "bg-gray-200 text-black hover:bg-gray-300"
+                              }
+                              onClick={() => onGeneratePdf(invoice)}
+                              disabled={pdfLoadingStates[invoice._id!]}
+                            >
+                              {pdfLoadingStates[invoice._id!] ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <DownloadIcon className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Download PDF</p>
+                          </TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className={
+                                theme === "dark"
+                                  ? "bg-gray-600 text-white hover:bg-gray-500"
+                                  : "bg-gray-200 text-black hover:bg-gray-300"
+                              }
+                              onClick={() => onEditInvoice(invoice)}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Edit Invoice</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
               <Pagination
                 totalItems={filteredInvoices.length}
                 itemsPerPage={itemsPerPage}

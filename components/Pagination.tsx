@@ -17,15 +17,18 @@ const Pagination: React.FC<PaginationProps> = ({
 }) => {
   const { theme } = useTheme();
   const totalPages = Math.ceil(totalItems / itemsPerPage);
-  const maxVisiblePages = 5; 
+  const maxVisiblePages = 5;
+
+  // Return null if there's only one page or no items
+  if (totalPages <= 1 || totalItems === 0) {
+    return null;
+  }
 
   const getPageNumbers = () => {
     const half = Math.floor(maxVisiblePages / 2);
     let start = Math.max(1, currentPage - half);
     let end = Math.min(totalPages, start + maxVisiblePages - 1);
-
     start = Math.max(1, end - maxVisiblePages + 1);
-
     return Array.from({ length: end - start + 1 }, (_, i) => start + i);
   };
 
@@ -35,7 +38,6 @@ const Pagination: React.FC<PaginationProps> = ({
     }
   };
 
-  // Handle navigation to next page
   const handleNext = () => {
     if (currentPage < totalPages) {
       onPageChange(currentPage + 1);
