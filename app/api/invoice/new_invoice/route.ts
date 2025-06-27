@@ -177,8 +177,6 @@ export async function POST(req: NextRequest) {
     await connectToDatabase();
     const body: InvoiceInput = await req.json();
 
-    console.log(body)
-
     // Validate required fields
     if (!body.invoiceNumber) {
       return NextResponse.json(
