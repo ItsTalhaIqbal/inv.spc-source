@@ -2009,7 +2009,7 @@ useEffect(() => {
                 </div>
               </div>
               <div className="flex justify-center gap-4">
-                <Button className="bg-red-600 text-white">Cancel</Button>
+                <Button className="bg-red-600 hover:bg-red-500 text-white"   onClick={()=>setConvertConfirm(false)}>Cancel</Button>
                 <Button
                   onClick={() => {
                     handleConvert();
