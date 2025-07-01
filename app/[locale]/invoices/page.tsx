@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useTheme } from "next-themes";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -49,6 +49,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import axios from "axios";
 import Pagination from "@/components/Pagination";
+import { DateRangePicker } from "@/components/DateFilter";
 
 interface Invoice {
   _id?: string;
@@ -116,31 +117,32 @@ interface Invoice {
   createdAt?: string | Date;
 }
 
+interface DateRange {
+  from: Date;
+  to?: Date;
+}
+
 const Page: React.FC = () => {
   const { theme } = useTheme();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [filteredInvoices, setFilteredInvoices] = useState<Invoice[]>([]);
   const [searchTerm, setSearchTerm] = useState<string>("");
-  const [filterType, setFilterType] = useState<string>("all"); // New state for dropdown filter
+  const [filterType, setFilterType] = useState<string>("all");
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const [viewInvoiceDialog, setViewInvoiceDialog] = useState<boolean>(false);
   const [editInvoiceDialog, setEditInvoiceDialog] = useState<boolean>(false);
-  const [viewInvoice, setViewInvoice] = useState<Invoice | undefined>(
-    undefined
-  );
-  const [editInvoice, setEditInvoice] = useState<Invoice | undefined>(
-    undefined
-  );
+  const [viewInvoice, setViewInvoice] = useState<Invoice | undefined>(undefined);
+  const [editInvoice, setEditInvoice] = useState<Invoice | undefined>(undefined);
   const [loading, setLoading] = useState<boolean>(true);
   const [authChecked, setAuthChecked] = useState<boolean>(false);
-  const [pdfLoadingStates, setPdfLoadingStates] = useState<{
-    [key: string]: boolean;
-  }>({});
+  const [pdfLoadingStates, setPdfLoadingStates] = useState<{ [key: string]: boolean }>({});
   const [errorMessage, setErrorMessage] = useState<string>("");
-  const [toast, setToast] = useState<{
-    title: string;
-    description: string;
-  } | null>(null);
+  const [toast, setToast] = useState<{ title: string; description: string } | null>(null);
   const [isSaving, setIsSaving] = useState<boolean>(false);
+  const [convertInvoice, setConvertInvoice] = useState<any>(null);
+  const [convertConfirm, setConvertConfirm] = useState<boolean>(false);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [itemsPerPage] = useState<number>(10);
   const router = useRouter();
 
   const methods = useForm<InvoiceType>({
@@ -197,8 +199,7 @@ const Page: React.FC = () => {
     },
   });
 
-  const { reset, handleSubmit, register, control, watch, setValue, getValues } =
-    methods;
+  const { reset, handleSubmit, register, control, watch, setValue, getValues } = methods;
   const { fields, append, remove } = useFieldArray({
     control,
     name: "details.items",
@@ -207,20 +208,14 @@ const Page: React.FC = () => {
   const [showTax, setShowTax] = useState<boolean>(false);
   const [showDiscount, setShowDiscount] = useState<boolean>(false);
   const [showShipping, setShowShipping] = useState<boolean>(false);
-  const [convertInvoice, setConvertInvoice] = useState<any>(null);
-  const [convertConfirm, setConvertConfirm] = useState<boolean>(false);
-  const [currentPage, setCurrentPage] = useState<number>(1);
-  const [itemsPerPage] = useState<number>(10);
   const items = watch("details.items") || [];
   const taxDetails = watch("details.taxDetails");
   const discountDetails = watch("details.discountDetails");
   const shippingDetails = watch("details.shippingDetails");
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentInvoices = filteredInvoices.slice(
-    indexOfFirstItem,
-    indexOfLastItem
-  );
+  const currentInvoices = filteredInvoices.slice(indexOfFirstItem, indexOfLastItem);
+
   useEffect(() => {
     const totalPages = Math.ceil(filteredInvoices.length / itemsPerPage);
     if (currentPage > totalPages && totalPages > 0) {
@@ -229,6 +224,7 @@ const Page: React.FC = () => {
       setCurrentPage(1);
     }
   }, [filteredInvoices, itemsPerPage, currentPage]);
+
   const subTotal = Number(
     items
       .reduce(
@@ -473,20 +469,17 @@ const Page: React.FC = () => {
         language: invoice.details?.language || "en",
         items:
           invoice.details?.items?.length > 0
-            ? invoice.details.items.map((item) => {
-                const mappedItem = {
-                  name: item.name || "",
-                  description: item.description || "",
-                  quantity: Number(item.quantity) || 0,
-                  unitPrice: Number(item.unitPrice) || 0,
-                  total: Number(item.total) || 0,
-                  unitType:
-                    item.unitType && UNIT_TYPES.includes(item.unitType)
-                      ? item.unitType
-                      : "",
-                };
-                return mappedItem;
-              })
+            ? invoice.details.items.map((item) => ({
+                name: item.name || "",
+                description: item.description || "",
+                quantity: Number(item.quantity) || 0,
+                unitPrice: Number(item.unitPrice) || 0,
+                total: Number(item.total) || 0,
+                unitType:
+                  item.unitType && UNIT_TYPES.includes(item.unitType)
+                    ? item.unitType
+                    : "",
+              }))
             : [
                 {
                   name: "",
@@ -624,7 +617,6 @@ const Page: React.FC = () => {
         (showShipping ? shippingAmount : 0) -
         (showDiscount ? discountAmount : 0);
 
-      // Validate due date is not before invoice date
       const invoiceDate = new Date(data?.details?.invoiceDate as any);
       const dueDate = data.details.dueDate
         ? new Date(data.details.dueDate)
@@ -652,21 +644,19 @@ const Page: React.FC = () => {
         (item: any) => !item.name.trim()
       );
       if (hasEmptyName) {
-        setErrorMessage(" Item name is required.");
+        setErrorMessage("Item name is required.");
+        setIsSaving(false);
         return;
       }
 
-      // Cap discount to prevent negative total
-      if (showDiscount && discountDetails?.amount) {
-        const maxDiscount =
-          subTotal +
-          (showTax ? taxAmount : 0) +
-          (showShipping ? shippingAmount : 0);
-        if (discountAmount > maxDiscount) {
-          setErrorMessage(`Discount cannot exceed ${maxDiscount.toFixed(2)}.`);
-          setIsSaving(false);
-          return;
-        }
+      const maxDiscount =
+        subTotal +
+        (showTax ? taxAmount : 0) +
+        (showShipping ? shippingAmount : 0);
+      if (showDiscount && discountDetails?.amount && discountAmount > maxDiscount) {
+        setErrorMessage(`Discount cannot exceed ${maxDiscount.toFixed(2)}.`);
+        setIsSaving(false);
+        return;
       }
 
       const response = await fetch("/api/invoice/new_invoice", {
@@ -768,9 +758,6 @@ const Page: React.FC = () => {
         throw new Error("Invalid data format received");
       }
 
-      // Log raw data to inspect createdAt values
-
-      // Sort invoices by createdAt in descending order (newest first)
       const sortedInvoices = data.sort((a: Invoice, b: Invoice) => {
         const dateA = a.createdAt
           ? new Date(a.createdAt).getTime()
@@ -778,12 +765,12 @@ const Page: React.FC = () => {
         const dateB = b.createdAt
           ? new Date(b.createdAt).getTime()
           : Number.MIN_SAFE_INTEGER;
-        return dateB - dateA; // Descending order: newest first
+        return dateB - dateA;
       });
 
       setInvoices(sortedInvoices);
       setFilteredInvoices(sortedInvoices);
-      setCurrentPage(1); // Reset to first page to show newest invoices
+      setCurrentPage(1);
     } catch (error) {
       console.error("Error fetching invoices:", error);
       setToast({
@@ -798,34 +785,77 @@ const Page: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    const results = invoices
-      .filter(
-        (invoice) =>
-          (invoice.details.invoiceNumber
-            ?.toLowerCase()
-            .includes(searchTerm.toLowerCase()) ||
-            invoice.receiver.name
-              .toLowerCase()
-              .includes(searchTerm.toLowerCase()) ||
-            invoice.receiver.phone
-              .toLowerCase()
-              .includes(searchTerm.toLowerCase())) &&
-          (filterType === "all" ||
-            (filterType === "invoices" && invoice.details.isInvoice) ||
-            (filterType === "quotations" && !invoice.details.isInvoice))
-      )
-      .sort((a: Invoice, b: Invoice) => {
-        const dateA = new Date(a.createdAt || 0).getTime();
-        const dateB = new Date(b.createdAt || 0).getTime();
-        return dateB - dateA;
-      });
-    setFilteredInvoices(results);
-  }, [searchTerm, invoices, filterType]);
+
+ const filterInvoices = useCallback(() => {
+    return invoices.filter((invoice) => {
+      // Search filter
+      const matchesSearch =
+        invoice.details.invoiceNumber
+          ?.toLowerCase()
+          .includes(searchTerm.toLowerCase()) ||
+        invoice.receiver.name
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase()) ||
+        invoice.receiver.phone
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase());
+
+      // Type filter
+      const matchesType =
+        filterType === "all" ||
+        (filterType === "invoices" && invoice.details.isInvoice) ||
+        (filterType === "quotations" && !invoice.details.isInvoice);
+
+      // Date filter - completely rewritten
+      let matchesDate = true;
+      if (dateRange?.from) {
+        try {
+          // Safely parse invoice date
+          const invoiceDate = invoice.createdAt 
+            ? new Date(invoice.createdAt)
+            : null;
+
+          if (!invoiceDate || isNaN(invoiceDate.getTime())) {
+            console.warn(`Invalid date for invoice ${invoice._id}`, invoice.createdAt);
+            return false;
+          }
+
+          // Create comparison dates (normalized to start/end of day)
+          const fromDate = new Date(dateRange.from);
+          fromDate.setHours(0, 0, 0, 0);
+          
+          const toDate = dateRange.to 
+            ? new Date(dateRange.to)
+            : new Date();
+          toDate.setHours(23, 59, 59, 999);
+
+          matchesDate = invoiceDate >= fromDate && invoiceDate <= toDate;
+        } catch (error) {
+          console.error("Date parsing error:", error);
+          return false;
+        }
+      }
+
+      return matchesSearch && matchesType && matchesDate;
+    });
+  }, [invoices, searchTerm, filterType, dateRange]);
+
+useEffect(() => {
+    const filtered = filterInvoices();
+    setFilteredInvoices(filtered);
+    
+    // Reset to first page if results change
+    setCurrentPage(1);
+  }, [filterInvoices]);
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
   };
+const handleDateRangeChange = (values: { range: DateRange }) => {
+    console.log("New date range selected:", values.range);
+    setDateRange(values.range);
+  };
+
   const handleConvert = async () => {
     setLoading(true);
     try {
@@ -846,7 +876,7 @@ const Page: React.FC = () => {
           invoiceNumber: invNumber,
           isInvoice: true,
         },
-        createdAt: new Date().toISOString(), // Explicitly set new timestamp
+        createdAt: new Date().toISOString(),
       };
 
       const response = await axios.post("/api/invoice/new_invoice", payload);
@@ -859,8 +889,8 @@ const Page: React.FC = () => {
         setEditInvoice(undefined);
         setEditInvoiceDialog(false);
         setConvertConfirm(false);
-        setCurrentPage(1); // Reset to first page to show new invoice
-        await fetchInvoices(); // Refresh invoices
+        setCurrentPage(1);
+        await fetchInvoices();
       }
     } catch (error) {
       console.error("Error converting quotation to invoice:", error);
@@ -875,6 +905,7 @@ const Page: React.FC = () => {
       setLoading(false);
     }
   };
+
   if (!authChecked) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -891,14 +922,14 @@ const Page: React.FC = () => {
     <FormProvider {...methods}>
       <ToastProvider>
         <div
-          className={`p-6 w-6xl mt-4 mx-[250px]  min-h-[850px] h-auto ${
+          className={`p-6 w-6xl mt-4 mx-[250px] min-h-[850px] h-auto ${
             theme === "dark" ? "bg-gray-900 text-white" : "bg-white text-black"
           } transition-colors duration-300`}
         >
           <h1 className="text-2xl font-bold mb-4">Invoice Management</h1>
 
           <div className="flex items-center justify-between mb-4">
-            <div className="relative w-64 gap-4  ">
+            <div className="relative w-64 gap-4">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
               <Input
                 placeholder="Search by invoice number or sender name..."
@@ -911,16 +942,25 @@ const Page: React.FC = () => {
                 }`}
               />
             </div>
-            <div>
+            <div className="flex items-center gap-4">
+             <DateRangePicker
+                onUpdate={handleDateRangeChange}
+                initialDateFrom={new Date(new Date().setDate(new Date().getDate() - 30))}
+                initialDateTo={new Date()}
+                showCompare={false}
+                align="end"
+                locale="en-US"
+              />
+              
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="outline"
                     className={`${
-                      theme === "light"
+                      theme === "dark"
                         ? "bg-gray-800 text-white border-gray-700"
                         : "bg-white text-black border-gray-300"
-                    } w-[100px] ml-4`}
+                    } w-[100px]`}
                   >
                     {filterType === "all"
                       ? "All"
@@ -1304,10 +1344,13 @@ const Page: React.FC = () => {
                         <strong>Shipping Cost:</strong>{" "}
                         <span>
                           {viewInvoice.details.shippingDetails?.cost
-                            ? Number(
-                                viewInvoice.details.shippingDetails.cost
-                              ).toFixed(2)
-                            : "0.00"}
+                            ? " border-gray-200 p-3 rounded-md my-2 bg-white"
+                            : "border border-gray-600 p-3 rounded-md my-2 bg-gray-800"
+                          }
+                        
+                          {Number(
+                            viewInvoice?.details?.shippingDetails?.cost
+                          ).toFixed(2)}
                         </span>
                       </p>
                     </div>
@@ -1414,8 +1457,8 @@ const Page: React.FC = () => {
                   <div className="space-y-6">
                     <div
                       className={`space-y-4 p-4 rounded-lg ${
-                        theme === "dark" ? "bg-gray-800/200" : "bg-gray-200"
-                      } `}
+                        theme === "dark" ? "bg-gray-800/50" : "bg-gray-200"
+                      }`}
                     >
                       <h3 className="text-lg font-semibold">Invoice Details</h3>
                       <div className="grid grid-cols-2 gap-4">
@@ -1463,6 +1506,98 @@ const Page: React.FC = () => {
                             }`}
                           />
                         </div>
+                        <div>
+                          <label className="text-sm font-medium">Currency</label>
+                          <select
+                            {...register("details.currency")}
+                            className={`mt-1 w-full rounded-md border p-2 focus:ring-2 focus:ring-blue-500 ${
+                              theme === "dark"
+                                ? "bg-gray-700 text-white border-gray-600"
+                                : "bg-white text-black border-gray-300"
+                            }`}
+                          >
+                            <option value="AED">AED</option>
+                            <option value="USD">USD</option>
+                            <option value="EUR">EUR</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div
+                      className={`space-y-4 p-4 rounded-lg ${
+                        theme === "dark" ? "bg-gray-800/50" : "bg-gray-200"
+                      }`}
+                    >
+                      <h3 className="text-lg font-semibold">Receiver Information</h3>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-sm font-medium">Name</label>
+                          <Input
+                            {...register("receiver.name")}
+                            className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
+                              theme === "dark"
+                                ? "bg-gray-700 text-white border-gray-600"
+                                : "bg-white text-black border-gray-300"
+                            }`}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium">Email</label>
+                          <Input
+                            type="email"
+                            {...register("receiver.email")}
+                            className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
+                              theme === "dark"
+                                ? "bg-gray-700 text-white border-gray-600"
+                                : "bg-white text-black border-gray-300"
+                            }`}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium">Phone</label>
+                          <Input
+                            {...register("receiver.phone")}
+                            className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
+                              theme === "dark"
+                                ? "bg-gray-700 text-white border-gray-600"
+                                : "bg-white text-black border-gray-300"
+                            }`}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium">Address</label>
+                          <Input
+                            {...register("receiver.address")}
+                            className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
+                              theme === "dark"
+                                ? "bg-gray-700 text-white border-gray-600"
+                                : "bg-white text-black border-gray-300"
+                            }`}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium">State</label>
+                          <Input
+                            {...register("receiver.state")}
+                            className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
+                              theme === "dark"
+                                ? "bg-gray-700 text-white border-gray-600"
+                                : "bg-white text-black border-gray-300"
+                            }`}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium">Country</label>
+                          <Input
+                            {...register("receiver.country")}
+                            className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
+                              theme === "dark"
+                                ? "bg-gray-700 text-white border-gray-600"
+                                : "bg-white text-black border-gray-300"
+                            }`}
+                          />
+                        </div>
                       </div>
                     </div>
 
@@ -1479,11 +1614,11 @@ const Page: React.FC = () => {
                         >
                           <div className="grid grid-cols-4 gap-4">
                             <div>
-                              <label className="text-sm font-medium">
-                                Name
-                              </label>
+                              <label className="text-sm font-medium">Name</label>
                               <textarea
-                                {...register(`details.items.${index}.name`)}
+                                {...register(`details.items.${index}.name`, {
+                                  required: "Item name is required",
+                                })}
                                 className={`mt-1 w-full rounded-md border p-2 focus:ring-2 focus:ring-blue-500 resize-y h-[50px] text-left ${
                                   theme === "dark"
                                     ? "bg-gray-700 text-white border-gray-600"
@@ -1498,15 +1633,12 @@ const Page: React.FC = () => {
                                 Unit Type
                               </label>
                               <select
-                                {...register(
-                                  `details.items.${index}.unitType`,
-                                  {
-                                    validate: (value) =>
-                                      value === "" ||
-                                      UNIT_TYPES.includes(value as any) ||
-                                      "Please select a valid unit type",
-                                  }
-                                )}
+                                {...register(`details.items.${index}.unitType`, {
+                                  validate: (value) =>
+                                    value === "" ||
+                                    UNIT_TYPES.includes(value as any) ||
+                                    "Please select a valid unit type",
+                                })}
                                 className={`mt-1 w-full rounded-md border p-2 focus:ring-2 focus:ring-blue-500 ${
                                   theme === "dark"
                                     ? "bg-gray-700 text-white border-gray-600"
@@ -1528,13 +1660,13 @@ const Page: React.FC = () => {
                               <Input
                                 type="number"
                                 step="1"
-                                {...register(
-                                  `details.items.${index}.quantity`,
-                                  {
-                                    valueAsNumber: true,
-                                    min: 0,
-                                  }
-                                )}
+                                {...register(`details.items.${index}.quantity`, {
+                                  valueAsNumber: true,
+                                  min: {
+                                    value: 0,
+                                    message: "Quantity cannot be negative",
+                                  },
+                                })}
                                 className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
                                   theme === "dark"
                                     ? "bg-gray-700 text-white border-gray-600"
@@ -1551,9 +1683,7 @@ const Page: React.FC = () => {
                                   setValue(
                                     `details.items.${index}.quantity`,
                                     parsedValue,
-                                    {
-                                      shouldValidate: true,
-                                    }
+                                    { shouldValidate: true }
                                   );
                                 }}
                               />
@@ -1565,13 +1695,13 @@ const Page: React.FC = () => {
                               <Input
                                 type="number"
                                 step="0.01"
-                                {...register(
-                                  `details.items.${index}.unitPrice`,
-                                  {
-                                    valueAsNumber: true,
-                                    min: 0,
-                                  }
-                                )}
+                                {...register(`details.items.${index}.unitPrice`, {
+                                  valueAsNumber: true,
+                                  min: {
+                                    value: 0,
+                                    message: "Unit price cannot be negative",
+                                  },
+                                })}
                                 className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
                                   theme === "dark"
                                     ? "bg-gray-700 text-white border-gray-600"
@@ -1588,55 +1718,57 @@ const Page: React.FC = () => {
                                   setValue(
                                     `details.items.${index}.unitPrice`,
                                     parsedValue,
-                                    {
-                                      shouldValidate: true,
-                                    }
+                                    { shouldValidate: true }
                                   );
                                 }}
                               />
                             </div>
                           </div>
-                          <Button
-                            type="button"
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => {
-                              if (items.length <= 1) {
-                                setErrorMessage("At least 1 item required.");
-                                return;
-                              }
-                              remove(index);
-                            }}
-                            className="mt-2"
-                          >
-                            Remove Item
-                          </Button>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <label className="text-sm font-medium">
+                                Description
+                              </label>
+                              <textarea
+                                {...register(`details.items.${index}.description`)}
+                                className={`mt-1 w-full rounded-md border p-2 focus:ring-2 focus:ring-blue-500 resize-y h-[50px] text-left ${
+                                  theme === "dark"
+                                    ? "bg-gray-700 text-white border-gray-600"
+                                    : "bg-white text-black border-gray-300"
+                                }`}
+                                placeholder="Item Description"
+                                rows={2}
+                              />
+                            </div>
+                            <div className="flex items-end">
+                              <Button
+                                type="button"
+                                variant="destructive"
+                                onClick={() => remove(index)}
+                                disabled={fields.length === 1}
+                              >
+                                Remove Item
+                              </Button>
+                            </div>
+                          </div>
                         </div>
                       ))}
-                      <div className="flex justify-between items-center mt-4">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => {
-                            setErrorMessage("");
-                            append({
-                              name: "",
-                              description: "",
-                              quantity: 0,
-                              unitPrice: 0,
-                              total: 0,
-                              unitType: "",
-                            });
-                          }}
-                          className={`${
-                            theme === "dark"
-                              ? "bg-gray-300 text-black hover:bg-gray-400 border-gray-200"
-                              : "bg-gray-400 hover:bg-gray-500 border-gray-200"
-                          }`}
-                        >
-                          Add Item
-                        </Button>
-                      </div>
+                      <Button
+                        type="button"
+                        onClick={() =>
+                          append({
+                            name: "",
+                            description: "",
+                            quantity: 0,
+                            unitPrice: 0,
+                            total: 0,
+                            unitType: "",
+                          })
+                        }
+                        className="mt-2"
+                      >
+                        Add Item
+                      </Button>
                     </div>
 
                     <div
@@ -1644,34 +1776,16 @@ const Page: React.FC = () => {
                         theme === "dark" ? "bg-gray-800/50" : "bg-gray-200"
                       }`}
                     >
+                      <h3 className="text-lg font-semibold">
+                        Tax, Discount & Shipping
+                      </h3>
                       <div className="flex items-center space-x-2">
                         <Switch
                           id="tax-switch"
                           checked={showTax}
-                          onCheckedChange={(checked: boolean) => {
-                            setShowTax(checked);
-                            if (checked) {
-                              setValue("details.taxDetails.amount", 5);
-                              setValue(
-                                "details.taxDetails.amountType",
-                                "percentage"
-                              );
-                            } else {
-                              setValue("details.taxDetails.amount", 0);
-                            }
-                          }}
-                          className={`${
-                            theme === "dark"
-                              ? "data-[state=checked]:bg-white data-[state=unchecked]:bg-gray-600"
-                              : "data-[state=checked]:bg-black data-[state=unchecked]:bg-gray-400"
-                          }`}
+                          onCheckedChange={setShowTax}
                         />
-                        <Label
-                          htmlFor="tax-switch"
-                          className="text-lg font-semibold"
-                        >
-                          Tax Details
-                        </Label>
+                        <Label htmlFor="tax-switch">Add Tax</Label>
                       </div>
                       {showTax && (
                         <div className="grid grid-cols-2 gap-4">
@@ -1684,29 +1798,16 @@ const Page: React.FC = () => {
                               step="0.01"
                               {...register("details.taxDetails.amount", {
                                 valueAsNumber: true,
-                                min: 0,
+                                min: {
+                                  value: 0,
+                                  message: "Tax amount cannot be negative",
+                                },
                               })}
                               className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
                                 theme === "dark"
                                   ? "bg-gray-700 text-white border-gray-600"
                                   : "bg-white text-black border-gray-300"
                               }`}
-                              onChange={(
-                                e: React.ChangeEvent<HTMLInputElement>
-                              ) => {
-                                const value = e.target.value;
-                                const parsedValue =
-                                  value === ""
-                                    ? 0
-                                    : parseFloat(value.replace(/^0+/, ""));
-                                setValue(
-                                  "details.taxDetails.amount",
-                                  parsedValue,
-                                  {
-                                    shouldValidate: true,
-                                  }
-                                );
-                              }}
                             />
                           </div>
                           <div>
@@ -1725,74 +1826,49 @@ const Page: React.FC = () => {
                               <option value="fixed">Fixed</option>
                             </select>
                           </div>
+                          <div>
+                            <label className="text-sm font-medium">Tax ID</label>
+                            <Input
+                              {...register("details.taxDetails.taxID")}
+                              className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
+                                theme === "dark"
+                                  ? "bg-gray-700 text-white border-gray-600"
+                                  : "bg-white text-black border-gray-300"
+                              }`}
+                            />
+                          </div>
                         </div>
                       )}
-                      {showTax && (
-                        <div className="text-right">
-                          <p className="text-sm font-medium">
-                            Tax Amount: {taxAmount.toFixed(2)}
-                          </p>
-                        </div>
-                      )}
-                    </div>
 
-                    <div
-                      className={`space-y-4 p-4 rounded-lg ${
-                        theme === "dark" ? "bg-gray-800/50" : "bg-gray-200"
-                      }`}
-                    >
                       <div className="flex items-center space-x-2">
                         <Switch
                           id="discount-switch"
                           checked={showDiscount}
                           onCheckedChange={setShowDiscount}
-                          className={`${
-                            theme === "dark"
-                              ? "data-[state=checked]:bg-white data-[state=unchecked]:bg-gray-600"
-                              : "data-[state=checked]:bg-black data-[state=unchecked]:bg-gray-400"
-                          }`}
                         />
-                        <Label
-                          htmlFor="discount-switch"
-                          className="text-lg font-semibold"
-                        >
-                          Discount Details
-                        </Label>
+                        <Label htmlFor="discount-switch">Add Discount</Label>
                       </div>
                       {showDiscount && (
                         <div className="grid grid-cols-2 gap-4">
                           <div>
                             <label className="text-sm font-medium">
-                              Amount
+                              Discount Amount
                             </label>
                             <Input
                               type="number"
                               step="0.01"
                               {...register("details.discountDetails.amount", {
                                 valueAsNumber: true,
-                                min: 0,
+                                min: {
+                                  value: 0,
+                                  message: "Discount amount cannot be negative",
+                                },
                               })}
                               className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
                                 theme === "dark"
                                   ? "bg-gray-700 text-white border-gray-600"
                                   : "bg-white text-black border-gray-300"
                               }`}
-                              onChange={(
-                                e: React.ChangeEvent<HTMLInputElement>
-                              ) => {
-                                const value = e.target.value;
-                                const parsedValue =
-                                  value === ""
-                                    ? 0
-                                    : parseFloat(value.replace(/^0+/, ""));
-                                setValue(
-                                  "details.discountDetails.amount",
-                                  parsedValue,
-                                  {
-                                    shouldValidate: true,
-                                  }
-                                );
-                              }}
                             />
                           </div>
                           <div>
@@ -1800,9 +1876,7 @@ const Page: React.FC = () => {
                               Amount Type
                             </label>
                             <select
-                              {...register(
-                                "details.discountDetails.amountType"
-                              )}
+                              {...register("details.discountDetails.amountType")}
                               className={`mt-1 w-full rounded-md border p-2 focus:ring-2 focus:ring-blue-500 ${
                                 theme === "dark"
                                   ? "bg-gray-700 text-white border-gray-600"
@@ -1810,76 +1884,41 @@ const Page: React.FC = () => {
                               }`}
                             >
                               <option value="percentage">Percentage</option>
-                              <option value="fixed">Fixed</option>
-                              <option value="amount">Amount</option>
+                              <option value="amount">Fixed</option>
                             </select>
                           </div>
                         </div>
                       )}
-                      {showDiscount && (
-                        <div className="text-right">
-                          <p className="text-sm font-medium">
-                            Discount Amount: {discountAmount.toFixed(2)}
-                          </p>
-                        </div>
-                      )}
-                    </div>
 
-                    <div
-                      className={`space-y-4 p-4 rounded-lg ${
-                        theme === "dark" ? "bg-gray-800/50" : "bg-gray-200"
-                      }`}
-                    >
                       <div className="flex items-center space-x-2">
                         <Switch
                           id="shipping-switch"
                           checked={showShipping}
                           onCheckedChange={setShowShipping}
-                          className={`${
-                            theme === "dark"
-                              ? "data-[state=checked]:bg-white data-[state=unchecked]:bg-gray-600"
-                              : "data-[state=checked]:bg-black data-[state=unchecked]:bg-gray-400"
-                          }`}
                         />
-                        <Label
-                          htmlFor="shipping-switch"
-                          className="text-lg font-semibold"
-                        >
-                          Shipping Details
-                        </Label>
+                        <Label htmlFor="shipping-switch">Add Shipping</Label>
                       </div>
                       {showShipping && (
                         <div className="grid grid-cols-2 gap-4">
                           <div>
-                            <label className="text-sm font-medium">Cost</label>
+                            <label className="text-sm font-medium">
+                              Shipping Cost
+                            </label>
                             <Input
                               type="number"
                               step="0.01"
                               {...register("details.shippingDetails.cost", {
                                 valueAsNumber: true,
-                                min: 0,
+                                min: {
+                                  value: 0,
+                                  message: "Shipping cost cannot be negative",
+                                },
                               })}
                               className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
                                 theme === "dark"
                                   ? "bg-gray-700 text-white border-gray-600"
                                   : "bg-white text-black border-gray-300"
                               }`}
-                              onChange={(
-                                e: React.ChangeEvent<HTMLInputElement>
-                              ) => {
-                                const value = e.target.value;
-                                const parsedValue =
-                                  value === ""
-                                    ? 0
-                                    : parseFloat(value.replace(/^0+/, ""));
-                                setValue(
-                                  "details.shippingDetails.cost",
-                                  parsedValue,
-                                  {
-                                    shouldValidate: true,
-                                  }
-                                );
-                              }}
                             />
                           </div>
                           <div>
@@ -1895,18 +1934,64 @@ const Page: React.FC = () => {
                               }`}
                             >
                               <option value="percentage">Percentage</option>
-                              <option value="amount">Amount</option>
+                              <option value="amount">Fixed</option>
                             </select>
                           </div>
                         </div>
                       )}
-                      {showShipping && (
-                        <div className="text-right">
-                          <p className="text-sm font-medium">
-                            Shipping Cost: {shippingAmount.toFixed(2)}
-                          </p>
+                    </div>
+
+                    <div
+                      className={`space-y-4 p-4 rounded-lg ${
+                        theme === "dark" ? "bg-gray-800/50" : "bg-gray-200"
+                      }`}
+                    >
+                      <h3 className="text-lg font-semibold">
+                        Payment Information
+                      </h3>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-sm font-medium">
+                            Bank Name
+                          </label>
+                          <Input
+                            {...register("details.paymentInformation.bankName")}
+                            className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
+                              theme === "dark"
+                                ? "bg-gray-700 text-white border-gray-600"
+                                : "bg-white text-black border-gray-300"
+                            }`}
+                          />
                         </div>
-                      )}
+                        <div>
+                          <label className="text-sm font-medium">
+                            Account Name
+                          </label>
+                          <Input
+                            {...register("details.paymentInformation.accountName")}
+                            className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
+                              theme === "dark"
+                                ? "bg-gray-700 text-white border-gray-600"
+                                : "bg-white text-black border-gray-300"
+                            }`}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium">
+                            Account Number
+                          </label>
+                          <Input
+                            {...register(
+                              "details.paymentInformation.accountNumber"
+                            )}
+                            className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
+                              theme === "dark"
+                                ? "bg-gray-700 text-white border-gray-600"
+                                : "bg-white text-black border-gray-300"
+                            }`}
+                          />
+                        </div>
+                      </div>
                     </div>
 
                     <div
@@ -1922,74 +2007,40 @@ const Page: React.FC = () => {
                           <label className="text-sm font-medium">
                             Additional Notes
                           </label>
-                          <Input
+                          <textarea
                             {...register("details.additionalNotes")}
-                            className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
+                            className={`mt-1 w-full rounded-md border p-2 focus:ring-2 focus:ring-blue-500 resize-y h-[100px] ${
                               theme === "dark"
                                 ? "bg-gray-700 text-white border-gray-600"
                                 : "bg-white text-black border-gray-300"
                             }`}
+                            placeholder="Additional Notes"
                           />
                         </div>
                         <div>
                           <label className="text-sm font-medium">
                             Payment Terms
                           </label>
-                          <Input
+                          <textarea
                             {...register("details.paymentTerms")}
-                            className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
+                            className={`mt-1 w-full rounded-md border p-2 focus:ring-2 focus:ring-blue-500 resize-y h-[100px] ${
                               theme === "dark"
                                 ? "bg-gray-700 text-white border-gray-600"
                                 : "bg-white text-black border-gray-300"
                             }`}
+                            placeholder="Payment Terms"
                           />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div
-                      className={`space-y-4 p-4 rounded-lg ${
-                        theme === "dark" ? "bg-gray-800/50" : "bg-gray-200"
-                      }`}
-                    >
-                      <h3 className="text-lg font-semibold">Summary</h3>
-                      <div className="space-y-2">
-                        <div className="flex justify-between">
-                          <span>Subtotal:</span>
-                          <span>{subTotal.toFixed(2)}</span>
-                        </div>
-                        {showDiscount && (
-                          <div className="flex justify-between">
-                            <span>Discount:</span>
-                            <span>-{discountAmount.toFixed(2)}</span>
-                          </div>
-                        )}
-                        {showShipping && (
-                          <div className="flex justify-between">
-                            <span>Shipping:</span>
-                            <span>{shippingAmount.toFixed(2)}</span>
-                          </div>
-                        )}
-                        {showTax && (
-                          <div className="flex justify-between">
-                            <span>VAT:</span>
-                            <span>{taxAmount.toFixed(2)}</span>
-                          </div>
-                        )}
-                        <div className="flex justify-between font-bold border-t pt-2 border-t-gray-200">
-                          <span>Grand Total:</span>
-                          <span>{totalAmount.toFixed(2)}</span>
                         </div>
                       </div>
                     </div>
                   </div>
                 </ScrollArea>
-                <DialogFooter className="border-t pt-4 flex justify-end gap-2">
-                  {errorMessage && (
-                    <p className="text-red-500 font-semibold text-lg mt-2 text-left">
-                      {errorMessage}
-                    </p>
-                  )}
+                {errorMessage && (
+                  <div className="text-red-500 text-sm mt-2">
+                    {errorMessage}
+                  </div>
+                )}
+                <DialogFooter className="mt-4">
                   <Button
                     type="button"
                     variant="outline"
@@ -1999,63 +2050,60 @@ const Page: React.FC = () => {
                   </Button>
                   <Button type="submit" disabled={isSaving}>
                     {isSaving ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Saving
-                      </>
+                      <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
-                      "Save Changes"
+                      "Save"
                     )}
                   </Button>
                 </DialogFooter>
               </form>
             </DialogContent>
           </Dialog>
+
           <Dialog open={convertConfirm} onOpenChange={setConvertConfirm}>
             <DialogContent
               className={`${
                 theme === "dark"
                   ? "bg-gray-800 text-white border-gray-700"
                   : "bg-white text-black border-gray-200"
-              } w-full shadow-lg rounded-lg`}
+              }`}
             >
-              <DialogTitle></DialogTitle>
-              <div className=" mb-4 gap-4">
-                <div className="text-center">
-                  <h2>Are You Sure ?</h2>
-                  <p className="text-md text-gray-400">
-                    Want to convert this quoation into invoice?
-                  </p>
-                </div>
-              </div>
-              <div className="flex justify-center gap-4">
+              <DialogHeader>
+                <DialogTitle>Confirm Conversion</DialogTitle>
+              </DialogHeader>
+              <p>
+                Are you sure you want to convert Quotation #
+                {convertInvoice?.details.invoiceNumber} to an Invoice?
+              </p>
+              <DialogFooter>
                 <Button
-                  className="bg-red-600 hover:bg-red-500 text-white"
+                  variant="outline"
                   onClick={() => setConvertConfirm(false)}
                 >
                   Cancel
                 </Button>
-                <Button
-                  onClick={() => {
-                    handleConvert();
-                  }}
-                >
-                  {loading ? "Converting..." : "Convert"}
+                <Button onClick={handleConvert} disabled={loading}>
+                  {loading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    "Confirm"
+                  )}
                 </Button>
-              </div>
+              </DialogFooter>
             </DialogContent>
           </Dialog>
+
+          {toast && (
+            <Toast>
+              <div className="grid gap-2">
+                <ToastTitle>{toast.title}</ToastTitle>
+                <ToastDescription>{toast.description}</ToastDescription>
+              </div>
+              <ToastClose />
+            </Toast>
+          )}
+          <ToastViewport />
         </div>
-        {toast && (
-          <Toast>
-            <div className="flex-1">
-              <ToastTitle>{toast.title}</ToastTitle>
-              <ToastDescription>{toast.description}</ToastDescription>
-            </div>
-            <ToastClose onClick={() => setToast(null)} />
-          </Toast>
-        )}
-        <ToastViewport />
       </ToastProvider>
     </FormProvider>
   );

@@ -544,7 +544,7 @@ const itemsHtml = (details.items || [])
             </a> | contact@spcsource.com
           </p>
           <p class="text-sm pt-1"></p>
-          <p class="text-sm pt-1">www.spcsource.com | TRN-29484858585</p>
+          <p class="text-sm pt-1">www.spcsource.com </p>
           <p class="text-sm pt-1">${
             senderData.address ||
             "Iris Bay, Office D-43, Business Bay, Dubai, UAE."
