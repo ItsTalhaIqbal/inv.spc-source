@@ -1528,84 +1528,6 @@ const Page: React.FC = () => {
                       </div>
                     </div>
 
-                    <div
-                      className={`space-y-4 p-4 rounded-lg ${
-                        theme === "dark" ? "bg-gray-800/50" : "bg-gray-200"
-                      }`}
-                    >
-                      <h3 className="text-lg font-semibold">
-                        Receiver Information
-                      </h3>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="text-sm font-medium">Name</label>
-                          <Input
-                            {...register("receiver.name")}
-                            className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
-                              theme === "dark"
-                                ? "bg-gray-700 text-white border-gray-600"
-                                : "bg-white text-black border-gray-300"
-                            }`}
-                          />
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium">Email</label>
-                          <Input
-                            type="email"
-                            {...register("receiver.email")}
-                            className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
-                              theme === "dark"
-                                ? "bg-gray-700 text-white border-gray-600"
-                                : "bg-white text-black border-gray-300"
-                            }`}
-                          />
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium">Phone</label>
-                          <Input
-                            {...register("receiver.phone")}
-                            className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
-                              theme === "dark"
-                                ? "bg-gray-700 text-white border-gray-600"
-                                : "bg-white text-black border-gray-300"
-                            }`}
-                          />
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium">Address</label>
-                          <Input
-                            {...register("receiver.address")}
-                            className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
-                              theme === "dark"
-                                ? "bg-gray-700 text-white border-gray-600"
-                                : "bg-white text-black border-gray-300"
-                            }`}
-                          />
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium">State</label>
-                          <Input
-                            {...register("receiver.state")}
-                            className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
-                              theme === "dark"
-                                ? "bg-gray-700 text-white border-gray-600"
-                                : "bg-white text-black border-gray-300"
-                            }`}
-                          />
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium">Country</label>
-                          <Input
-                            {...register("receiver.country")}
-                            className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
-                              theme === "dark"
-                                ? "bg-gray-700 text-white border-gray-600"
-                                : "bg-white text-black border-gray-300"
-                            }`}
-                          />
-                        </div>
-                      </div>
-                    </div>
 
                     <div
                       className={`space-y-4 p-4 rounded-lg ${
@@ -1964,60 +1886,7 @@ const Page: React.FC = () => {
                       )}
                     </div>
 
-                    <div
-                      className={`space-y-4 p-4 rounded-lg ${
-                        theme === "dark" ? "bg-gray-800/50" : "bg-gray-200"
-                      }`}
-                    >
-                      <h3 className="text-lg font-semibold">
-                        Payment Information
-                      </h3>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="text-sm font-medium">
-                            Bank Name
-                          </label>
-                          <Input
-                            {...register("details.paymentInformation.bankName")}
-                            className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
-                              theme === "dark"
-                                ? "bg-gray-700 text-white border-gray-600"
-                                : "bg-white text-black border-gray-300"
-                            }`}
-                          />
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium">
-                            Account Name
-                          </label>
-                          <Input
-                            {...register(
-                              "details.paymentInformation.accountName"
-                            )}
-                            className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
-                              theme === "dark"
-                                ? "bg-gray-700 text-white border-gray-600"
-                                : "bg-white text-black border-gray-300"
-                            }`}
-                          />
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium">
-                            Account Number
-                          </label>
-                          <Input
-                            {...register(
-                              "details.paymentInformation.accountNumber"
-                            )}
-                            className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
-                              theme === "dark"
-                                ? "bg-gray-700 text-white border-gray-600"
-                                : "bg-white text-black border-gray-300"
-                            }`}
-                          />
-                        </div>
-                      </div>
-                    </div>
+                   
 
                     <div
                       className={`space-y-4 p-4 rounded-lg ${
