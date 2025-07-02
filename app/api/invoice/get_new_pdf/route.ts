@@ -540,6 +540,7 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
         <p class="text-base font-bold text-gray-800 ml-3">Receiver's Sign _________________</p>
         <p class="text-base text-gray-800">for <span class="font-bold">${senderData.name || ""}</span></p>
       </div>
+      <div class="h-[20px] w-full bg-[#FFA733]"></div>
     </div>
   </body>
 </html>

@@ -265,24 +265,36 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
     details.currency || "AED"
   );
 
-const itemsHtml = (details.items || [])
-  .map((item: Item, index: number) => {
-    const quantity = item.quantity || 0;
-    const unitPrice = item.unitPrice || 0;
-    const total = quantity * unitPrice;
+  const itemsHtml = (details.items || [])
+    .map((item: Item, index: number) => {
+      const quantity = item.quantity || 0;
+      const unitPrice = item.unitPrice || 0;
+      const total = quantity * unitPrice;
 
-    return `
+      return `
       <tr class="border">
-        <td class="w-[5%] text-center font-bold text-black text-base border">${index + 1}</td>
-        <td class="w-[40%] text-center text-black text-base border px-2 py-1"><pre>${item.name?.trim() || ""}</pre></td>
-        <td class="w-[10%] text-center text-black text-base border">${item.unitType || ""}</td>
-        <td class="w-[10%] text-center text-black text-base border">${quantity ? quantity : ""}</td>
-        <td class="w-[20%] text-center text-black text-base border">${unitPrice ? unitPrice : ""}</td>
-        <td class="w-[15%] text-center text-black text-base border">${total ? total : ""}</td>
+        <td class="w-[5%] text-center font-bold text-black text-base border">${
+          index + 1
+        }</td>
+        <td class="w-[40%] text-center text-black text-base border px-2 py-1"><pre>${
+          item.name?.trim() || ""
+        }</pre></td>
+        <td class="w-[10%] text-center text-black text-base border">${
+          item.unitType || ""
+        }</td>
+        <td class="w-[10%] text-center text-black text-base border">${
+          quantity ? quantity : ""
+        }</td>
+        <td class="w-[20%] text-center text-black text-base border">${
+          unitPrice ? unitPrice : ""
+        }</td>
+        <td class="w-[15%] text-center text-black text-base border">${
+          total ? total : ""
+        }</td>
       </tr>
     `;
-  })
-  .join("");
+    })
+    .join("");
 
   const logoPath = path.resolve(process.cwd(), "public/assets/img/image.jpg");
   let logoBase64 = "";
@@ -622,6 +634,8 @@ ${details.invoiceNumber}
           senderData.name || ""
         }</span></p>
       </div>
+      <div class="h-[20px] w-full bg-[#FFA733]"></div>
+
     </div>
   </body>
 </html>
