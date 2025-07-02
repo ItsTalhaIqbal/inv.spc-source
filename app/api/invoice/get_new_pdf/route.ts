@@ -431,7 +431,10 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
       @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
       ${tailwindCss}
       body {
+      width:100px;
+
         font-family: 'Roboto', sans-serif;
+        padding:0;
         margin: 0;
         border:1px solid black;
         background-color: #ffffff;
