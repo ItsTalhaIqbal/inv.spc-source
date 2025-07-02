@@ -646,7 +646,7 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
     </div>
     <div class="footer w-full">
       <div class="flex justify-between">
-        <p class="text-base font-bold text-gray-800 ml-3">Receiver's Sign _________________</p>
+        <p class="text-base font-bold text-gray-800 ">Receiver's Sign _________________</p>
         <p class="text-base text-gray-800">for <span class="font-bold">${
           senderData.name || ""
         }</span></p>

@@ -271,7 +271,7 @@ const Page: React.FC = () => {
         ? subTotal * (shippingDetails.cost / 100)
         : shippingDetails.cost
       : 0
-    ).toFixed(2)
+    ).toFixed 
   );
 
   const totalAmount = Number(
@@ -290,8 +290,7 @@ const Page: React.FC = () => {
       "one",
       "two",
       "three",
-      "four",
-      "five",
+      "four five",
       "six",
       "seven",
       "eight",
@@ -604,22 +603,21 @@ const Page: React.FC = () => {
     }
   };
 
- const onEditInvoice = (invoice: Invoice) => {
-  const formData = mapInvoiceToFormData(invoice);
-  reset(formData);
-  setEditInvoice(invoice);
-  setEditInvoiceDialog(true);
-  setShowTax(
-    !!invoice.details.taxDetails?.amount && invoice.details.taxDetails.amount > 0
-  );
-  setShowDiscount(!!invoice.details.discountDetails?.amount);
-  setShowShipping(!!invoice.details.shippingDetails?.cost);
-  // Set dueDate value based on invoice data
-  setValue("details.dueDate", formData.details.dueDate || "", {
-    shouldValidate: true,
-  });
-  setErrorMessage("");
-};
+  const onEditInvoice = (invoice: Invoice) => {
+    const formData = mapInvoiceToFormData(invoice);
+    reset(formData);
+    setEditInvoice(invoice);
+    setEditInvoiceDialog(true);
+    setShowTax(
+      !!invoice.details.taxDetails?.amount && invoice.details.taxDetails.amount > 0
+    );
+    setShowDiscount(!!invoice.details.discountDetails?.amount);
+    setShowShipping(!!invoice.details.shippingDetails?.cost);
+    setValue("details.dueDate", formData.details.dueDate || "", {
+      shouldValidate: true,
+    });
+    setErrorMessage("");
+  };
 
   const onSubmitEdit = async (data: InvoiceType) => {
     if (!editInvoice?._id) return;
@@ -807,7 +805,6 @@ const Page: React.FC = () => {
 
   const filterInvoices = useCallback(() => {
     return invoices.filter((invoice) => {
-      // Search filter
       const matchesSearch =
         invoice.details.invoiceNumber
           ?.toLowerCase()
@@ -817,17 +814,14 @@ const Page: React.FC = () => {
           .includes(searchTerm.toLowerCase()) ||
         invoice.receiver.phone.toLowerCase().includes(searchTerm.toLowerCase());
 
-      // Type filter
       const matchesType =
         filterType === "all" ||
         (filterType === "invoices" && invoice.details.isInvoice) ||
         (filterType === "quotations" && !invoice.details.isInvoice);
 
-      // Date filter - completely rewritten
       let matchesDate = true;
       if (dateRange?.from) {
         try {
-          // Safely parse invoice date
           const invoiceDate = invoice.createdAt
             ? new Date(invoice.createdAt)
             : null;
@@ -840,7 +834,6 @@ const Page: React.FC = () => {
             return false;
           }
 
-          // Create comparison dates (normalized to start/end of day)
           const fromDate = new Date(dateRange.from);
           fromDate.setHours(0, 0, 0, 0);
 
@@ -861,8 +854,6 @@ const Page: React.FC = () => {
   useEffect(() => {
     const filtered = filterInvoices();
     setFilteredInvoices(filtered);
-
-    // Reset to first page if results change
     setCurrentPage(1);
   }, [filterInvoices]);
 
@@ -940,27 +931,27 @@ const Page: React.FC = () => {
     <FormProvider {...methods}>
       <ToastProvider>
         <div
-          className={`p-6 w-6xl mt-4 mx-[250px] min-h-[850px] h-auto ${
+          className={`p-4 sm:p-6 mt-4 mx-auto w-full max-w-full sm:max-w-4xl lg:max-w-6xl min-h-[850px] h-auto ${
             theme === "dark" ? "bg-gray-900 text-white" : "bg-white text-black"
           } transition-colors duration-300`}
         >
-          <h1 className="text-2xl font-bold mb-4">Invoice Management</h1>
+          <h1 className="text-xl sm:text-2xl font-bold mb-4">Invoice Management</h1>
 
-          <div className="flex items-center justify-between mb-4">
-            <div className="relative w-64 gap-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-4">
+            <div className="relative w-full max-w-xs sm:max-w-md">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
               <Input
                 placeholder="Search by invoice number or sender name..."
                 value={searchTerm}
                 onChange={handleSearch}
-                className={`pl-10 ${
+                className={`pl-10 w-full ${
                   theme === "dark"
                     ? "bg-gray-800 text-white border-gray-700"
                     : "bg-white text-black border-gray-300"
                 }`}
               />
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full sm:w-auto">
               <DateRangePicker
                 onUpdate={handleDateRangeChange}
                 initialDateFrom={
@@ -971,16 +962,15 @@ const Page: React.FC = () => {
                 align="end"
                 locale="en-US"
               />
-
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="outline"
-                    className={`${
+                    className={`w-full sm:w-[100px] ${
                       theme === "dark"
                         ? "bg-gray-800 text-white border-gray-700"
                         : "bg-white text-black border-gray-300"
-                    } w-[100px]`}
+                    }`}
                   >
                     {filterType === "all"
                       ? "All"
@@ -1014,7 +1004,7 @@ const Page: React.FC = () => {
             </div>
           ) : filteredInvoices.length === 0 ? (
             <div
-              className={`text-start mt-4 text-xl ${
+              className={`text-center text-base sm:text-xl ${
                 theme === "dark" ? "text-gray-300" : "text-gray-500"
               } mt-8`}
             >
@@ -1022,146 +1012,148 @@ const Page: React.FC = () => {
               available
             </div>
           ) : (
-            <Table
-              className={`${
-                theme === "dark"
-                  ? "bg-gray-800 text-white"
-                  : "bg-white text-black"
-              } w-full `}
-            >
-              <TableHeader>
-                <TableRow
-                  className={theme === "dark" ? "bg-gray-700" : "bg-gray-100"}
-                >
-                  <TableHead
-                    className={theme === "dark" ? "text-white" : "text-black"}
-                  >
-                    Invoice Number
-                  </TableHead>
-                  <TableHead
-                    className={theme === "dark" ? "text-white" : "text-black"}
-                  >
-                    Customer
-                  </TableHead>
-                  <TableHead
-                    className={theme === "dark" ? "text-white" : "text-black"}
-                  >
-                    Phone
-                  </TableHead>
-                  <TableHead
-                    className={theme === "dark" ? "text-white" : "text-black"}
-                  >
-                    Amount
-                  </TableHead>
-                  <TableHead
-                    className={theme === "dark" ? "text-white" : "text-black"}
-                  >
-                    Date
-                  </TableHead>
-                  <TableHead
-                    className={theme === "dark" ? "text-white" : "text-black"}
-                  >
-                    Actions
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {currentInvoices.map((invoice) => (
+            <div className="overflow-x-auto">
+              <Table
+                className={`w-full ${
+                  theme === "dark"
+                    ? "bg-gray-800 text-white"
+                    : "bg-white text-black"
+                }`}
+              >
+                <TableHeader>
                   <TableRow
-                    key={invoice._id}
-                    className={
-                      theme === "dark"
-                        ? "hover:bg-gray-700"
-                        : "hover:bg-gray-50"
-                    }
+                    className={theme === "dark" ? "bg-gray-700" : "bg-gray-100"}
                   >
-                    <TableCell>
-                      {invoice.details?.isInvoice ? INVVariable : QUTVariable}
-                      {invoice.details.invoiceNumber}
-                    </TableCell>
-                    <TableCell>{invoice.receiver.name}</TableCell>
-                    <TableCell>{invoice.receiver.phone}</TableCell>
-                    <TableCell>
-                      {Number(invoice.details.totalAmount).toFixed(2)}
-                    </TableCell>
-                    <TableCell>
-                      {invoice?.createdAt
-                        ? new Date(invoice.createdAt).toLocaleDateString()
-                        : "N/A"}
-                    </TableCell>
-                    <TableCell className="flex gap-2">
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className={
-                                theme === "dark"
-                                  ? "bg-gray-600 text-white hover:bg-gray-500"
-                                  : "bg-gray-200 text-black hover:bg-gray-300"
-                              }
-                              onClick={() => {
-                                setViewInvoiceDialog(true);
-                                setViewInvoice(invoice);
-                              }}
-                            >
-                              <EyeIcon className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>View Invoice</p>
-                          </TooltipContent>
-                        </Tooltip>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className={
-                                theme === "dark"
-                                  ? "bg-gray-600 text-white hover:bg-gray-500"
-                                  : "bg-gray-200 text-black hover:bg-gray-300"
-                              }
-                              onClick={() => onGeneratePdf(invoice)}
-                              disabled={pdfLoadingStates[invoice._id!]}
-                            >
-                              {pdfLoadingStates[invoice._id!] ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <DownloadIcon className="h-4 w-4" />
-                              )}
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Download PDF</p>
-                          </TooltipContent>
-                        </Tooltip>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className={
-                                theme === "dark"
-                                  ? "bg-gray-600 text-white hover:bg-gray-500"
-                                  : "bg-gray-200 text-black hover:bg-gray-300"
-                              }
-                              onClick={() => onEditInvoice(invoice)}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Edit Invoice</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    </TableCell>
+                    <TableHead
+                      className={theme === "dark" ? "text-white" : "text-black"}
+                    >
+                      Invoice Number
+                    </TableHead>
+                    <TableHead
+                      className={theme === "dark" ? "text-white" : "text-black"}
+                    >
+                      Customer
+                    </TableHead>
+                    <TableHead
+                      className={`hidden sm:table-cell ${theme === "dark" ? "text-white" : "text-black"}`}
+                    >
+                      Phone
+                    </TableHead>
+                    <TableHead
+                      className={theme === "dark" ? "text-white" : "text-black"}
+                    >
+                      Amount
+                    </TableHead>
+                    <TableHead
+                      className={`hidden md:table-cell ${theme === "dark" ? "text-white" : "text-black"}`}
+                    >
+                      Date
+                    </TableHead>
+                    <TableHead
+                      className={theme === "dark" ? "text-white" : "text-black"}
+                    >
+                      Actions
+                    </TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {currentInvoices.map((invoice) => (
+                    <TableRow
+                      key={invoice._id}
+                      className={
+                        theme === "dark"
+                          ? "hover:bg-gray-700"
+                          : "hover:bg-gray-50"
+                      }
+                    >
+                      <TableCell>
+                        {invoice.details?.isInvoice ? INVVariable : QUTVariable}
+                        {invoice.details.invoiceNumber}
+                      </TableCell>
+                      <TableCell>{invoice.receiver.name}</TableCell>
+                      <TableCell className="hidden sm:table-cell">{invoice.receiver.phone}</TableCell>
+                      <TableCell>
+                        {Number(invoice.details.totalAmount).toFixed(2)}
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell">
+                        {invoice?.createdAt
+                          ? new Date(invoice.createdAt).toLocaleDateString()
+                          : "N/A"}
+                      </TableCell>
+                      <TableCell className="flex gap-2">
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className={
+                                  theme === "dark"
+                                    ? "bg-gray-600 text-white hover:bg-gray-500"
+                                    : "bg-gray-200 text-black hover:bg-gray-300"
+                                }
+                                onClick={() => {
+                                  setViewInvoiceDialog(true);
+                                  setViewInvoice(invoice);
+                                }}
+                              >
+                                <EyeIcon className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>View Invoice</p>
+                            </TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className={
+                                  theme === "dark"
+                                    ? "bg-gray-600 text-white hover:bg-gray-500"
+                                    : "bg-gray-200 text-black hover:bg-gray-300"
+                                }
+                                onClick={() => onGeneratePdf(invoice)}
+                                disabled={pdfLoadingStates[invoice._id!]}
+                              >
+                                {pdfLoadingStates[invoice._id!] ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <DownloadIcon className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Download PDF</p>
+                            </TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className={
+                                  theme === "dark"
+                                    ? "bg-gray-600 text-white hover:bg-gray-500"
+                                    : "bg-gray-200 text-black hover:bg-gray-300"
+                                }
+                                onClick={() => onEditInvoice(invoice)}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Edit Invoice</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           )}
           <Pagination
             totalItems={filteredInvoices.length}
@@ -1172,14 +1164,14 @@ const Page: React.FC = () => {
 
           <Dialog open={viewInvoiceDialog} onOpenChange={setViewInvoiceDialog}>
             <DialogContent
-              className={`${
+              className={`w-full max-w-full sm:max-w-3xl ${
                 theme === "dark"
                   ? "bg-gray-800 text-white border-gray-700"
                   : "bg-white text-black border-gray-200"
-              } max-w-3xl shadow-lg rounded-lg`}
+              } shadow-lg rounded-lg`}
             >
               <DialogHeader className="border-b pb-4">
-                <DialogTitle className="text-2xl font-bold">
+                <DialogTitle className="text-lg sm:text-2xl font-bold">
                   {viewInvoice?.details.isInvoice == true
                     ? "Invoice #"
                     : "Quotation #"}
@@ -1203,10 +1195,10 @@ const Page: React.FC = () => {
                         : "bg-gray-200 p-4 rounded-md shadow-sm"
                     }
                   >
-                    <h3 className="text-lg font-semibold mb-2">
+                    <h3 className="text-base sm:text-lg font-semibold mb-2">
                       Invoice Details
                     </h3>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <p className="text-sm">
                         <strong>Invoice Number:</strong>{" "}
                         <span>{viewInvoice.invoiceNumber}</span>
@@ -1252,10 +1244,10 @@ const Page: React.FC = () => {
                         : "bg-gray-200 p-4 rounded-md shadow-sm"
                     }
                   >
-                    <h3 className="text-lg font-semibold mb-2">
+                    <h3 className="text-base sm:text-lg font-semibold mb-2">
                       Receiver Information
                     </h3>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <p className="text-sm">
                         <strong>Name:</strong>{" "}
                         <span>{viewInvoice.receiver.name}</span>
@@ -1289,7 +1281,7 @@ const Page: React.FC = () => {
                         : "bg-gray-200 p-4 rounded-md shadow-sm"
                     }
                   >
-                    <h3 className="text-lg font-semibold mb-2">Items</h3>
+                    <h3 className="text-base sm:text-lg font-semibold mb-2">Items</h3>
                     {viewInvoice.details.items.map((item, index) => (
                       <div
                         key={item._id || index}
@@ -1299,7 +1291,7 @@ const Page: React.FC = () => {
                             : "border border-gray-200 p-3 rounded-md my-2 bg-white"
                         }
                       >
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <p className="text-sm whitespace-pre-line">
                             <strong>Name:</strong> <span>{item.name}</span>
                           </p>
@@ -1336,10 +1328,10 @@ const Page: React.FC = () => {
                         : "bg-gray-200 p-4 rounded-md shadow-sm"
                     }
                   >
-                    <h3 className="text-lg font-semibold mb-2">
+                    <h3 className="text-base sm:text-lg font-semibold mb-2">
                       Tax, Discount & Shipping Details
                     </h3>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <p className="text-sm">
                         <strong>Tax Amount:</strong>{" "}
                         <span>
@@ -1364,12 +1356,10 @@ const Page: React.FC = () => {
                         <strong>Shipping Cost:</strong>{" "}
                         <span>
                           {viewInvoice.details.shippingDetails?.cost
-                            ? " border-gray-200 p-3 rounded-md my-2 bg-white"
-                            : "border border-gray-600 p-3 rounded-md my-2 bg-gray-800"}
-
-                          {Number(
-                            viewInvoice?.details?.shippingDetails?.cost
-                          ).toFixed(2)}
+                            ? Number(
+                                viewInvoice.details.shippingDetails.cost
+                              ).toFixed(2)
+                            : "0.00"}
                         </span>
                       </p>
                     </div>
@@ -1381,10 +1371,10 @@ const Page: React.FC = () => {
                         : "bg-gray-200 p-4 rounded-md shadow-sm"
                     }
                   >
-                    <h3 className="text-lg font-semibold mb-2">
+                    <h3 className="text-base sm:text-lg font-semibold mb-2">
                       Payment Information
                     </h3>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <p className="text-sm">
                         <strong>Bank Name:</strong>{" "}
                         <span>
@@ -1415,10 +1405,10 @@ const Page: React.FC = () => {
                         : "bg-gray-200 p-4 rounded-md shadow-sm"
                     }
                   >
-                    <h3 className="text-lg font-semibold mb-2">
+                    <h3 className="text-base sm:text-lg font-semibold mb-2">
                       Additional Information
                     </h3>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <p className="text-sm">
                         <strong>Additional Notes:</strong>{" "}
                         <span>
@@ -1446,18 +1436,20 @@ const Page: React.FC = () => {
 
           <Dialog open={editInvoiceDialog} onOpenChange={setEditInvoiceDialog}>
             <DialogContent
-              className={`${
+              className={`w-full max-w-full sm:max-w-[800px] ${
                 theme === "dark"
                   ? "bg-gray-700 text-white border-gray-700"
                   : "bg-white text-black border-gray-200 focus:outline-none"
-              } sm:max-w-[800px] shadow-lg rounded-md`}
+              } shadow-lg rounded-md`}
             >
               <DialogHeader className="border-b pb-4">
-                <DialogTitle className="text-lg font-bold flex justify-between mt-6">
-                  {editInvoice?.details.isInvoice == true
-                    ? "Invoice #"
-                    : "Quotation #"}
-                  {editInvoice?.details.invoiceNumber}
+                <DialogTitle className="text-base sm:text-lg font-bold flex flex-col sm:flex-row justify-between mt-4 sm:mt-6 gap-2">
+                  <span>
+                    {editInvoice?.details.isInvoice == true
+                      ? "Invoice #"
+                      : "Quotation #"}
+                    {editInvoice?.details.invoiceNumber}
+                  </span>
                   {editInvoice?.details.isInvoice == false ? (
                     <Button
                       onClick={() => {
@@ -1465,6 +1457,7 @@ const Page: React.FC = () => {
                         setConvertConfirm(true);
                       }}
                       disabled={loading}
+                      className="w-full sm:w-auto"
                     >
                       Convert Into Invoice
                     </Button>
@@ -1479,8 +1472,8 @@ const Page: React.FC = () => {
                         theme === "dark" ? "bg-gray-800/50" : "bg-gray-200"
                       }`}
                     >
-                      <h3 className="text-lg font-semibold">Invoice Details</h3>
-                      <div className="grid grid-cols-2 gap-4">
+                      <h3 className="text-base sm:text-lg font-semibold">Invoice Details</h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                           <label className="text-sm font-medium">
                             Invoice Type
@@ -1504,7 +1497,7 @@ const Page: React.FC = () => {
                           <Input
                             type="date"
                             {...register("details.invoiceDate")}
-                            className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
+                            className={`mt-1 w-full focus:ring-2 focus:ring-blue-500 ${
                               theme === "dark"
                                 ? "bg-gray-700 text-white border-gray-600"
                                 : "bg-white text-black border-gray-300"
@@ -1518,7 +1511,7 @@ const Page: React.FC = () => {
                           <Input
                             type="date"
                             {...register("details.dueDate")}
-                            className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
+                            className={`mt-1 w-full focus:ring-2 focus:ring-blue-500 ${
                               theme === "dark"
                                 ? "bg-gray-700 text-white border-gray-600"
                                 : "bg-white text-black border-gray-300"
@@ -1527,20 +1520,18 @@ const Page: React.FC = () => {
                         </div>
                       </div>
                     </div>
-
-
                     <div
                       className={`space-y-4 p-4 rounded-lg ${
                         theme === "dark" ? "bg-gray-800/50" : "bg-gray-200"
                       }`}
                     >
-                      <h3 className="text-lg font-semibold">Items</h3>
+                      <h3 className="text-base sm:text-lg font-semibold">Items</h3>
                       {fields.map((item, index) => (
                         <div
                           key={item.id}
                           className="border border-gray-400 p-4 rounded-md space-y-2"
                         >
-                          <div className="grid grid-cols-4 gap-4">
+                          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                             <div>
                               <label className="text-sm font-medium">
                                 Name
@@ -1603,7 +1594,7 @@ const Page: React.FC = () => {
                                     },
                                   }
                                 )}
-                                className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
+                                className={`mt-1 w-full focus:ring-2 focus:ring-blue-500 ${
                                   theme === "dark"
                                     ? "bg-gray-700 text-white border-gray-600"
                                     : "bg-white text-black border-gray-300"
@@ -1641,7 +1632,7 @@ const Page: React.FC = () => {
                                     },
                                   }
                                 )}
-                                className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
+                                className={`mt-1 w-full focus:ring-2 focus:ring-blue-500 ${
                                   theme === "dark"
                                     ? "bg-gray-700 text-white border-gray-600"
                                     : "bg-white text-black border-gray-300"
@@ -1663,18 +1654,16 @@ const Page: React.FC = () => {
                               />
                             </div>
                           </div>
-                          <div className="grid grid-cols-2 gap-4">
-                            
-                            <div className="flex items-end">
-                              <Button
-                                type="button"
-                                variant="destructive"
-                                onClick={() => remove(index)}
-                                disabled={fields.length === 1}
-                              >
-                                Remove Item
-                              </Button>
-                            </div>
+                          <div className="flex justify-end">
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              onClick={() => remove(index)}
+                              disabled={fields.length === 1}
+                              className="w-full sm:w-auto"
+                            >
+                              Remove Item
+                            </Button>
                           </div>
                         </div>
                       ))}
@@ -1690,18 +1679,17 @@ const Page: React.FC = () => {
                             unitType: "",
                           })
                         }
-                        className="mt-2"
+                        className="mt-2 w-full sm:w-auto"
                       >
                         Add Item
                       </Button>
                     </div>
-
                     <div
                       className={`space-y-4 p-4 rounded-lg ${
                         theme === "dark" ? "bg-gray-800/50" : "bg-gray-200"
                       }`}
                     >
-                      <h3 className="text-lg font-semibold">
+                      <h3 className="text-base sm:text-lg font-semibold">
                         Tax, Discount & Shipping
                       </h3>
                       <div className="flex items-center space-x-2">
@@ -1714,7 +1702,7 @@ const Page: React.FC = () => {
                         <Label htmlFor="tax-switch">Add Tax</Label>
                       </div>
                       {showTax && (
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div>
                             <label className="text-sm font-medium">
                               Tax Amount
@@ -1729,7 +1717,7 @@ const Page: React.FC = () => {
                                   message: "Tax amount cannot be negative",
                                 },
                               })}
-                              className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
+                              className={`mt-1 w-full focus:ring-2 focus:ring-blue-500 ${
                                 theme === "dark"
                                   ? "bg-gray-700 text-white border-gray-600"
                                   : "bg-white text-black border-gray-300"
@@ -1758,7 +1746,7 @@ const Page: React.FC = () => {
                             </label>
                             <Input
                               {...register("details.taxDetails.taxID")}
-                              className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
+                              className={`mt-1 w-full focus:ring-2 focus:ring-blue-500 ${
                                 theme === "dark"
                                   ? "bg-gray-700 text-white border-gray-600"
                                   : "bg-white text-black border-gray-300"
@@ -1767,19 +1755,17 @@ const Page: React.FC = () => {
                           </div>
                         </div>
                       )}
-
                       <div className="flex items-center space-x-2">
                         <Switch
                           id="discount-switch"
                           checked={showDiscount}
                           onCheckedChange={setShowDiscount}
                           className="bg-black"
-
                         />
                         <Label htmlFor="discount-switch">Add Discount</Label>
                       </div>
                       {showDiscount && (
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div>
                             <label className="text-sm font-medium">
                               Discount Amount
@@ -1794,7 +1780,7 @@ const Page: React.FC = () => {
                                   message: "Discount amount cannot be negative",
                                 },
                               })}
-                              className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
+                              className={`mt-1 w-full focus:ring-2 focus:ring-blue-500 ${
                                 theme === "dark"
                                   ? "bg-gray-700 text-white border-gray-600"
                                   : "bg-white text-black border-gray-300"
@@ -1821,18 +1807,16 @@ const Page: React.FC = () => {
                           </div>
                         </div>
                       )}
-
                       <div className="flex items-center space-x-2">
                         <Switch
                           id="shipping-switch"
                           checked={showShipping}
                           onCheckedChange={setShowShipping}
-
                         />
                         <Label htmlFor="shipping-switch">Add Shipping</Label>
                       </div>
                       {showShipping && (
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div>
                             <label className="text-sm font-medium">
                               Shipping Cost
@@ -1847,7 +1831,7 @@ const Page: React.FC = () => {
                                   message: "Shipping cost cannot be negative",
                                 },
                               })}
-                              className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
+                              className={`mt-1 w-full focus:ring-2 focus:ring-blue-500 ${
                                 theme === "dark"
                                   ? "bg-gray-700 text-white border-gray-600"
                                   : "bg-white text-black border-gray-300"
@@ -1873,15 +1857,12 @@ const Page: React.FC = () => {
                         </div>
                       )}
                     </div>
-
-                   
-
                     <div
                       className={`space-y-4 p-4 rounded-lg ${
                         theme === "dark" ? "bg-gray-800/50" : "bg-gray-200"
                       }`}
                     >
-                      <h3 className="text-lg font-semibold">
+                      <h3 className="text-base sm:text-lg font-semibold">
                         Additional Information
                       </h3>
                       <div className="grid grid-cols-1 gap-4">
@@ -1895,7 +1876,7 @@ const Page: React.FC = () => {
                               theme === "dark"
                                 ? "bg-gray-700 text-white border-gray-600"
                                 : "bg-white text-black border-gray-300"
-                            }`}
+                              }`}
                             placeholder="Additional Notes"
                           />
                         </div>
@@ -1922,15 +1903,16 @@ const Page: React.FC = () => {
                     {errorMessage}
                   </div>
                 )}
-                <DialogFooter className="mt-4">
+                <DialogFooter className="mt-4 flex flex-col sm:flex-row sm:justify-end gap-2">
                   <Button
                     type="button"
                     variant="outline"
                     onClick={() => setEditInvoiceDialog(false)}
+                    className="w-full sm:w-auto"
                   >
                     Cancel
                   </Button>
-                  <Button type="submit" disabled={isSaving}>
+                  <Button type="submit" disabled={isSaving} className="w-full sm:w-auto">
                     {isSaving ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
@@ -1944,7 +1926,7 @@ const Page: React.FC = () => {
 
           <Dialog open={convertConfirm} onOpenChange={setConvertConfirm}>
             <DialogContent
-              className={`${
+              className={`w-full max-w-md sm:max-w-lg ${
                 theme === "dark"
                   ? "bg-gray-800 text-white border-gray-700"
                   : "bg-white text-black border-gray-200"
@@ -1953,18 +1935,19 @@ const Page: React.FC = () => {
               <DialogHeader>
                 <DialogTitle>Confirm Conversion</DialogTitle>
               </DialogHeader>
-              <p>
+              <p className="text-sm sm:text-base">
                 Are you sure you want to convert Quotation #
                 {convertInvoice?.details.invoiceNumber} to an Invoice?
               </p>
-              <DialogFooter>
+              <DialogFooter className="flex flex-col sm:flex-row sm:justify-end gap-2">
                 <Button
                   variant="outline"
                   onClick={() => setConvertConfirm(false)}
+                  className="w-full sm:w-auto"
                 >
                   Cancel
                 </Button>
-                <Button onClick={handleConvert} disabled={loading}>
+                <Button onClick={handleConvert} disabled={loading} className="w-full sm:w-auto">
                   {loading ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
