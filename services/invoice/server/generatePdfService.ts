@@ -410,7 +410,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
       body {
         font-family: 'Roboto', sans-serif;
         margin: 0;
-        padding: 0 10px;
+        padding: 0 20px;
         background-color: #ffffff;
         color: #000000;
       }
@@ -458,7 +458,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
       }
       .invoice-table th, .invoice-table td {
         font-size: 14px;
-        border: 1px solid #808080;
+        border: 1px solid #6b7280;
       }
       .invoice-table th {
         font-weight: bold;
@@ -467,16 +467,9 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
         padding: 8px;
       }
       .invoice-table td {
-        text-align: center;
-        vertical-align: middle;
-        padding: 4px;
-      }
-      .description-cell {
-        text-align: center;
-        overflow-wrap: break-word;
+        word-wrap: break-word;
         white-space: normal;
-        hyphens: auto;
-        padding: 4px 8px;
+        padding: 4px;
       }
       .invoice-table th:nth-child(1), .invoice-table td:nth-child(1) { width: 5%; }
       .invoice-table th:nth-child(2), .invoice-table td:nth-child(2) { width: 40%; }
@@ -492,7 +485,6 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
       }
       .notes-section {
         width: 55%;
-        break-inside: avoid;
       }
       .amounts-section {
         width: 35%;
@@ -501,17 +493,16 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
         margin-bottom: 4px;
       }
       .total-amount {
-        border-top: 1px solid #808080;
-        border-bottom: 1px solid #808080;
+        border-top: 1px solid #6b7280;
+        border-bottom: 1px solid #6b7280;
         padding: 8px 0;
         margin-top: 8px;
         font-weight: bold;
       }
       .footer {
         width: calc(100% - 40px);
-        padding-top: 10px;
-        break-inside: avoid;
-        margin-top: 20px;
+        padding: 0;
+        margin-top: 0;
       }
       @media print {
         body {
@@ -522,8 +513,9 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
           padding-bottom: 80px;
         }
         .footer {
-          position: static;
-          margin-top: 10px;
+          position: fixed;
+          bottom: 0;
+          margin-top: 0;
         }
       }
       @page {
@@ -534,12 +526,6 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
           font-size: 12px;
           color: #000000;
         }
-      }
-      .container, .summary, .notes-section, .amounts-section {
-        page-break-inside: avoid;
-      }
-      .invoice-table tr {
-        page-break-inside: avoid;
       }
     </style>
   </head>

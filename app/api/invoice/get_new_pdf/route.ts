@@ -508,7 +508,6 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
       }
       .notes-section {
         width: 55%;
-        break-inside: avoid;
       }
       .amounts-section {
         width: 35%;
@@ -525,9 +524,8 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
       }
       .footer {
         width: calc(100% - 40px);
-        padding-top: 10px;
-        break-inside: avoid;
-        margin-top: 10px;
+        padding: 0;
+        margin-top: 0;
       }
       @media print {
         body {
@@ -538,8 +536,9 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
           padding-bottom: 80px;
         }
         .footer {
-          position: static;
-          margin-top: 10px;
+          position: fixed;
+          bottom: 0;
+          margin-top: 0;
         }
       }
       @page {
@@ -550,12 +549,6 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
           font-size: 12px;
           color: #000000;
         }
-      }
-      .container, .summary, .notes-section, .amounts-section {
-        page-break-inside: avoid;
-      }
-      .invoice-table tr {
-        page-break-inside: avoid;
       }
     </style>
   </head>
@@ -637,7 +630,6 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
                 details.currency || "AED"
               } ${formatNumberWithCommas(subtotal)}</span>
             </div>
-            
             ${shippingHtml}
             ${discountHtml}
             ${taxHtml}
@@ -658,7 +650,7 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
           senderData.name || ""
         }</span></p>
       </div>
-      <div class="flex justify-between h-[10px]  mt-1 p-2 w-full" style="background-color: #FFA733;">
+      <div class="flex justify-between h-[10px] mt-1 p-2 w-full" style="background-color: #FFA733;">
         <p> 📧contact@spcsource.com</p>
         <p>🌐www.spcsource.com</p> 
       </div>
@@ -670,7 +662,7 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
   let browser = null;
   try {
     const launchOptions: any = {
-      args: [
+      args: [                                                      
         ...chromium.args,
         "--no-sandbox",
         "--disable-setuid-sandbox",
