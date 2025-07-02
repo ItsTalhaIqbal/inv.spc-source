@@ -1448,7 +1448,7 @@ const Page: React.FC = () => {
             <DialogContent
               className={`${
                 theme === "dark"
-                  ? "bg-gray-800 text-white border-gray-700"
+                  ? "bg-gray-700 text-white border-gray-700"
                   : "bg-white text-black border-gray-200 focus:outline-none"
               } sm:max-w-[800px] shadow-lg rounded-md`}
             >
@@ -1664,23 +1664,7 @@ const Page: React.FC = () => {
                             </div>
                           </div>
                           <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <label className="text-sm font-medium">
-                                Description
-                              </label>
-                              <textarea
-                                {...register(
-                                  `details.items.${index}.description`
-                                )}
-                                className={`mt-1 w-full rounded-md border p-2 focus:ring-2 focus:ring-blue-500 resize-y h-[50px] text-left ${
-                                  theme === "dark"
-                                    ? "bg-gray-700 text-white border-gray-600"
-                                    : "bg-white text-black border-gray-300"
-                                }`}
-                                placeholder="Item Description"
-                                rows={2}
-                              />
-                            </div>
+                            
                             <div className="flex items-end">
                               <Button
                                 type="button"
@@ -1725,6 +1709,7 @@ const Page: React.FC = () => {
                           id="tax-switch"
                           checked={showTax}
                           onCheckedChange={setShowTax}
+                          className="bg-black"
                         />
                         <Label htmlFor="tax-switch">Add Tax</Label>
                       </div>
@@ -1788,6 +1773,8 @@ const Page: React.FC = () => {
                           id="discount-switch"
                           checked={showDiscount}
                           onCheckedChange={setShowDiscount}
+                          className="bg-black"
+
                         />
                         <Label htmlFor="discount-switch">Add Discount</Label>
                       </div>
@@ -1840,6 +1827,7 @@ const Page: React.FC = () => {
                           id="shipping-switch"
                           checked={showShipping}
                           onCheckedChange={setShowShipping}
+
                         />
                         <Label htmlFor="shipping-switch">Add Shipping</Label>
                       </div>
