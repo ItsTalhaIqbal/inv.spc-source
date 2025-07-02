@@ -223,7 +223,7 @@ const Page = () => {
   return (
     <div
       className={`p-4 sm:p-6 mt-4 mx-auto w-full max-w-full sm:max-w-4xl lg:max-w-6xl ${
-        theme === "dark" ? "bg-gray-900 text-white" : "bg-white text-black"
+        theme == "dark" ? "bg-gray-900 text-white" : "bg-white text-black"
       }`}
     >
       <h1 className="text-xl sm:text-2xl font-bold mb-4">Customer Management</h1>
@@ -416,20 +416,7 @@ const Page = () => {
                 placeholder="Enter state"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium">Country</label>
-              <Input
-                value={editCountry}
-                onChange={(e) => setEditCountry(e.target.value)}
-                className={`w-full ${
-                  theme === "dark"
-                    ? "bg-gray-700 text-white border-gray-600 focus:ring-blue-500"
-                    : "bg-white text-black border-gray-300 focus:ring-blue-500"
-                }`}
-                disabled={editLoading}
-                placeholder="Enter country"
-              />
-            </div>
+            
           </div>
           <DialogFooter className="flex flex-col sm:flex-row sm:justify-end gap-2">
             <Button
