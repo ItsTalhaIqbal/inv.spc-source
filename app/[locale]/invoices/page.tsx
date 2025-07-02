@@ -604,23 +604,22 @@ const Page: React.FC = () => {
     }
   };
 
-  const onEditInvoice = (invoice: Invoice) => {
-    const formData = mapInvoiceToFormData(invoice);
-    reset(formData);
-    setEditInvoice(invoice);
-    setEditInvoiceDialog(true);
-    setShowTax(
-      !!invoice.details.taxDetails?.amount &&
-        invoice.details.taxDetails.amount > 0
-    );
-    setShowDiscount(!!invoice.details.discountDetails?.amount);
-    setShowShipping(!!invoice.details.shippingDetails?.cost);
-    // Set dueDate value based on invoice data
-    setValue("details.dueDate", formData.details.dueDate || "", {
-      shouldValidate: true,
-    });
-    setErrorMessage("");
-  };
+ const onEditInvoice = (invoice: Invoice) => {
+  const formData = mapInvoiceToFormData(invoice);
+  reset(formData);
+  setEditInvoice(invoice);
+  setEditInvoiceDialog(true);
+  setShowTax(
+    !!invoice.details.taxDetails?.amount && invoice.details.taxDetails.amount > 0
+  );
+  setShowDiscount(!!invoice.details.discountDetails?.amount);
+  setShowShipping(!!invoice.details.shippingDetails?.cost);
+  // Set dueDate value based on invoice data
+  setValue("details.dueDate", formData.details.dueDate || "", {
+    shouldValidate: true,
+  });
+  setErrorMessage("");
+};
 
   const onSubmitEdit = async (data: InvoiceType) => {
     if (!editInvoice?._id) return;
@@ -1529,8 +1528,536 @@ const Page: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Rest of the form remains unchanged */}
-                    {/* ... */}
+                    <div
+                      className={`space-y-4 p-4 rounded-lg ${
+                        theme === "dark" ? "bg-gray-800/50" : "bg-gray-200"
+                      }`}
+                    >
+                      <h3 className="text-lg font-semibold">
+                        Receiver Information
+                      </h3>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-sm font-medium">Name</label>
+                          <Input
+                            {...register("receiver.name")}
+                            className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
+                              theme === "dark"
+                                ? "bg-gray-700 text-white border-gray-600"
+                                : "bg-white text-black border-gray-300"
+                            }`}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium">Email</label>
+                          <Input
+                            type="email"
+                            {...register("receiver.email")}
+                            className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
+                              theme === "dark"
+                                ? "bg-gray-700 text-white border-gray-600"
+                                : "bg-white text-black border-gray-300"
+                            }`}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium">Phone</label>
+                          <Input
+                            {...register("receiver.phone")}
+                            className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
+                              theme === "dark"
+                                ? "bg-gray-700 text-white border-gray-600"
+                                : "bg-white text-black border-gray-300"
+                            }`}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium">Address</label>
+                          <Input
+                            {...register("receiver.address")}
+                            className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
+                              theme === "dark"
+                                ? "bg-gray-700 text-white border-gray-600"
+                                : "bg-white text-black border-gray-300"
+                            }`}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium">State</label>
+                          <Input
+                            {...register("receiver.state")}
+                            className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
+                              theme === "dark"
+                                ? "bg-gray-700 text-white border-gray-600"
+                                : "bg-white text-black border-gray-300"
+                            }`}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium">Country</label>
+                          <Input
+                            {...register("receiver.country")}
+                            className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
+                              theme === "dark"
+                                ? "bg-gray-700 text-white border-gray-600"
+                                : "bg-white text-black border-gray-300"
+                            }`}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div
+                      className={`space-y-4 p-4 rounded-lg ${
+                        theme === "dark" ? "bg-gray-800/50" : "bg-gray-200"
+                      }`}
+                    >
+                      <h3 className="text-lg font-semibold">Items</h3>
+                      {fields.map((item, index) => (
+                        <div
+                          key={item.id}
+                          className="border border-gray-400 p-4 rounded-md space-y-2"
+                        >
+                          <div className="grid grid-cols-4 gap-4">
+                            <div>
+                              <label className="text-sm font-medium">
+                                Name
+                              </label>
+                              <textarea
+                                {...register(`details.items.${index}.name`, {
+                                  required: "Item name is required",
+                                })}
+                                className={`mt-1 w-full rounded-md border p-2 focus:ring-2 focus:ring-blue-500 resize-y h-[50px] text-left ${
+                                  theme === "dark"
+                                    ? "bg-gray-700 text-white border-gray-600"
+                                    : "bg-white text-black border-gray-300"
+                                }`}
+                                placeholder="Item Name"
+                                rows={2}
+                              />
+                            </div>
+                            <div>
+                              <label className="text-sm font-medium">
+                                Unit Type
+                              </label>
+                              <select
+                                {...register(
+                                  `details.items.${index}.unitType`,
+                                  {
+                                    validate: (value) =>
+                                      value === "" ||
+                                      UNIT_TYPES.includes(value as any) ||
+                                      "Please select a valid unit type",
+                                  }
+                                )}
+                                className={`mt-1 w-full rounded-md border p-2 focus:ring-2 focus:ring-blue-500 ${
+                                  theme === "dark"
+                                    ? "bg-gray-700 text-white border-gray-600"
+                                    : "bg-white text-black border-gray-300"
+                                }`}
+                              >
+                                <option value="">Select Unit</option>
+                                {UNIT_TYPES.map((unit) => (
+                                  <option key={unit} value={unit}>
+                                    {unit || "None"}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+                            <div>
+                              <label className="text-sm font-medium">
+                                Quantity
+                              </label>
+                              <Input
+                                type="number"
+                                step="1"
+                                {...register(
+                                  `details.items.${index}.quantity`,
+                                  {
+                                    valueAsNumber: true,
+                                    min: {
+                                      value: 0,
+                                      message: "Quantity cannot be negative",
+                                    },
+                                  }
+                                )}
+                                className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
+                                  theme === "dark"
+                                    ? "bg-gray-700 text-white border-gray-600"
+                                    : "bg-white text-black border-gray-300"
+                                }`}
+                                onChange={(
+                                  e: React.ChangeEvent<HTMLInputElement>
+                                ) => {
+                                  const value = e.target.value;
+                                  const parsedValue =
+                                    value === ""
+                                      ? 0
+                                      : parseInt(value.replace(/^0+/, ""));
+                                  setValue(
+                                    `details.items.${index}.quantity`,
+                                    parsedValue,
+                                    { shouldValidate: true }
+                                  );
+                                }}
+                              />
+                            </div>
+                            <div>
+                              <label className="text-sm font-medium">
+                                Unit Price
+                              </label>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                {...register(
+                                  `details.items.${index}.unitPrice`,
+                                  {
+                                    valueAsNumber: true,
+                                    min: {
+                                      value: 0,
+                                      message: "Unit price cannot be negative",
+                                    },
+                                  }
+                                )}
+                                className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
+                                  theme === "dark"
+                                    ? "bg-gray-700 text-white border-gray-600"
+                                    : "bg-white text-black border-gray-300"
+                                }`}
+                                onChange={(
+                                  e: React.ChangeEvent<HTMLInputElement>
+                                ) => {
+                                  const value = e.target.value;
+                                  const parsedValue =
+                                    value === ""
+                                      ? 0
+                                      : parseFloat(value.replace(/^0+/, ""));
+                                  setValue(
+                                    `details.items.${index}.unitPrice`,
+                                    parsedValue,
+                                    { shouldValidate: true }
+                                  );
+                                }}
+                              />
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <label className="text-sm font-medium">
+                                Description
+                              </label>
+                              <textarea
+                                {...register(
+                                  `details.items.${index}.description`
+                                )}
+                                className={`mt-1 w-full rounded-md border p-2 focus:ring-2 focus:ring-blue-500 resize-y h-[50px] text-left ${
+                                  theme === "dark"
+                                    ? "bg-gray-700 text-white border-gray-600"
+                                    : "bg-white text-black border-gray-300"
+                                }`}
+                                placeholder="Item Description"
+                                rows={2}
+                              />
+                            </div>
+                            <div className="flex items-end">
+                              <Button
+                                type="button"
+                                variant="destructive"
+                                onClick={() => remove(index)}
+                                disabled={fields.length === 1}
+                              >
+                                Remove Item
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      <Button
+                        type="button"
+                        onClick={() =>
+                          append({
+                            name: "",
+                            description: "",
+                            quantity: 0,
+                            unitPrice: 0,
+                            total: 0,
+                            unitType: "",
+                          })
+                        }
+                        className="mt-2"
+                      >
+                        Add Item
+                      </Button>
+                    </div>
+
+                    <div
+                      className={`space-y-4 p-4 rounded-lg ${
+                        theme === "dark" ? "bg-gray-800/50" : "bg-gray-200"
+                      }`}
+                    >
+                      <h3 className="text-lg font-semibold">
+                        Tax, Discount & Shipping
+                      </h3>
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          id="tax-switch"
+                          checked={showTax}
+                          onCheckedChange={setShowTax}
+                        />
+                        <Label htmlFor="tax-switch">Add Tax</Label>
+                      </div>
+                      {showTax && (
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-sm font-medium">
+                              Tax Amount
+                            </label>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              {...register("details.taxDetails.amount", {
+                                valueAsNumber: true,
+                                min: {
+                                  value: 0,
+                                  message: "Tax amount cannot be negative",
+                                },
+                              })}
+                              className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
+                                theme === "dark"
+                                  ? "bg-gray-700 text-white border-gray-600"
+                                  : "bg-white text-black border-gray-300"
+                              }`}
+                            />
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium">
+                              Amount Type
+                            </label>
+                            <select
+                              {...register("details.taxDetails.amountType")}
+                              className={`mt-1 w-full rounded-md border p-2 focus:ring-2 focus:ring-blue-500 ${
+                                theme === "dark"
+                                  ? "bg-gray-700 text-white border-gray-600"
+                                  : "bg-white text-black border-gray-300"
+                              }`}
+                            >
+                              <option value="percentage">Percentage</option>
+                              <option value="fixed">Fixed</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium">
+                              Tax ID
+                            </label>
+                            <Input
+                              {...register("details.taxDetails.taxID")}
+                              className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
+                                theme === "dark"
+                                  ? "bg-gray-700 text-white border-gray-600"
+                                  : "bg-white text-black border-gray-300"
+                              }`}
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          id="discount-switch"
+                          checked={showDiscount}
+                          onCheckedChange={setShowDiscount}
+                        />
+                        <Label htmlFor="discount-switch">Add Discount</Label>
+                      </div>
+                      {showDiscount && (
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-sm font-medium">
+                              Discount Amount
+                            </label>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              {...register("details.discountDetails.amount", {
+                                valueAsNumber: true,
+                                min: {
+                                  value: 0,
+                                  message: "Discount amount cannot be negative",
+                                },
+                              })}
+                              className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
+                                theme === "dark"
+                                  ? "bg-gray-700 text-white border-gray-600"
+                                  : "bg-white text-black border-gray-300"
+                              }`}
+                            />
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium">
+                              Amount Type
+                            </label>
+                            <select
+                              {...register(
+                                "details.discountDetails.amountType"
+                              )}
+                              className={`mt-1 w-full rounded-md border p-2 focus:ring-2 focus:ring-blue-500 ${
+                                theme === "dark"
+                                  ? "bg-gray-700 text-white border-gray-600"
+                                  : "bg-white text-black border-gray-300"
+                              }`}
+                            >
+                              <option value="percentage">Percentage</option>
+                              <option value="amount">Fixed</option>
+                            </select>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          id="shipping-switch"
+                          checked={showShipping}
+                          onCheckedChange={setShowShipping}
+                        />
+                        <Label htmlFor="shipping-switch">Add Shipping</Label>
+                      </div>
+                      {showShipping && (
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-sm font-medium">
+                              Shipping Cost
+                            </label>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              {...register("details.shippingDetails.cost", {
+                                valueAsNumber: true,
+                                min: {
+                                  value: 0,
+                                  message: "Shipping cost cannot be negative",
+                                },
+                              })}
+                              className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
+                                theme === "dark"
+                                  ? "bg-gray-700 text-white border-gray-600"
+                                  : "bg-white text-black border-gray-300"
+                              }`}
+                            />
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium">
+                              Cost Type
+                            </label>
+                            <select
+                              {...register("details.shippingDetails.costType")}
+                              className={`mt-1 w-full rounded-md border p-2 focus:ring-2 focus:ring-blue-500 ${
+                                theme === "dark"
+                                  ? "bg-gray-700 text-white border-gray-600"
+                                  : "bg-white text-black border-gray-300"
+                              }`}
+                            >
+                              <option value="percentage">Percentage</option>
+                              <option value="amount">Fixed</option>
+                            </select>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div
+                      className={`space-y-4 p-4 rounded-lg ${
+                        theme === "dark" ? "bg-gray-800/50" : "bg-gray-200"
+                      }`}
+                    >
+                      <h3 className="text-lg font-semibold">
+                        Payment Information
+                      </h3>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-sm font-medium">
+                            Bank Name
+                          </label>
+                          <Input
+                            {...register("details.paymentInformation.bankName")}
+                            className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
+                              theme === "dark"
+                                ? "bg-gray-700 text-white border-gray-600"
+                                : "bg-white text-black border-gray-300"
+                            }`}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium">
+                            Account Name
+                          </label>
+                          <Input
+                            {...register(
+                              "details.paymentInformation.accountName"
+                            )}
+                            className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
+                              theme === "dark"
+                                ? "bg-gray-700 text-white border-gray-600"
+                                : "bg-white text-black border-gray-300"
+                            }`}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium">
+                            Account Number
+                          </label>
+                          <Input
+                            {...register(
+                              "details.paymentInformation.accountNumber"
+                            )}
+                            className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
+                              theme === "dark"
+                                ? "bg-gray-700 text-white border-gray-600"
+                                : "bg-white text-black border-gray-300"
+                            }`}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div
+                      className={`space-y-4 p-4 rounded-lg ${
+                        theme === "dark" ? "bg-gray-800/50" : "bg-gray-200"
+                      }`}
+                    >
+                      <h3 className="text-lg font-semibold">
+                        Additional Information
+                      </h3>
+                      <div className="grid grid-cols-1 gap-4">
+                        <div>
+                          <label className="text-sm font-medium">
+                            Additional Notes
+                          </label>
+                          <textarea
+                            {...register("details.additionalNotes")}
+                            className={`mt-1 w-full rounded-md border p-2 focus:ring-2 focus:ring-blue-500 resize-y h-[100px] ${
+                              theme === "dark"
+                                ? "bg-gray-700 text-white border-gray-600"
+                                : "bg-white text-black border-gray-300"
+                            }`}
+                            placeholder="Additional Notes"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium">
+                            Payment Terms
+                          </label>
+                          <textarea
+                            {...register("details.paymentTerms")}
+                            className={`mt-1 w-full rounded-md border p-2 focus:ring-2 focus:ring-blue-500 resize-y h-[100px] ${
+                              theme === "dark"
+                                ? "bg-gray-700 text-white border-gray-600"
+                                : "bg-white text-black border-gray-300"
+                            }`}
+                            placeholder="Payment Terms"
+                          />
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </ScrollArea>
                 {errorMessage && (
