@@ -525,7 +525,7 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
         font-weight: bold;
       }
       .footer {
-        width: calc(100%);
+        width: 100%;
         padding: 0;
         margin-top: 0;
       }
@@ -645,7 +645,7 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
         </div>
       </div>
     </div>
-    <div class="footer mx-auto">
+    <div class="footer w-full">
       <div class="flex justify-between">
         <p class="text-base font-bold text-gray-800 ml-3">Receiver's Sign _________________</p>
         <p class="text-base text-gray-800">for <span class="font-bold">${

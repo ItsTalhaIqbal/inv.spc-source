@@ -500,7 +500,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
         font-weight: bold;
       }
       .footer {
-        width: calc(100%);
+        width:100%;
         padding: 0;
         margin-top: 0;
       }
@@ -612,7 +612,7 @@ ${details.invoiceNumber}
         </div>
       </div>
     </div>
-    <div class="footer ">
+    <div class="footer w-full">
       <div class="flex justify-between">
         <p class="text-base font-bold text-gray-800 ml-3">Receiver's Sign _________________</p>
         <p class="text-base text-gray-800">for <span class="font-bold">${
