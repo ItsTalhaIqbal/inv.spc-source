@@ -131,13 +131,22 @@ const Page: React.FC = () => {
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const [viewInvoiceDialog, setViewInvoiceDialog] = useState<boolean>(false);
   const [editInvoiceDialog, setEditInvoiceDialog] = useState<boolean>(false);
-  const [viewInvoice, setViewInvoice] = useState<Invoice | undefined>(undefined);
-  const [editInvoice, setEditInvoice] = useState<Invoice | undefined>(undefined);
+  const [viewInvoice, setViewInvoice] = useState<Invoice | undefined>(
+    undefined
+  );
+  const [editInvoice, setEditInvoice] = useState<Invoice | undefined>(
+    undefined
+  );
   const [loading, setLoading] = useState<boolean>(true);
   const [authChecked, setAuthChecked] = useState<boolean>(false);
-  const [pdfLoadingStates, setPdfLoadingStates] = useState<{ [key: string]: boolean }>({});
+  const [pdfLoadingStates, setPdfLoadingStates] = useState<{
+    [key: string]: boolean;
+  }>({});
   const [errorMessage, setErrorMessage] = useState<string>("");
-  const [toast, setToast] = useState<{ title: string; description: string } | null>(null);
+  const [toast, setToast] = useState<{
+    title: string;
+    description: string;
+  } | null>(null);
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [convertInvoice, setConvertInvoice] = useState<any>(null);
   const [convertConfirm, setConvertConfirm] = useState<boolean>(false);
@@ -199,7 +208,8 @@ const Page: React.FC = () => {
     },
   });
 
-  const { reset, handleSubmit, register, control, watch, setValue, getValues } = methods;
+  const { reset, handleSubmit, register, control, watch, setValue, getValues } =
+    methods;
   const { fields, append, remove } = useFieldArray({
     control,
     name: "details.items",
@@ -214,7 +224,10 @@ const Page: React.FC = () => {
   const shippingDetails = watch("details.shippingDetails");
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentInvoices = filteredInvoices.slice(indexOfFirstItem, indexOfLastItem);
+  const currentInvoices = filteredInvoices.slice(
+    indexOfFirstItem,
+    indexOfLastItem
+  );
 
   useEffect(() => {
     const totalPages = Math.ceil(filteredInvoices.length / itemsPerPage);
@@ -591,19 +604,22 @@ const Page: React.FC = () => {
     }
   };
 
-  const onEditInvoice = (invoice: Invoice) => {
-    const formData = mapInvoiceToFormData(invoice);
-    reset(formData);
-    setEditInvoice(invoice);
-    setEditInvoiceDialog(true);
-    setShowTax(
-      !!invoice.details.taxDetails?.amount &&
-        invoice.details.taxDetails.amount > 0
-    );
-    setShowDiscount(!!invoice.details.discountDetails?.amount);
-    setShowShipping(!!invoice.details.shippingDetails?.cost);
-    setErrorMessage("");
-  };
+ const onEditInvoice = (invoice: Invoice) => {
+  const formData = mapInvoiceToFormData(invoice);
+  reset(formData);
+  setEditInvoice(invoice);
+  setEditInvoiceDialog(true);
+  setShowTax(
+    !!invoice.details.taxDetails?.amount && invoice.details.taxDetails.amount > 0
+  );
+  setShowDiscount(!!invoice.details.discountDetails?.amount);
+  setShowShipping(!!invoice.details.shippingDetails?.cost);
+  // Set dueDate value based on invoice data
+  setValue("details.dueDate", formData.details.dueDate || "", {
+    shouldValidate: true,
+  });
+  setErrorMessage("");
+};
 
   const onSubmitEdit = async (data: InvoiceType) => {
     if (!editInvoice?._id) return;
@@ -653,7 +669,11 @@ const Page: React.FC = () => {
         subTotal +
         (showTax ? taxAmount : 0) +
         (showShipping ? shippingAmount : 0);
-      if (showDiscount && discountDetails?.amount && discountAmount > maxDiscount) {
+      if (
+        showDiscount &&
+        discountDetails?.amount &&
+        discountAmount > maxDiscount
+      ) {
         setErrorMessage(`Discount cannot exceed ${maxDiscount.toFixed(2)}.`);
         setIsSaving(false);
         return;
@@ -785,8 +805,7 @@ const Page: React.FC = () => {
     }
   };
 
-
- const filterInvoices = useCallback(() => {
+  const filterInvoices = useCallback(() => {
     return invoices.filter((invoice) => {
       // Search filter
       const matchesSearch =
@@ -796,9 +815,7 @@ const Page: React.FC = () => {
         invoice.receiver.name
           .toLowerCase()
           .includes(searchTerm.toLowerCase()) ||
-        invoice.receiver.phone
-          .toLowerCase()
-          .includes(searchTerm.toLowerCase());
+        invoice.receiver.phone.toLowerCase().includes(searchTerm.toLowerCase());
 
       // Type filter
       const matchesType =
@@ -811,22 +828,23 @@ const Page: React.FC = () => {
       if (dateRange?.from) {
         try {
           // Safely parse invoice date
-          const invoiceDate = invoice.createdAt 
+          const invoiceDate = invoice.createdAt
             ? new Date(invoice.createdAt)
             : null;
 
           if (!invoiceDate || isNaN(invoiceDate.getTime())) {
-            console.warn(`Invalid date for invoice ${invoice._id}`, invoice.createdAt);
+            console.warn(
+              `Invalid date for invoice ${invoice._id}`,
+              invoice.createdAt
+            );
             return false;
           }
 
           // Create comparison dates (normalized to start/end of day)
           const fromDate = new Date(dateRange.from);
           fromDate.setHours(0, 0, 0, 0);
-          
-          const toDate = dateRange.to 
-            ? new Date(dateRange.to)
-            : new Date();
+
+          const toDate = dateRange.to ? new Date(dateRange.to) : new Date();
           toDate.setHours(23, 59, 59, 999);
 
           matchesDate = invoiceDate >= fromDate && invoiceDate <= toDate;
@@ -840,10 +858,10 @@ const Page: React.FC = () => {
     });
   }, [invoices, searchTerm, filterType, dateRange]);
 
-useEffect(() => {
+  useEffect(() => {
     const filtered = filterInvoices();
     setFilteredInvoices(filtered);
-    
+
     // Reset to first page if results change
     setCurrentPage(1);
   }, [filterInvoices]);
@@ -851,7 +869,7 @@ useEffect(() => {
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
   };
-const handleDateRangeChange = (values: { range: DateRange }) => {
+  const handleDateRangeChange = (values: { range: DateRange }) => {
     console.log("New date range selected:", values.range);
     setDateRange(values.range);
   };
@@ -943,15 +961,17 @@ const handleDateRangeChange = (values: { range: DateRange }) => {
               />
             </div>
             <div className="flex items-center gap-4">
-             <DateRangePicker
+              <DateRangePicker
                 onUpdate={handleDateRangeChange}
-                initialDateFrom={new Date(new Date().setDate(new Date().getDate() - 30))}
+                initialDateFrom={
+                  new Date(new Date().setDate(new Date().getDate() - 30))
+                }
                 initialDateTo={new Date()}
                 showCompare={false}
                 align="end"
                 locale="en-US"
               />
-              
+
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
@@ -1345,9 +1365,8 @@ const handleDateRangeChange = (values: { range: DateRange }) => {
                         <span>
                           {viewInvoice.details.shippingDetails?.cost
                             ? " border-gray-200 p-3 rounded-md my-2 bg-white"
-                            : "border border-gray-600 p-3 rounded-md my-2 bg-gray-800"
-                          }
-                        
+                            : "border border-gray-600 p-3 rounded-md my-2 bg-gray-800"}
+
                           {Number(
                             viewInvoice?.details?.shippingDetails?.cost
                           ).toFixed(2)}
@@ -1498,7 +1517,7 @@ const handleDateRangeChange = (values: { range: DateRange }) => {
                           </label>
                           <Input
                             type="date"
-                              
+                            {...register("details.dueDate")}
                             className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
                               theme === "dark"
                                 ? "bg-gray-700 text-white border-gray-600"
@@ -1514,7 +1533,9 @@ const handleDateRangeChange = (values: { range: DateRange }) => {
                         theme === "dark" ? "bg-gray-800/50" : "bg-gray-200"
                       }`}
                     >
-                      <h3 className="text-lg font-semibold">Receiver Information</h3>
+                      <h3 className="text-lg font-semibold">
+                        Receiver Information
+                      </h3>
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <label className="text-sm font-medium">Name</label>
@@ -1599,7 +1620,9 @@ const handleDateRangeChange = (values: { range: DateRange }) => {
                         >
                           <div className="grid grid-cols-4 gap-4">
                             <div>
-                              <label className="text-sm font-medium">Name</label>
+                              <label className="text-sm font-medium">
+                                Name
+                              </label>
                               <textarea
                                 {...register(`details.items.${index}.name`, {
                                   required: "Item name is required",
@@ -1618,12 +1641,15 @@ const handleDateRangeChange = (values: { range: DateRange }) => {
                                 Unit Type
                               </label>
                               <select
-                                {...register(`details.items.${index}.unitType`, {
-                                  validate: (value) =>
-                                    value === "" ||
-                                    UNIT_TYPES.includes(value as any) ||
-                                    "Please select a valid unit type",
-                                })}
+                                {...register(
+                                  `details.items.${index}.unitType`,
+                                  {
+                                    validate: (value) =>
+                                      value === "" ||
+                                      UNIT_TYPES.includes(value as any) ||
+                                      "Please select a valid unit type",
+                                  }
+                                )}
                                 className={`mt-1 w-full rounded-md border p-2 focus:ring-2 focus:ring-blue-500 ${
                                   theme === "dark"
                                     ? "bg-gray-700 text-white border-gray-600"
@@ -1645,13 +1671,16 @@ const handleDateRangeChange = (values: { range: DateRange }) => {
                               <Input
                                 type="number"
                                 step="1"
-                                {...register(`details.items.${index}.quantity`, {
-                                  valueAsNumber: true,
-                                  min: {
-                                    value: 0,
-                                    message: "Quantity cannot be negative",
-                                  },
-                                })}
+                                {...register(
+                                  `details.items.${index}.quantity`,
+                                  {
+                                    valueAsNumber: true,
+                                    min: {
+                                      value: 0,
+                                      message: "Quantity cannot be negative",
+                                    },
+                                  }
+                                )}
                                 className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
                                   theme === "dark"
                                     ? "bg-gray-700 text-white border-gray-600"
@@ -1680,13 +1709,16 @@ const handleDateRangeChange = (values: { range: DateRange }) => {
                               <Input
                                 type="number"
                                 step="0.01"
-                                {...register(`details.items.${index}.unitPrice`, {
-                                  valueAsNumber: true,
-                                  min: {
-                                    value: 0,
-                                    message: "Unit price cannot be negative",
-                                  },
-                                })}
+                                {...register(
+                                  `details.items.${index}.unitPrice`,
+                                  {
+                                    valueAsNumber: true,
+                                    min: {
+                                      value: 0,
+                                      message: "Unit price cannot be negative",
+                                    },
+                                  }
+                                )}
                                 className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
                                   theme === "dark"
                                     ? "bg-gray-700 text-white border-gray-600"
@@ -1715,7 +1747,9 @@ const handleDateRangeChange = (values: { range: DateRange }) => {
                                 Description
                               </label>
                               <textarea
-                                {...register(`details.items.${index}.description`)}
+                                {...register(
+                                  `details.items.${index}.description`
+                                )}
                                 className={`mt-1 w-full rounded-md border p-2 focus:ring-2 focus:ring-blue-500 resize-y h-[50px] text-left ${
                                   theme === "dark"
                                     ? "bg-gray-700 text-white border-gray-600"
@@ -1812,7 +1846,9 @@ const handleDateRangeChange = (values: { range: DateRange }) => {
                             </select>
                           </div>
                           <div>
-                            <label className="text-sm font-medium">Tax ID</label>
+                            <label className="text-sm font-medium">
+                              Tax ID
+                            </label>
                             <Input
                               {...register("details.taxDetails.taxID")}
                               className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
@@ -1861,7 +1897,9 @@ const handleDateRangeChange = (values: { range: DateRange }) => {
                               Amount Type
                             </label>
                             <select
-                              {...register("details.discountDetails.amountType")}
+                              {...register(
+                                "details.discountDetails.amountType"
+                              )}
                               className={`mt-1 w-full rounded-md border p-2 focus:ring-2 focus:ring-blue-500 ${
                                 theme === "dark"
                                   ? "bg-gray-700 text-white border-gray-600"
@@ -1953,7 +1991,9 @@ const handleDateRangeChange = (values: { range: DateRange }) => {
                             Account Name
                           </label>
                           <Input
-                            {...register("details.paymentInformation.accountName")}
+                            {...register(
+                              "details.paymentInformation.accountName"
+                            )}
                             className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
                               theme === "dark"
                                 ? "bg-gray-700 text-white border-gray-600"
