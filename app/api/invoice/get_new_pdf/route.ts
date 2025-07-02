@@ -482,7 +482,7 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
       }
       .invoice-table th, .invoice-table td {
         font-size: 14px;
-        border: 1px solid rgb(143, 145, 150);
+        border: 1px solid rgb(212, 213, 216);
       }
       .invoice-table th {
         font-weight: bold;
