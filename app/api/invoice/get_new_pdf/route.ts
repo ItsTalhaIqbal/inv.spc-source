@@ -57,9 +57,42 @@ interface InvoiceType {
 
 const formatPriceToString = (amount: number, currency: string): string => {
   const numberToWords = (num: number): string => {
-    const units = ["", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"];
-    const teens = ["ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen"];
-    const tens = ["", "", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"];
+    const units = [
+      "",
+      "one",
+      "two",
+      "three",
+      "four",
+      "five",
+      "six",
+      "seven",
+      "eight",
+      "nine",
+    ];
+    const teens = [
+      "ten",
+      "eleven",
+      "twelve",
+      "thirteen",
+      "fourteen",
+      "fifteen",
+      "sixteen",
+      "seventeen",
+      "eighteen",
+      "nineteen",
+    ];
+    const tens = [
+      "",
+      "",
+      "twenty",
+      "thirty",
+      "forty",
+      "fifty",
+      "sixty",
+      "seventy",
+      "eighty",
+      "ninety",
+    ];
     const thousands = ["", "thousand", "million", "billion"];
 
     if (num === 0) return "zero";
@@ -132,7 +165,6 @@ const formatPriceToString = (amount: number, currency: string): string => {
 };
 
 async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
-
   if (!invoiceData.details?.invoiceNumber) {
     console.error("Invoice number missing");
     throw new Error("Invoice number is missing");
@@ -140,7 +172,9 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
 
   if (typeof invoiceData.details?.pdfTemplate !== "number") {
     console.error("Invalid PDF template:", invoiceData.details?.pdfTemplate);
-    throw new Error(`PDF template must be a number, received: ${invoiceData.details.pdfTemplate}`);
+    throw new Error(
+      `PDF template must be a number, received: ${invoiceData.details.pdfTemplate}`
+    );
   }
 
   const senderData = invoiceData.sender || {
@@ -177,17 +211,28 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
     return `${formattedInteger}.${decimalPart}`;
   };
 
-  const taxDetails = details.taxDetails || { amount: 0, amountType: "percentage", taxID: "" };
-  const discountDetails = details.discountDetails || { amount: 0, amountType: "amount" };
-  const shippingDetails = details.shippingDetails || { cost: 0, costType: "amount" };
-
+  const taxDetails = details.taxDetails || {
+    amount: 0,
+    amountType: "percentage",
+    taxID: "",
+  };
+  const discountDetails = details.discountDetails || {
+    amount: 0,
+    amountType: "amount",
+  };
+  const shippingDetails = details.shippingDetails || {
+    cost: 0,
+    costType: "amount",
+  };
 
   const subtotal = Number(
-    (details.items || []).reduce((sum, item) => {
-      const quantity = item.quantity || 0;
-      const unitPrice = item.unitPrice || 0;
-      return sum + quantity * unitPrice;
-    }, 0).toFixed(2)
+    (details.items || [])
+      .reduce((sum, item) => {
+        const quantity = item.quantity || 0;
+        const unitPrice = item.unitPrice || 0;
+        return sum + quantity * unitPrice;
+      }, 0)
+      .toFixed(2)
   );
 
   const taxAmount = Number(
@@ -214,10 +259,14 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
       : 0
   );
 
-  const grandTotal = Number((subtotal + taxAmount + shippingAmount - discountAmount).toFixed(2));
+  const grandTotal = Number(
+    (subtotal + taxAmount + shippingAmount - discountAmount).toFixed(2)
+  );
 
-  const totalAmountInWords = formatPriceToString(grandTotal, details.currency || "AED");
-
+  const totalAmountInWords = formatPriceToString(
+    grandTotal,
+    details.currency || "AED"
+  );
 
   const itemsHtml = (details.items || [])
     .map((item: Item, index: number) => {
@@ -227,18 +276,36 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
 
       return `
         <tr class="border">
-          <td class="w-[5%] text-center font-bold text-black text-base border border-gray-500">${index + 1}</td>
-          <td class="w-[40%] text-center text-black text-base border border-gray-500 px-2 py-1" style="word-wrap: break-word; white-space: normal;"><pre class="text-start">${item.name || ""}</pre></td>
-          <td class="w-[10%] text-center text-black text-base border border-gray-500">${item.unitType || ""}</td>
-          <td class="w-[10%] text-center text-black text-base border border-gray-500">${quantity?quantity:""}</td>
-          <td class="w-[20%] text-center text-black text-base border border-gray-500">${unitPrice? unitPrice:""}</td>
-          <td class="w-[15%] text-center text-black text-base border border-gray-500">${total?total:""}</td>
+          <td class="w-[5%] text-center font-bold text-black text-base border border-gray-500">${
+            index + 1
+          }</td>
+          <td class="w-[40%] text-center text-black text-base border border-gray-500 px-2 py-1" style="word-wrap: break-word; white-space: normal;"><pre class="text-start">${
+            item.name || ""
+          }</pre></td>
+          <td class="w-[10%] text-center text-black text-base border border-gray-500">${
+            item.unitType || ""
+          }</td>
+          <td class="w-[10%] text-center text-black text-base border border-gray-500">${
+            quantity ? quantity : ""
+          }</td>
+          <td class="w-[20%] text-center text-black text-base border border-gray-500">${
+            unitPrice ? unitPrice : ""
+          }</td>
+          <td class="w-[15%] text-center text-black text-base border border-gray-500">${
+            total ? total : ""
+          }</td>
         </tr>
       `;
     })
     .join("");
 
-  const logoPath = path.join(process.cwd(), "public", "assets", "img", "image.jpg");
+  const logoPath = path.join(
+    process.cwd(),
+    "public",
+    "assets",
+    "img",
+    "image.jpg"
+  );
   let logoBase64 = "";
   try {
     if (fs.existsSync(logoPath)) {
@@ -252,7 +319,11 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
   }
 
   let tailwindCss = "";
-  const localTailwindPath = path.join(process.cwd(), "public", "tailwind.min.css");
+  const localTailwindPath = path.join(
+    process.cwd(),
+    "public",
+    "tailwind.min.css"
+  );
   try {
     if (fs.existsSync(localTailwindPath)) {
       tailwindCss = fs.readFileSync(localTailwindPath, "utf8");
@@ -268,16 +339,28 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
   const hasTax = taxDetails.amount && taxDetails.amount > 0;
   const hasDiscount = discountDetails.amount && discountDetails.amount > 0;
   const hasShipping = shippingDetails.cost && shippingDetails.cost > 0;
-  const hasTotalInWords = totalAmountInWords && totalAmountInWords.trim() !== "";
+  const hasTotalInWords =
+    totalAmountInWords && totalAmountInWords.trim() !== "";
   const isInvoice = details.isInvoice || false;
 
-  const invoiceNumberPrefix = isInvoice && hasTax ? `TAX_INV-${details.invoiceNumber}` : isInvoice ? `INV-${details.invoiceNumber}` : `QUT-${details.invoiceNumber}`;
+  const invoiceNumberPrefix =
+    isInvoice && hasTax
+      ? `TAX_INV-${details.invoiceNumber}`
+      : isInvoice
+      ? `INV-${details.invoiceNumber}`
+      : `QUT-${details.invoiceNumber}`;
 
   const taxHtml = hasTax
     ? `
       <div class="flex justify-between amount-line">
-        <span class="text-base text-gray-800">VAT ${taxDetails.amountType === "percentage" ? `(${taxDetails.amount}%)` : ""}</span>
-        <span class="text-base text-gray-800">${details.currency || "AED"} ${formatNumberWithCommas(taxAmount)}</span>
+        <span class="text-base text-gray-800">VAT ${
+          taxDetails.amountType === "percentage"
+            ? `(${taxDetails.amount}%)`
+            : ""
+        }</span>
+        <span class="text-base text-gray-800">${
+          details.currency || "AED"
+        } ${formatNumberWithCommas(taxAmount)}</span>
       </div>
     `
     : "";
@@ -285,8 +368,14 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
   const discountHtml = hasDiscount
     ? `
       <div class="flex justify-between amount-line">
-        <span class="text-base text-gray-800">Discount ${discountDetails.amountType === "percentage" ? `(${discountDetails.amount}%)` : ""}</span>
-        <span class="text-base text-gray-800">${details.currency || "AED"} ${formatNumberWithCommas(discountAmount)}</span>
+        <span class="text-base text-gray-800">Discount ${
+          discountDetails.amountType === "percentage"
+            ? `(${discountDetails.amount}%)`
+            : ""
+        }</span>
+        <span class="text-base text-gray-800">${
+          details.currency || "AED"
+        } ${formatNumberWithCommas(discountAmount)}</span>
       </div>
     `
     : "";
@@ -294,8 +383,14 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
   const shippingHtml = hasShipping
     ? `
       <div class="flex justify-between amount-line">
-        <span class="text-base text-gray-800">Shipping ${shippingDetails.costType === "percentage" ? `(${shippingDetails.cost}%)` : ""}</span>
-        <span class="text-base text-gray-800">${details.currency || "AED"} ${formatNumberWithCommas(shippingAmount)}</span>
+        <span class="text-base text-gray-800">Shipping ${
+          shippingDetails.costType === "percentage"
+            ? `(${shippingDetails.cost}%)`
+            : ""
+        }</span>
+        <span class="text-base text-gray-800">${
+          details.currency || "AED"
+        } ${formatNumberWithCommas(shippingAmount)}</span>
       </div>
     `
     : "";
@@ -468,17 +563,22 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
     <div class="container mx-auto">
       <div class="header">
         <div class="logo">
-          ${logoBase64 ? `<img src="${logoBase64}" alt="SPC Source Logo" />` : `<p>SPC Source Logo</p>`}
+          ${
+            logoBase64
+              ? `<img src="${logoBase64}" alt="SPC Source Logo" />`
+              : `<p>SPC Source Logo</p>`
+          }
         </div>
         <div class="header-details mt-4">
           <p class="text-sm pt-1">
             <a href="https://bit.ly/spc-whatsapp-contact" target="_blank" rel="noopener noreferrer">
               +971 54 500 4520
-            </a> | contact@spcsource.com
+            </a>
           </p>
-          <p class="text-sm pt-1"></p>
-          <p class="text-sm pt-1">www.spcsource.com</p>
-          <p class="text-sm pt-1">${senderData.address || "Iris Bay, Office D-43, Business Bay, Dubai, UAE."}</p>
+          <p class="text-sm pt-1">${
+            senderData.address ||
+            "Iris Bay, Office D-43, Business Bay, Dubai, UAE."
+          }</p>
         </div>
       </div>
       <div class="customer-invoice-container">
@@ -489,14 +589,26 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
         </div>
         <div class="invoice-info">
           <h2 class="text-xl text-right">
-            <span class="invoice-number">${isInvoice?"INV-":"QUT-"}${details.invoiceNumber}</span>
+            <span class="invoice-number">${isInvoice ? "INV-" : "QUT-"}${
+    details.invoiceNumber
+  }</span>
           </h2>
-          <p class="text-md mt-1">${new Date(details.invoiceDate || new Date()).toLocaleDateString("en-US", DATE_OPTIONS)}</p>
-          ${details.dueDate ? `<p class="text-md mt-1">Due: ${new Date(details.dueDate).toLocaleDateString("en-US", DATE_OPTIONS)}</p>` : ""}
+          <p class="text-md mt-1">${new Date(
+            details.invoiceDate || new Date()
+          ).toLocaleDateString("en-US", DATE_OPTIONS)}</p>
+          ${
+            details.dueDate
+              ? `<p class="text-md mt-1">Due: ${new Date(
+                  details.dueDate
+                ).toLocaleDateString("en-US", DATE_OPTIONS)}</p>`
+              : ""
+          }
         </div>
       </div>
       <div class="mt-4">
-        <h3 class="text-lg font-bold">${isInvoice ? `${hasTax ? "TAX" : ""} INVOICE` : "QUOTATION"}</h3>
+        <h3 class="text-lg font-bold">${
+          isInvoice ? `${hasTax ? "TAX" : ""} INVOICE` : "QUOTATION"
+        }</h3>
         <table class="invoice-table">
           <thead>
             <tr class="py-8">
@@ -521,7 +633,9 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
           <div class="amounts-section">
             <div class="flex justify-between amount-line">
               <span class="text-base text-gray-800">Subtotal</span>
-              <span class="text-base text-gray-800">${details.currency || "AED"} ${formatNumberWithCommas(subtotal)}</span>
+              <span class="text-base text-gray-800">${
+                details.currency || "AED"
+              } ${formatNumberWithCommas(subtotal)}</span>
             </div>
             
             ${shippingHtml}
@@ -529,7 +643,9 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
             ${taxHtml}
             <div class="flex justify-between total-amount">
               <span class="text-base font-bold text-gray-800">Grand Total</span>
-              <span class="text-base font-bold text-gray-800">${details.currency || "AED"} ${formatNumberWithCommas(grandTotal)}</span>
+              <span class="text-base font-bold text-gray-800">${
+                details.currency || "AED"
+              } ${formatNumberWithCommas(grandTotal)}</span>
             </div>
           </div>
         </div>
@@ -538,9 +654,16 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
     <div class="footer mx-auto">
       <div class="flex justify-between">
         <p class="text-base font-bold text-gray-800 ml-3">Receiver's Sign _________________</p>
-        <p class="text-base text-gray-800">for <span class="font-bold">${senderData.name || ""}</span></p>
+        <p class="text-base text-gray-800">for <span class="font-bold">${
+          senderData.name || ""
+        }</span></p>
       </div>
-      <div class="h-[20px] w-full bg-[#FFA733]"></div>
+      <div class="flex justify-between h-[20px] w-full bg-[#FFA733]">
+      <p> contact@spcsource.com</p>
+      <p>www.spcsource.com</p>
+
+  
+      </div>
     </div>
   </body>
 </html>
@@ -548,7 +671,7 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
 
   let browser = null;
   try {
-    const launchOptions:any = {
+    const launchOptions: any = {
       args: [
         ...chromium.args,
         "--no-sandbox",
@@ -576,7 +699,7 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
       timeout: 60000, // Increased timeout
     });
 
-    const pdfBuffer:any = await page.pdf({
+    const pdfBuffer: any = await page.pdf({
       format: "A4",
       printBackground: true,
       margin: { top: "5mm", right: "5mm", bottom: "20mm", left: "5mm" },
@@ -611,13 +734,17 @@ export async function POST(req: NextRequest) {
       );
     }
 
-
     const pdfBuffer = await generatePdf(invoiceData);
 
     const isInvoice = invoiceData.details.isInvoice || false;
     const hasTaxDetails = !!invoiceData.details.taxDetails;
-    const taxAmount = hasTaxDetails ? Number(invoiceData.details.taxDetails?.amount) : 0;
-    const numericInvoiceNumber = invoiceData.details.invoiceNumber.replace(/\D/g, "");
+    const taxAmount = hasTaxDetails
+      ? Number(invoiceData.details.taxDetails?.amount)
+      : 0;
+    const numericInvoiceNumber = invoiceData.details.invoiceNumber.replace(
+      /\D/g,
+      ""
+    );
 
     let fileName = "";
     if (isInvoice && taxAmount > 0) {
@@ -628,10 +755,11 @@ export async function POST(req: NextRequest) {
       fileName = `SPC_QUT_${numericInvoiceNumber}.pdf`;
     }
 
-
     const headers = new Headers({
       "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="${encodeURIComponent(fileName)}"`,
+      "Content-Disposition": `attachment; filename="${encodeURIComponent(
+        fileName
+      )}"`,
       "Content-Length": pdfBuffer.length.toString(),
       "Cache-Control": "no-cache",
       "Access-Control-Allow-Origin": "*", // Ensure CORS compatibility
@@ -673,19 +801,20 @@ export async function GET(req: NextRequest) {
 
     if (!invoiceData) {
       console.error("Invoice not found for number:", invoiceNumber);
-      return NextResponse.json(
-        { error: "Invoice not found" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Invoice not found" }, { status: 404 });
     }
-
 
     const pdfBuffer = await generatePdf(invoiceData);
 
     const isInvoice = invoiceData.details?.isInvoice || false;
     const hasTaxDetails = !!invoiceData.details?.taxDetails;
-    const taxAmount = hasTaxDetails ? Number(invoiceData.details?.taxDetails?.amount) : 0;
-    const numericInvoiceNumber = invoiceData.details?.invoiceNumber.replace(/\D/g, "");
+    const taxAmount = hasTaxDetails
+      ? Number(invoiceData.details?.taxDetails?.amount)
+      : 0;
+    const numericInvoiceNumber = invoiceData.details?.invoiceNumber.replace(
+      /\D/g,
+      ""
+    );
 
     let fileName = "";
     if (isInvoice && taxAmount > 0) {
@@ -696,10 +825,11 @@ export async function GET(req: NextRequest) {
       fileName = `SPC_QUT_${numericInvoiceNumber}.pdf`;
     }
 
-
     const headers = new Headers({
       "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="${encodeURIComponent(fileName)}"`,
+      "Content-Disposition": `attachment; filename="${encodeURIComponent(
+        fileName
+      )}"`,
       "Content-Length": pdfBuffer.length.toString(),
       "Cache-Control": "no-cache",
       "Access-Control-Allow-Origin": "*", // Ensure CORS compatibility

@@ -553,10 +553,9 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
           <p class="text-sm pt-1">
             <a href="https://bit.ly/spc-whatsapp-contact" target="_blank" rel="noopener noreferrer">
               +971 54 500 4520
-            </a> | contact@spcsource.com
+            </a>
           </p>
-          <p class="text-sm pt-1"></p>
-          <p class="text-sm pt-1">www.spcsource.com </p>
+
           <p class="text-sm pt-1">${
             senderData.address ||
             "Iris Bay, Office D-43, Business Bay, Dubai, UAE."
@@ -634,7 +633,10 @@ ${details.invoiceNumber}
           senderData.name || ""
         }</span></p>
       </div>
-      <div class="h-[20px] w-full bg-[#FFA733]"></div>
+        <div class="flex justify-between h-[20px] w-full bg-[#FFA733]">
+      <p> contact@spcsource.com</p>
+      <p>www.spcsource.com</p>  
+      </div>
 
     </div>
   </body>
