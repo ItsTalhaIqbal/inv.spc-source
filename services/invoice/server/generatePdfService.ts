@@ -619,10 +619,10 @@ ${details.invoiceNumber}
           senderData.name || ""
         }</span></p>
       </div>
-        <div class="flex justify-between h-[10px]  mt-1 p-2 w-full" style="background-color: #FFA733; ">
-      <p><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-mail-icon lucide-mail"><path d="m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7"/><rect x="2" y="4" width="20" height="16" rx="2"/></svg>contact@spcsource.com</p>
-      <p><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-globe-icon lucide-globe"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>www.spcsource.com</p>  
-      </div>
+        <div class="flex justify-between h-[10px] mt-1 p-2 w-full" style="background-color: #FFA733;">
+    <p> &#x2709; contact@spcsource.com</p> <!-- Unicode for envelope -->
+    <p> &#x1F310; www.spcsource.com</p>   <!-- Unicode for globe -->
+  </div>
 
     </div>
   </body>
