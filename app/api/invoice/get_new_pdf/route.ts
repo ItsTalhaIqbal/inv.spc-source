@@ -433,7 +433,7 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
       body {
         font-family: 'Roboto', sans-serif;
         margin: 0;
-        padding: 0 20px;
+        
         background-color: #ffffff;
         color: #000000;
       }
@@ -441,7 +441,7 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
         display: block;
         min-height: calc(100vh - 80px);
         box-sizing: border-box;
-        padding: 0;
+        padding: 0 20px;
       }
       .header {
         display: flex;

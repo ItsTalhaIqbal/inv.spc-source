@@ -1498,7 +1498,7 @@ const handleDateRangeChange = (values: { range: DateRange }) => {
                           </label>
                           <Input
                             type="date"
-                            {...register("details.dueDate")}
+                              
                             className={`mt-1 focus:ring-2 focus:ring-blue-500 ${
                               theme === "dark"
                                 ? "bg-gray-700 text-white border-gray-600"
