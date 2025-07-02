@@ -633,7 +633,7 @@ ${details.invoiceNumber}
           senderData.name || ""
         }</span></p>
       </div>
-        <div class="flex justify-between h-[20px] w-full bg-[#FFA733]">
+        <div class="flex justify-between h-[20px] w-full" style="background-color: #FFA733; padding: 0.5rem;">
       <p> contact@spcsource.com</p>
       <p>www.spcsource.com</p>  
       </div>

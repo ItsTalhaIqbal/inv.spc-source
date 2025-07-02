@@ -1506,21 +1506,6 @@ const handleDateRangeChange = (values: { range: DateRange }) => {
                             }`}
                           />
                         </div>
-                        <div>
-                          <label className="text-sm font-medium">Currency</label>
-                          <select
-                            {...register("details.currency")}
-                            className={`mt-1 w-full rounded-md border p-2 focus:ring-2 focus:ring-blue-500 ${
-                              theme === "dark"
-                                ? "bg-gray-700 text-white border-gray-600"
-                                : "bg-white text-black border-gray-300"
-                            }`}
-                          >
-                            <option value="AED">AED</option>
-                            <option value="USD">USD</option>
-                            <option value="EUR">EUR</option>
-                          </select>
-                        </div>
                       </div>
                     </div>
 
