@@ -542,7 +542,6 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
         }
       }
       @page {
-        margin: 5mm;
         @bottom-right {
           content: "Page " counter(page) " of " counter(pages);
           font-family: 'Roboto', sans-serif;
