@@ -248,7 +248,7 @@ export const InvoiceContextProvider = ({
             invoiceLogo: data.details?.invoiceLogo || "/public/assets/img/image.jpg",
             invoiceNumber: data.details.invoiceNumber || "",
             invoiceDate: data.details?.invoiceDate ? new Date(data.details.invoiceDate).toISOString() : new Date().toISOString(),
-            dueDate: data.details?.dueDate ? new Date(data.details.dueDate) : new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString(),
+            dueDate: data.details?.dueDate ? new Date(data.details.dueDate) : null,
             items: (data.details.items || []).map((item) => ({
               name: item.name || "No description provided",
               description: item.description || "No description provided",
