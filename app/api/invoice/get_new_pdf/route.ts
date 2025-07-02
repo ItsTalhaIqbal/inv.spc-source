@@ -164,7 +164,7 @@ const formatPriceToString = (amount: number, currency: string): string => {
   return result.charAt(0).toUpperCase() + result.slice(1);
 };
 
-async function generatePdf(invoiceData: InvoiceType): Promise<any> {
+async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
   if (!invoiceData.details?.invoiceNumber) {
     console.error("Invoice number missing");
     throw new Error("Invoice number is missing");
@@ -422,6 +422,8 @@ async function generatePdf(invoiceData: InvoiceType): Promise<any> {
     `
     : "";
 
+
+
   const htmlTemplate = `
 <html>
   <head>
@@ -523,7 +525,7 @@ async function generatePdf(invoiceData: InvoiceType): Promise<any> {
         font-weight: bold;
       }
       .footer {
-        width: calc(100% - 40px);
+        width: calc(100%);
         padding: 0;
         margin-top: 0;
       }
@@ -643,33 +645,26 @@ async function generatePdf(invoiceData: InvoiceType): Promise<any> {
         </div>
       </div>
     </div>
-    <div class="footer flex flex-col items-center">
+    <div class="footer mx-auto">
       <div class="flex justify-between">
         <p class="text-base font-bold text-gray-800 ml-3">Receiver's Sign _________________</p>
         <p class="text-base text-gray-800">for <span class="font-bold">${
           senderData.name || ""
         }</span></p>
       </div>
-      <div class="footer flex flex-col items-center">
-  <div class="flex justify-between">
-    <p class="text-base font-bold text-gray-800 ml-3">Receiver's Sign _________________</p>
-    <p class="text-base text-gray-800">for <span class="font-bold">${
-      senderData.name || ""
-    }</span></p>
-  </div>
-  <div class="flex justify-between h-[10px] mt-1 p-2 w-full" style="background-color: #FFA733;">
-    <p> &#x2709; contact@spcsource.com</p> <!-- Unicode for envelope -->
-    <p> &#x1F310; www.spcsource.com</p>   <!-- Unicode for globe -->
-  </div>
-</div>
+      <div class="flex justify-between h-[10px] mt-1 p-2 w-full" style="background-color: #FFA733;">
+        <p> 📧contact@spcsource.com</p>
+        <p>🌐www.spcsource.com</p> 
+      </div>
     </div>
   </body>
 </html>
 `;
+
   let browser = null;
   try {
     const launchOptions: any = {
-      args: [
+      args: [                                                      
         ...chromium.args,
         "--no-sandbox",
         "--disable-setuid-sandbox",
