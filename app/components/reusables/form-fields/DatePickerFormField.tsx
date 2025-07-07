@@ -30,7 +30,7 @@ type DatePickerFormFieldProps = {
 const  DatePickerFormField = ({
   name,
   label,
-  defaultToday = false,
+  defaultToday,
 }: DatePickerFormFieldProps) => {
   const { control, setValue } = useFormContext();
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
