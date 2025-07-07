@@ -27,7 +27,7 @@ type DatePickerFormFieldProps = {
   defaultToday?: boolean;
 };
 
-const DatePickerFormField = ({
+const  DatePickerFormField = ({
   name,
   label,
   defaultToday = false,
@@ -66,8 +66,6 @@ const DatePickerFormField = ({
                       <CalendarIcon className="mr-2 h-4 w-4" />
                       {field.value ? (
                         new Date(field.value).toLocaleDateString(
-                          "en-US",
-                          DATE_OPTIONS
                         )
                       ) : (
                         <span>Pick a date</span>

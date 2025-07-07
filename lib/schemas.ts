@@ -32,7 +32,7 @@ const fieldValidators = {
   date: z
     .string()
     .refine((val) => val === "" || !isNaN(Date.parse(val)), { message: "Must be a valid date string" })
-    .transform((val) => (val === "" ? undefined : new Date(val).toLocaleDateString("en-US", DATE_OPTIONS))),
+    .transform((val) => (val === "" ? undefined : new Date(val).toLocaleDateString())),
   quantity: z
     .union([z.coerce.number(), z.literal("")])
     .optional()
