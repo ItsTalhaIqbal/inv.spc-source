@@ -563,7 +563,7 @@ ${details.invoiceNumber}
             </span>
           </h2>
         <p class="text-md mt-1 text-right">
-  ${new Date(details.invoiceDate ?? new Date()).toLocaleDateString("en-US", DATE_OPTIONS)}
+  ${new Date( new Date()).toLocaleDateString("en-US", DATE_OPTIONS)}
 </p>
 
         </div>
