@@ -33,6 +33,7 @@ interface Details {
   totalAmount?: number;
   pdfTemplate?: number;
   paymentTerms?: string;
+  paymentInformation:{accountName:string,accountNumber:string,bankName:string}
   additionalNotes?: string;
   totalAmountInWords?: string;
   currency?: string;
@@ -377,6 +378,18 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
       <div class="mt-2">
         <h2 class="font-bold text-lg">Total Amount in Words</h2>
         <p class="font-normal text-md">${totalAmountInWords}</p>
+      </div>
+    `
+    : "";
+    
+  const PaymentDtails = hasTotalInWords
+    ? `
+      <div class="mt-2">
+        <h2 class="font-bold text-lg">Payment Details</h2>
+        <p class="font-normal text-md">${details.paymentInformation.bankName}</p>
+        <p class="font-normal text-md">${details.paymentInformation.accountName}</p>
+        <p class="font-normal text-md">${details.paymentInformation.accountNumber}</p>
+
       </div>
     `
     : "";

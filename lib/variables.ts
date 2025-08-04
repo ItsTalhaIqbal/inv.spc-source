@@ -155,7 +155,7 @@ export const FORM_DEFAULT_VALUES = {
             amount: 0,
             amountType: "amount",
         },
-        shippingDetails: {
+        shippingDetails: {                                                         
             cost: 0,
             costType: "amount",
         },
@@ -165,7 +165,7 @@ export const FORM_DEFAULT_VALUES = {
             accountNumber: "0883578428001",
         },
         additionalNotes: "Received above items in good condition.",
-        paymentTerms: "50% advance upon confirmation of the order, 50% upon delivery or completion.",
+        paymentTerms: "50% advance , 50% upon delivery or completion.",
         totalAmountInWords: "",
         isInvoice: false,
     },
