@@ -33,7 +33,12 @@ interface Details {
   totalAmount?: number;
   pdfTemplate?: number;
   paymentTerms?: string;
-  paymentInformation:{accountName:string,accountNumber:string,bankName:string,IBAN:string}
+  paymentInformation: {
+    accountName: string;
+    accountNumber: string;
+    bankName: string;
+    IBAN: string;
+  };
   additionalNotes?: string;
   totalAmountInWords?: string;
   currency?: string;
@@ -381,20 +386,27 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
       </div>
     `
     : "";
-    
-const PaymentDtails = details.paymentInformation
-  ? `
+
+  const PaymentDtails = details.paymentInformation
+    ? `
     <div class="mt-2">
       <h2 class="font-bold text-lg">Payment Details</h2>
-      <p class="font-normal text-md"><span class="font-semibold mt-2">Bank:</span> ${details.paymentInformation.bankName}</p>
-      <p class="font-normal text-md"><span class="font-semibold">Account Name:</span> ${details.paymentInformation.accountName}</p>
-      <p class="font-normal text-md"><span class="font-semibold">Account Number:</span> ${details.paymentInformation.accountNumber}</p>
-            <p class="font-normal text-md"><span class="font-semibold">IBAN:</span>${details.paymentInformation.IBAN?details.paymentInformation.IBAN :"AE450400000883578428001"}  </p>
+      <p class="font-normal text-md"><span class="font-semibold mt-2">Bank:</span> ${
+        details.paymentInformation.bankName
+      }</p>
+      <p class="font-normal text-md"><span class="font-semibold">Account Name:</span> ${
+        details.paymentInformation.accountName
+      }</p>
+      <p class="font-normal text-md"><span class="font-semibold">Account Number:</span> ${
+        details.paymentInformation.accountNumber
+      }</p>
+            <p class="font-normal text-md"><span class="font-semibold">IBAN:</span>
+                : "AE450400000883578428001"
+           </p>
 
     </div>
   `
-  : "";
-
+    : "";
 
   const paymentTermsHtml = details.paymentTerms
     ? `
