@@ -389,7 +389,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
         <p class="font-normal text-md">Bank : ${details.paymentInformation.bankName}</p>
         <p class="font-normal text-md">Account Name : ${details.paymentInformation.accountName}</p>
         <p class="font-normal text-md">Account Number : ${details.paymentInformation.accountNumber}</p>
-        <p class="font-normal text-md">IBAN : ${details.paymentInformation.IBAN}</p>
+        <p class="font-normal text-md">IBAN : AE450400000883578428001</p>
 
       </div>
     `
