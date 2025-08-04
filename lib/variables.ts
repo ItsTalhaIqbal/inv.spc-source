@@ -243,6 +243,7 @@ export const FORM_FILL_VALUES = {
             bankName: "Bank Inc.",
             accountName: "John Doe",
             accountNumber: "445566998877",
+            IBAN:" AE450400000883578428001"
         },
         additionalNotes: "Thank you for your business",
         paymentTerms: "Net 30",

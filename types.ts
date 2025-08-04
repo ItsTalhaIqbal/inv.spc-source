@@ -98,6 +98,7 @@ export interface InvoiceTypeExplicit {
             bankName: string;
             accountName: string;
             accountNumber: string;
+            IBAN:string
         };
         taxDetails?: {
             amount: number;

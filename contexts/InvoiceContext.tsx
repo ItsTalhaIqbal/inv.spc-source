@@ -276,6 +276,9 @@ export const InvoiceContextProvider = ({
               bankName: data.details?.paymentInformation?.bankName || "Bank Inc.",
               accountName: data.details?.paymentInformation?.accountName || "John Doe",
               accountNumber: data.details?.paymentInformation?.accountNumber || "445566998877",
+              // IBAN: data.details?.paymentInformation?.IBAN || " AE450400000883578428001",
+
+
             },
             additionalNotes: data.details?.additionalNotes || "Received above items in good condition.",
             paymentTerms: data.details?.paymentTerms || "50% advance , 50% upon delivery or completion.",

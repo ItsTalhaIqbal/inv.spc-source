@@ -104,6 +104,7 @@ interface Invoice {
       bankName: string;
       accountName: string;
       accountNumber: string;
+      IBAN:string
     };
     additionalNotes?: string;
     paymentTerms: string;
