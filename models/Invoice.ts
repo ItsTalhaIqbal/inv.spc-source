@@ -120,7 +120,7 @@ const InvoiceSchema = new Schema<IInvoice>({
       accountNumber: { type: String,  default: '445566998877' },
     },
     additionalNotes: { type: String, default: 'Received above items in good condition.' },
-    paymentTerms: { type: String,  default: '50% advance upon confirmation of the order, 50% upon delivery or completion.' },
+    paymentTerms: { type: String,  default: '50% advance , 50% upon delivery or completion.' },
     signature: {
       data: { type: String },
     },

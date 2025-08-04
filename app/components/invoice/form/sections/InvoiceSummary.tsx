@@ -13,7 +13,7 @@ const InvoiceSummary = () => {
 
   useEffect(() => {
     setValue("details.additionalNotes", "Received above items in good condition.");
-    setValue("details.paymentTerms", "50% advance upon confirmation of the order, 50% upon delivery or completion.");
+    setValue("details.paymentTerms", "50% advance , 50% upon delivery or completion.");
   }, [setValue]);
 
   return (

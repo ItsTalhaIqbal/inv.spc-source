@@ -278,7 +278,7 @@ export const InvoiceContextProvider = ({
               accountNumber: data.details?.paymentInformation?.accountNumber || "445566998877",
             },
             additionalNotes: data.details?.additionalNotes || "Received above items in good condition.",
-            paymentTerms: data.details?.paymentTerms || "50% advance upon confirmation of the order, 50% upon delivery or completion.",
+            paymentTerms: data.details?.paymentTerms || "50% advance , 50% upon delivery or completion.",
             signature: data.details?.signature || undefined,
             subTotal,
             totalAmount,

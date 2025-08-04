@@ -36,6 +36,7 @@ interface Details {
   totalAmount?: number;
   pdfTemplate?: number;
   paymentTerms?: string;
+  paymentInformation:{accountName:string,accountNumber:string,bankName:string};
   additionalNotes?: string;
   totalAmountInWords?: string;
   currency?: string;
@@ -412,6 +413,17 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
       </div>
     `
     : "";
+    const PaymentDtails = details.paymentInformation
+    ? `
+      <div class="mt-2">
+        <h2 class="font-bold text-lg">Payment Details</h2>
+        <p class="font-normal text-md">${details.paymentInformation.bankName}</p>
+        <p class="font-normal text-md">${details.paymentInformation.accountName}</p>
+        <p class="font-normal text-md">${details.paymentInformation.accountNumber}</p>
+
+      </div>
+    `
+    : "";
 
   const additionalNotesHtml = details.additionalNotes
     ? `
@@ -623,6 +635,7 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
             ${additionalNotesHtml}
             ${paymentTermsHtml}
             ${totalInWordsHtml}
+            ${PaymentDtails}
           </div>
           <div class="amounts-section">
             <div class="flex justify-between amount-line">

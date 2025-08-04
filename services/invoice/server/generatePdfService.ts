@@ -382,7 +382,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
     `
     : "";
     
-  const PaymentDtails = hasTotalInWords
+  const PaymentDtails = details.paymentInformation
     ? `
       <div class="mt-2">
         <h2 class="font-bold text-lg">Payment Details</h2>
@@ -607,6 +607,7 @@ ${details.invoiceNumber}
             ${additionalNotesHtml}
             ${paymentTermsHtml}
             ${totalInWordsHtml}
+            ${PaymentDtails}
           </div>
           <div class="amounts-section">
             <div class="flex justify-between amount-line">

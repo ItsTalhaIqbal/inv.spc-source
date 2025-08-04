@@ -200,7 +200,7 @@ const Page: React.FC = () => {
         },
         additionalNotes: "Received above items in good condition.",
         paymentTerms:
-          "50% advance upon confirmation of the order, 50% upon delivery or completion.",
+          "50% advance , 50% upon delivery or completion.",
         subTotal: 0,
         totalAmount: 0,
         totalAmountInWords: "",
@@ -529,7 +529,7 @@ const Page: React.FC = () => {
           "Received above items in good condition.",
         paymentTerms:
           invoice.details?.paymentTerms ||
-          "50% advance upon confirmation of the order, 50% upon delivery or completion.",
+          "50% advance, 50% upon delivery or completion.",
         signature: invoice.details?.signature || undefined,
         subTotal: Number(invoice.details?.subTotal) || 0,
         totalAmount: Number(invoice.details?.totalAmount) || 0,
