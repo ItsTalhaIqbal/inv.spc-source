@@ -401,7 +401,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
         details.paymentInformation.accountNumber
       }</p>
             <p class="font-normal text-md"><span class="font-semibold">IBAN:</span>
-                : "AE450400000883578428001"
+                 AE450400000883578428001
            </p>
 
     </div>
