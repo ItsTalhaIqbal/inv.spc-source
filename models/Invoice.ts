@@ -119,7 +119,7 @@ const InvoiceSchema = new Schema<IInvoice>({
       bankName: { type: String,  default: 'Bank Inc.' },
       accountName: { type: String,  default: 'John Doe' },
       accountNumber: { type: String,  default: '445566998877' },
-      IBAN:{type: String,default:' AE450400000883578428001'}
+      IBAN:{type: String,default:'AE450400000883578428001'}
     },
     additionalNotes: { type: String, default: 'Received above items in good condition.' },
     paymentTerms: { type: String,  default: '50% advance , 50% upon delivery or completion.' },

@@ -36,12 +36,7 @@ interface Details {
   totalAmount?: number;
   pdfTemplate?: number;
   paymentTerms?: string;
-  paymentInformation: {
-    accountName: string;
-    accountNumber: string;
-    bankName: string;
-    IBAN: string;
-  };
+  paymentInformation:{accountName:string,accountNumber:string,bankName:string,IBAN:string};
   additionalNotes?: string;
   totalAmountInWords?: string;
   currency?: string;
@@ -419,18 +414,22 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
     `
     : "";
   const PaymentDtails = details.paymentInformation
-    ? `
+  ? `
     <div class="mt-2">
       <h2 class="font-bold text-lg">Payment Details</h2>
       <p class="font-normal text-md"><span class="font-semibold mt-2">Bank:</span> ${details.paymentInformation.bankName}</p>
       <p class="font-normal text-md"><span class="font-semibold">Account Name:</span> ${details.paymentInformation.accountName}</p>
       <p class="font-normal text-md"><span class="font-semibold">Account Number:</span> ${details.paymentInformation.accountNumber}</p>
-<p class="font-normal text-md"><span class="font-semibold">IBAN:</span> ${details.paymentInformation.IBAN}</p>
-         
-      
+      ${
+        details.paymentInformation.IBAN
+          ? `<p class="font-normal text-md"><span class="font-semibold">IBAN:</span> ${details.paymentInformation.IBAN}</p>`
+          : ""
+      }
     </div>
   `
-    : "";
+  : "";
+
+
 
   const additionalNotesHtml = details.additionalNotes
     ? `
