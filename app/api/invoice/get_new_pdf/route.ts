@@ -417,7 +417,7 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
   ? `
     <div class="mt-2">
       <h2 class="font-bold text-lg">Payment Details</h2>
-      <p class="font-normal text-md"><span class="font-semibold">Bank:</span> ${details.paymentInformation.bankName}</p>
+      <p class="font-normal text-md"><span class="font-semibold mt-2">Bank:</span> ${details.paymentInformation.bankName}</p>
       <p class="font-normal text-md"><span class="font-semibold">Account Name:</span> ${details.paymentInformation.accountName}</p>
       <p class="font-normal text-md"><span class="font-semibold">Account Number:</span> ${details.paymentInformation.accountNumber}</p>
       <p class="font-normal text-md"><span class="font-semibold">IBAN:</span> AE450400000883578428001</p>
