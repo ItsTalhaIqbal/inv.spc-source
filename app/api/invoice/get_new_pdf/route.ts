@@ -420,10 +420,15 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
       <p class="font-normal text-md"><span class="font-semibold mt-2">Bank:</span> ${details.paymentInformation.bankName}</p>
       <p class="font-normal text-md"><span class="font-semibold">Account Name:</span> ${details.paymentInformation.accountName}</p>
       <p class="font-normal text-md"><span class="font-semibold">Account Number:</span> ${details.paymentInformation.accountNumber}</p>
-      <p class="font-normal text-md"><span class="font-semibold">IBAN:</span>${details.paymentInformation.accountNumber?details.paymentInformation.accountNumber :"AE450400000883578428001"}  </p>
+      ${
+        details.paymentInformation.IBAN
+          ? `<p class="font-normal text-md"><span class="font-semibold">IBAN:</span> ${details.paymentInformation.IBAN}</p>`
+          : ""
+      }
     </div>
   `
   : "";
+
 
 
   const additionalNotesHtml = details.additionalNotes
