@@ -160,9 +160,9 @@ export const FORM_DEFAULT_VALUES = {
             costType: "amount",
         },
         paymentInformation: {
-            bankName: "Bank Inc.",
-            accountName: "John Doe",
-            accountNumber: "445566998877",
+            bankName: "RAK BANK",
+            accountName: "SPC SOURCE TECHNICAL SERVICES LLC",
+            accountNumber: "0883578428001",
         },
         additionalNotes: "Received above items in good condition.",
         paymentTerms: "50% advance upon confirmation of the order, 50% upon delivery or completion.",
