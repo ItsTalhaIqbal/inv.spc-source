@@ -20,7 +20,7 @@ const defaultChargesContext = {
     setTaxType: (newValue: SetStateAction<string>) => {},
     shippingType: "amount",
     setShippingType: (newValue: SetStateAction<string>) => {},
-    totalInWordsSwitch: true,
+    totalInWordsSwitch: false,
     setTotalInWordsSwitch: (newValue: boolean) => {},
     currency: "AED",
     subTotal: 0,
@@ -65,7 +65,7 @@ export const ChargesContextProvider = ({ children }: ChargesContextProps) => {
     const [discountSwitch, setDiscountSwitch] = useState<boolean>(false);
     const [taxSwitch, setTaxSwitch] = useState<boolean>(false);
     const [shippingSwitch, setShippingSwitch] = useState<boolean>(false);
-    const [totalInWordsSwitch, setTotalInWordsSwitch] = useState<boolean>(true);
+    const [totalInWordsSwitch, setTotalInWordsSwitch] = useState<boolean>(false);
     const [discountType, setDiscountType] = useState<string>("amount");
     const [taxType, setTaxType] = useState<string>("percentage");
     const [shippingType, setShippingType] = useState<string>("amount");
@@ -80,13 +80,14 @@ export const ChargesContextProvider = ({ children }: ChargesContextProps) => {
         setDiscountType("amount");
         setTaxType("percentage");
         setShippingType("amount");
-        setTotalInWordsSwitch(true);
+        setTotalInWordsSwitch(false);
         setValue("details.discountDetails.amount", 0);
         setValue("details.taxDetails.amount", 0);
         setValue("details.shippingDetails.cost", 0);
         setValue("details.discountDetails.amountType", "amount");
         setValue("details.taxDetails.amountType", "percentage");
         setValue("details.shippingDetails.costType", "amount");
+        setValue("details.totalAmountInWords", "");
     }, [newInvoiceTrigger, setValue]);
 
     // Sync switches and types with form values when loading an invoice
@@ -126,7 +127,10 @@ export const ChargesContextProvider = ({ children }: ChargesContextProps) => {
         if (!shippingSwitch) {
             setValue("details.shippingDetails.cost", 0);
         }
-    }, [discountSwitch, shippingSwitch, setValue]);
+        if (!totalInWordsSwitch) {
+            setValue("details.totalAmountInWords", "");
+        }
+    }, [discountSwitch, shippingSwitch, totalInWordsSwitch, setValue]);
 
     // Calculate total when values change
     useEffect(() => {

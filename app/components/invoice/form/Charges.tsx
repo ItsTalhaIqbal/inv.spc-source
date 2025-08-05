@@ -187,7 +187,6 @@ const Charges = () => {
             currency={currency}
             onValueChange={handleValueChange}
             value={watch("details.discountDetails.amount")?.toString() || "0"}
-                                        
           />
         )}
 
@@ -240,6 +239,9 @@ const Charges = () => {
             checked={totalInWordsSwitch}
             onCheckedChange={(value) => {
               setTotalInWordsSwitch(value);
+              if (!value) {
+                setValue("details.totalAmountInWords", "");
+              }
             }}
           />
         </div>
