@@ -589,6 +589,7 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
             senderData.address ||
             "Iris Bay, Office D-43, Business Bay, Dubai, UAE."
           }</p>
+            <p class="text-sm pt-1">TRN-105078528400003</p>
         </div>
       </div>
       <div class="customer-invoice-container">
