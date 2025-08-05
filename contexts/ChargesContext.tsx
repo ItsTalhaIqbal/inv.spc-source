@@ -20,7 +20,7 @@ const defaultChargesContext = {
     setTaxType: (newValue: SetStateAction<string>) => {},
     shippingType: "amount",
     setShippingType: (newValue: SetStateAction<string>) => {},
-    totalInWordsSwitch: true,
+    totalInWordsSwitch: false,
     setTotalInWordsSwitch: (newValue: boolean) => {},
     currency: "AED",
     subTotal: 0,
