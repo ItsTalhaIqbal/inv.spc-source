@@ -637,7 +637,6 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
         </table>
         <div class="summary">
           <div class="notes-section">
-            ${additionalNotesHtml}
             ${paymentTermsHtml}
             ${totalInWordsHtml}
             ${PaymentDetails}

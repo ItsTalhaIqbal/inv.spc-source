@@ -619,7 +619,6 @@ ${details.invoiceNumber}
         </table>
         <div class="summary">
           <div class="notes-section">
-            ${additionalNotesHtml}
             ${paymentTermsHtml}
             ${totalInWordsHtml}
             ${PaymentDtails}

@@ -65,7 +65,7 @@ export const ChargesContextProvider = ({ children }: ChargesContextProps) => {
     const [discountSwitch, setDiscountSwitch] = useState<boolean>(false);
     const [taxSwitch, setTaxSwitch] = useState<boolean>(false);
     const [shippingSwitch, setShippingSwitch] = useState<boolean>(false);
-    const [totalInWordsSwitch, setTotalInWordsSwitch] = useState<boolean>(true);
+    const [totalInWordsSwitch, setTotalInWordsSwitch] = useState<boolean>(false);
     const [discountType, setDiscountType] = useState<string>("amount");
     const [taxType, setTaxType] = useState<string>("percentage");
     const [shippingType, setShippingType] = useState<string>("amount");
@@ -80,7 +80,7 @@ export const ChargesContextProvider = ({ children }: ChargesContextProps) => {
         setDiscountType("amount");
         setTaxType("percentage");
         setShippingType("amount");
-        setTotalInWordsSwitch(true);
+        setTotalInWordsSwitch(false);
         setValue("details.discountDetails.amount", 0);
         setValue("details.taxDetails.amount", 0);
         setValue("details.shippingDetails.cost", 0);
