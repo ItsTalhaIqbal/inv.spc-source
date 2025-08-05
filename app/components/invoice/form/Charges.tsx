@@ -45,9 +45,9 @@ const ChargeInputComponent = ({
   const {theme} = useTheme()
 
   return (
-    <div className="flex justify-between items-center">
+    <div class="flex justify-between items-center">
       <div>{label}</div>
-      <div className="flex gap-2 items-center">
+      <div class="flex gap-2 items-center">
         <input
           type="text"
           value={value}
@@ -58,7 +58,7 @@ const ChargeInputComponent = ({
         <span>{type === "percentage" ? "%" : currency}</span>
         <button
           type="button"
-          className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background border border-input hover:bg-accent hover:text-accent-foreground h-9 py-2 px-3"
+          class="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background border border-input hover:bg-accent hover:text-accent-foreground h-9 py-2 px-3"
           onClick={() => switchAmountType(type, setType)}
         >
           <RotateCcw />
@@ -124,8 +124,8 @@ const Charges = () => {
   };
 
   return (
-    <div className="flex flex-col gap-3 min-w-[20rem]">
-      <div className="flex justify-evenly pb-6">
+    <div class="flex flex-col gap-3 min-w-[20rem]">
+      <div class="flex justify-evenly pb-6">
         <div>
           <Label>{_t("form.steps.summary.discount")}</Label>
           <div>
@@ -169,8 +169,8 @@ const Charges = () => {
         </div>
       </div>
 
-      <div className="flex flex-col justify-center px-5 gap-y-3">
-        <div className="flex justify-between items-center">
+      <div class="flex flex-col justify-center px-5 gap-y-3">
+        <div class="flex justify-between items-center">
           <div>{_t("form.steps.summary.subTotal")}</div>
           <div>
             {formatNumberWithCommas(subTotal)} {currency}
@@ -216,7 +216,7 @@ const Charges = () => {
           />
         )}
 
-        <div className="flex justify-between items-center">
+        <div class="flex justify-between items-center">
           <div>{_t("form.steps.summary.totalAmount")}</div>
           <div>
             <p>
@@ -224,11 +224,11 @@ const Charges = () => {
             </p>
           </div>
         </div>
-        <small className="text-sm font-medium text-destructive ">
+        <small class="text-sm font-medium text-destructive">
           {errors.details?.totalAmount?.message}
         </small>
 
-        <div className="flex justify-between items-center">
+        <div class="flex justify-between items-center">
           <p>{_t("form.steps.summary.includeTotalInWords")}</p>
           <p>
             {totalInWordsSwitch

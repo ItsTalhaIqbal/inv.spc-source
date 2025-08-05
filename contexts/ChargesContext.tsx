@@ -72,7 +72,6 @@ export const ChargesContextProvider = ({ children }: ChargesContextProps) => {
     const [subTotal, setSubTotal] = useState<number>(0);
     const [totalAmount, setTotalAmount] = useState<number>(0);
 
-    // Reset switches and types on new invoice
     useEffect(() => {
         setDiscountSwitch(false);
         setTaxSwitch(false);
@@ -91,7 +90,6 @@ export const ChargesContextProvider = ({ children }: ChargesContextProps) => {
         console.log("Reset: totalInWordsSwitch set to false, totalAmountInWords cleared");
     }, [newInvoiceTrigger, setValue]);
 
-    // Sync switches and types with form values when loading an invoice
     useEffect(() => {
         if (discount?.amount) {
             setDiscountSwitch(true);
@@ -107,7 +105,6 @@ export const ChargesContextProvider = ({ children }: ChargesContextProps) => {
         setShippingType(shipping?.costType || "amount");
     }, [discount?.amount, tax?.amount, shipping?.cost, discount?.amountType, tax?.amountType, shipping?.costType]);
 
-    // Handle tax switch toggle
     useEffect(() => {
         if (taxSwitch) {
             setValue("details.taxDetails.amount", 5);
@@ -120,7 +117,6 @@ export const ChargesContextProvider = ({ children }: ChargesContextProps) => {
         }
     }, [taxSwitch, setValue]);
 
-    // Reset form values to 0 when other switches are off
     useEffect(() => {
         if (!discountSwitch) {
             setValue("details.discountDetails.amount", 0);
@@ -134,7 +130,6 @@ export const ChargesContextProvider = ({ children }: ChargesContextProps) => {
         }
     }, [discountSwitch, shippingSwitch, totalInWordsSwitch, setValue]);
 
-    // Calculate total when values change
     useEffect(() => {
         calculateTotal();
     }, [

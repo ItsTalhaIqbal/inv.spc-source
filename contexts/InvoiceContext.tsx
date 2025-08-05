@@ -63,7 +63,7 @@ export const InvoiceContextProvider = ({
 }: InvoiceContextProviderProps) => {
   const router = useRouter();
   const { getValues, reset } = useFormContext<InvoiceType>();
-  const { totalInWordsSwitch } = useChargesContext(); // Added to access totalInWordsSwitch
+  const { totalInWordsSwitch } = useChargesContext();
   const {
     newInvoiceSuccess,
     pdfGenerationSuccess,
@@ -84,7 +84,6 @@ export const InvoiceContextProvider = ({
     return invoiceNumber.replace(/\D/g, "");
   };
 
-  // Simple number-to-words conversion for totalAmountInWords
   const numberToWords = (num: number): string => {
     const units = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine"];
     const teens = ["Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen"];
@@ -96,7 +95,7 @@ export const InvoiceContextProvider = ({
     if (num < 100) return `${tens[Math.floor(num / 10)]} ${units[num % 10]}`.trim();
     if (num < 1000) return `${units[Math.floor(num / 100)]} Hundred ${numberToWords(num % 100)}`.trim();
     if (num < 1000000) return `${numberToWords(Math.floor(num / 1000))} Thousand ${numberToWords(num % 1000)}`.trim();
-    return "Number too large"; // Add more logic for larger numbers if needed
+    return "Number too large";
   };
 
   useEffect(() => {
@@ -140,7 +139,7 @@ export const InvoiceContextProvider = ({
       details: {
         ...FORM_DEFAULT_VALUES.details,
         currency: "AED",
-        totalAmountInWords: "", // Ensure default is empty
+        totalAmountInWords: "",
         items: FORM_DEFAULT_VALUES.details.items.map((item) => ({
           ...item,
           unitType: item.unitType,
@@ -285,7 +284,7 @@ export const InvoiceContextProvider = ({
             signature: data.details?.signature || undefined,
             subTotal,
             totalAmount,
-            totalAmountInWords: totalInWordsSwitch ? `${numberToWords(totalAmount)} AED` : "", // Respect totalInWordsSwitch
+            totalAmountInWords: totalInWordsSwitch ? `${numberToWords(totalAmount)} AED` : "",
             pdfTemplate: data.details?.pdfTemplate || 2,
             isInvoice: data.details?.isInvoice || false,
           },
@@ -358,7 +357,7 @@ export const InvoiceContextProvider = ({
         }, 500);
       }
     },
-    [pdfGenerationSuccess, downloadPdf, newInvoice, totalInWordsSwitch] // Added totalInWordsSwitch to dependencies
+    [pdfGenerationSuccess, downloadPdf, newInvoice, totalInWordsSwitch]
   );
 
   const saveInvoice = useCallback(
@@ -558,7 +557,7 @@ export const InvoiceContextProvider = ({
               ...importedData.details,
               invoiceNumber: importedData.details.invoiceNumber || "UNKNOWN",
               currency: "AED",
-              totalAmountInWords: totalInWordsSwitch ? importedData.details.totalAmountInWords || "" : "", // Respect totalInWordsSwitch on import
+              totalAmountInWords: totalInWordsSwitch ? importedData.details.totalAmountInWords || "" : "",
               invoiceDate: importedData.details.invoiceDate
                 ? new Date(importedData.details.invoiceDate).toISOString()
                 : new Date().toISOString(),
@@ -580,7 +579,7 @@ export const InvoiceContextProvider = ({
       reader.onerror = importInvoiceError;
       reader.readAsText(file);
     },
-    [reset, importInvoiceError, totalInWordsSwitch] // Added totalInWordsSwitch to dependencies
+    [reset, importInvoiceError, totalInWordsSwitch]
   );
 
   return (
