@@ -88,6 +88,7 @@ export const ChargesContextProvider = ({ children }: ChargesContextProps) => {
         setValue("details.taxDetails.amountType", "percentage");
         setValue("details.shippingDetails.costType", "amount");
         setValue("details.totalAmountInWords", "");
+        console.log("Reset: totalInWordsSwitch set to false, totalAmountInWords cleared");
     }, [newInvoiceTrigger, setValue]);
 
     // Sync switches and types with form values when loading an invoice
@@ -129,6 +130,7 @@ export const ChargesContextProvider = ({ children }: ChargesContextProps) => {
         }
         if (!totalInWordsSwitch) {
             setValue("details.totalAmountInWords", "");
+            console.log("totalInWordsSwitch is off, totalAmountInWords set to empty string");
         }
     }, [discountSwitch, shippingSwitch, totalInWordsSwitch, setValue]);
 
@@ -209,8 +211,10 @@ export const ChargesContextProvider = ({ children }: ChargesContextProps) => {
 
         if (totalInWordsSwitch) {
             setValue("details.totalAmountInWords", formatPriceToString(total, getValues("details.currency")));
+            console.log("totalInWordsSwitch is on, totalAmountInWords set to:", formatPriceToString(total, getValues("details.currency")));
         } else {
             setValue("details.totalAmountInWords", "");
+            console.log("totalInWordsSwitch is off, totalAmountInWords cleared");
         }
     };
 

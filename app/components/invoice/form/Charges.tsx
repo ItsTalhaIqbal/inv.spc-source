@@ -241,6 +241,7 @@ const Charges = () => {
               setTotalInWordsSwitch(value);
               if (!value) {
                 setValue("details.totalAmountInWords", "");
+                console.log("Total in Words switch turned off, totalAmountInWords cleared");
               }
             }}
           />

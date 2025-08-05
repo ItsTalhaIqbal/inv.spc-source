@@ -19,6 +19,7 @@ import {
   UNIT_TYPES,
 } from "@/lib/variables";
 import { ExportTypes, InvoiceType } from "@/types";
+import { useChargesContext } from "@/contexts/ChargesContext";
 
 const defaultInvoiceContext = {
   invoicePdf: new Blob(),
@@ -62,6 +63,7 @@ export const InvoiceContextProvider = ({
 }: InvoiceContextProviderProps) => {
   const router = useRouter();
   const { getValues, reset } = useFormContext<InvoiceType>();
+  const { totalInWordsSwitch } = useChargesContext(); // Added to access totalInWordsSwitch
   const {
     newInvoiceSuccess,
     pdfGenerationSuccess,
@@ -138,9 +140,10 @@ export const InvoiceContextProvider = ({
       details: {
         ...FORM_DEFAULT_VALUES.details,
         currency: "AED",
+        totalAmountInWords: "", // Ensure default is empty
         items: FORM_DEFAULT_VALUES.details.items.map((item) => ({
           ...item,
-          unitType: item.unitType ,
+          unitType: item.unitType,
         })),
       },
     }),
@@ -262,7 +265,7 @@ export const InvoiceContextProvider = ({
             taxDetails: {
               amount: taxAmount,
               amountType: data.details.taxDetails?.amountType === "amount" ? "fixed" : data.details.taxDetails?.amountType || "percentage",
-              taxID: data.details.taxDetails?.taxID || undefined ,
+              taxID: data.details.taxDetails?.taxID || undefined,
             },
             discountDetails: data.details?.discountDetails || {
               amount: 0,
@@ -276,21 +279,17 @@ export const InvoiceContextProvider = ({
               bankName: data.details?.paymentInformation?.bankName || "Bank Inc.",
               accountName: data.details?.paymentInformation?.accountName || "John Doe",
               accountNumber: data.details?.paymentInformation?.accountNumber || "445566998877",
-              // IBAN: data.details?.paymentInformation?.IBAN || " AE450400000883578428001",
-
-
             },
             additionalNotes: data.details?.additionalNotes || "Received above items in good condition.",
             paymentTerms: data.details?.paymentTerms || "50% advance , 50% upon delivery or completion.",
             signature: data.details?.signature || undefined,
             subTotal,
             totalAmount,
-            totalAmountInWords: `${numberToWords(totalAmount)} AED`,
+            totalAmountInWords: totalInWordsSwitch ? `${numberToWords(totalAmount)} AED` : "", // Respect totalInWordsSwitch
             pdfTemplate: data.details?.pdfTemplate || 2,
             isInvoice: data.details?.isInvoice || false,
           },
         };
-
 
         let attempts = 0;
         const maxAttempts = 3;
@@ -359,7 +358,7 @@ export const InvoiceContextProvider = ({
         }, 500);
       }
     },
-    [pdfGenerationSuccess, downloadPdf, newInvoice]
+    [pdfGenerationSuccess, downloadPdf, newInvoice, totalInWordsSwitch] // Added totalInWordsSwitch to dependencies
   );
 
   const saveInvoice = useCallback(
@@ -559,6 +558,7 @@ export const InvoiceContextProvider = ({
               ...importedData.details,
               invoiceNumber: importedData.details.invoiceNumber || "UNKNOWN",
               currency: "AED",
+              totalAmountInWords: totalInWordsSwitch ? importedData.details.totalAmountInWords || "" : "", // Respect totalInWordsSwitch on import
               invoiceDate: importedData.details.invoiceDate
                 ? new Date(importedData.details.invoiceDate).toISOString()
                 : new Date().toISOString(),
@@ -566,7 +566,7 @@ export const InvoiceContextProvider = ({
                 name: item.name || "No description provided",
                 quantity: Number(item.quantity) || 0,
                 unitPrice: Number(item.unitPrice) || 0,
-                unitType: item.unitType && UNIT_TYPES.includes(item.unitType) ? item.unitType :"",
+                unitType: item.unitType && UNIT_TYPES.includes(item.unitType) ? item.unitType : "",
                 total: Number(item.quantity) * Number(item.unitPrice) || 0,
               })),
             },
@@ -580,7 +580,7 @@ export const InvoiceContextProvider = ({
       reader.onerror = importInvoiceError;
       reader.readAsText(file);
     },
-    [reset, importInvoiceError]
+    [reset, importInvoiceError, totalInWordsSwitch] // Added totalInWordsSwitch to dependencies
   );
 
   return (
