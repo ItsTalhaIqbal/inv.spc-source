@@ -413,7 +413,8 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
     ? `
       <div class="mt-2">
         <h2 class="font-bold text-lg">Terms</h2>
-        <p class="font-normal text-md">${details.paymentTerms}</p>
+          <td class="w-[40%] text-center text-black text-base border border-gray-500 px-2 py-1" style="word-wrap: break-word; white-space: normal;"><pre class="text-start">${details.paymentTerms}</pre></td>
+        
       </div>
     `
     : "";
