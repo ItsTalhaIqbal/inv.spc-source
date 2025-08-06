@@ -1410,14 +1410,14 @@ const Page: React.FC = () => {
                       Additional Information
                     </h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <p className="text-sm">
+                      {/* <p className="text-sm">
                         <strong>Additional Notes:</strong>{" "}
                         <span>
                           {viewInvoice.details.additionalNotes || "N/A"}
                         </span>
-                      </p>
+                      </p> */}
                       <p className="text-sm">
-                        <strong>Payment Terms:</strong>{" "}
+                        <strong> Terms:</strong>{" "}
                         <span>{viewInvoice.details.paymentTerms}</span>
                       </p>
                       <p className="text-sm">
@@ -1867,7 +1867,7 @@ const Page: React.FC = () => {
                         Additional Information
                       </h3>
                       <div className="grid grid-cols-1 gap-4">
-                        <div>
+                        {/* <div>
                           <label className="text-sm font-medium">
                             Additional Notes
                           </label>
@@ -1880,10 +1880,10 @@ const Page: React.FC = () => {
                               }`}
                             placeholder="Additional Notes"
                           />
-                        </div>
+                        </div> */}
                         <div>
                           <label className="text-sm font-medium">
-                            Payment Terms
+                             Terms
                           </label>
                           <textarea
                             {...register("details.paymentTerms")}

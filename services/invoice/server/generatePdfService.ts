@@ -411,7 +411,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
   const paymentTermsHtml = details.paymentTerms
     ? `
       <div class="mt-2">
-        <h2 class="font-bold text-lg">Payment Terms</h2>
+        <h2 class="font-bold text-lg">Terms</h2>
         <p class="font-normal text-md">${details.paymentTerms}</p>
       </div>
     `

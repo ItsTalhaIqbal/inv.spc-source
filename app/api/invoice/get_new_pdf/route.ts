@@ -412,7 +412,7 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
   const paymentTermsHtml = details.paymentTerms
     ? `
       <div class="mt-2">
-        <h2 class="font-bold text-lg">Payment Terms</h2>
+        <h2 class="font-bold text-lg">Terms</h2>
         <p class="font-normal text-md">${details.paymentTerms}</p>
       </div>
     `
@@ -428,8 +428,8 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
       <p class="font-normal text-md"><span class="font-semibold">IBAN:</span> ${details.paymentInformation.IBAN ? details.paymentInformation.IBAN : "AE450400000883578428001"}</p>
     </div>
   `
-    : "";
-
+    : "";                                               
+                 
   const additionalNotesHtml = details.additionalNotes
     ? `
       <div class="mt-2">
