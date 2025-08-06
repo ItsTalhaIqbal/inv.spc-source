@@ -617,7 +617,7 @@ ${new Date(new Date()).toLocaleDateString("en-US", DATE_OPTIONS)}
         <div class="summary">
           <div class="notes-section">
             ${paymentTermsHtml}
-            ${totalInWordsHtml}
+            
             ${PaymentDtails}
           </div>
           <div class="amounts-section">
