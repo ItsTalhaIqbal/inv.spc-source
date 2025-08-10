@@ -1420,14 +1420,14 @@ const Page: React.FC = () => {
                         <strong> Terms:</strong>{" "}
                         <span>{viewInvoice.details.paymentTerms}</span>
                       </p>
-                      <p className="text-sm">
+                      {/* <p className="text-sm">
                         <strong>Signature:</strong>{" "}
                         <span>
                           {viewInvoice.details.signature?.data
                             ? "Present"
                             : "N/A"}
                         </span>
-                      </p>
+                      </p> */}
                     </div>
                   </div>
                 </div>
