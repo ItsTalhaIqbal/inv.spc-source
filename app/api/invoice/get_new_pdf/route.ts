@@ -199,23 +199,27 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
   };
   const details = invoiceData.details || {};
 
-const DATE_OPTIONS:any = {
-  weekday: 'long',  // Full day (e.g., "Tuesday")
+const DATE_OPTIONS = {
+  weekday: 'long',  // Full weekday name (e.g., "Tuesday")
   year: 'numeric',  // Full year (e.g., "2025")
   month: 'long',    // Full month name (e.g., "December")
   day: 'numeric',   // Day of the month (e.g., "8")
 };
 
-// Create a date object from the ISO 8601 string
-const date = new Date("2025-12-08T00:00:00.000+00:00");
+// Parse the date string to a Date object
+const date = new Date(details.invoiceDate as any);
 
-// Get the date formatted using UTC
-const formattedDate = date.toLocaleDateString("en-US", {
-  ...DATE_OPTIONS,
-  timeZone: 'UTC',  // Forces the date to stay in UTC without local time zone adjustment
-});
+// Extract the UTC components
+const weekday = date.toLocaleString("en-US", { weekday: "long", timeZone: "UTC" });
+const year = date.getUTCFullYear();
+const month = date.toLocaleString("en-US", { month: "long", timeZone: "UTC" });
+const day = date.getUTCDate();
+
+// Format the date manually
+const formattedDate = `${weekday}, ${month} ${day}, ${year}`;
 
 console.log(formattedDate); // "Tuesday, December 8, 2025"
+
 
 
 
