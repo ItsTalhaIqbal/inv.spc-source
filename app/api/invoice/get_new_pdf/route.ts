@@ -199,13 +199,12 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
   };
   const details = invoiceData.details || {};
 
-const DATE_OPTIONS = {
-  weekday: 'long',    // This will show the full day name (e.g., Tuesday)
-  month: 'long',      // This will show the full month name (e.g., August)
-  day: 'numeric',     // This will show the day without leading zero (e.g., 12)
-  year: 'numeric'     // This will show the full year (e.g., 2025)
-} as const;
-
+  const DATE_OPTIONS = {
+    year: "numeric",
+    month: "long",
+    day: "2-digit",
+    weekday: "long",
+  } as const;
 
   const formatNumberWithCommas = (num: number): string => {
     const fixedNum = Number(num).toFixed(2);
@@ -608,9 +607,15 @@ const DATE_OPTIONS = {
   }</span>
           </h2>
           <p class="text-md mt-1 text-right">${new Date(
-            details.invoiceDate as any
+            details.invoiceDate || new Date()
           ).toLocaleDateString("en-US", DATE_OPTIONS)}</p>
-       
+          ${
+            details.dueDate
+              ? `<p class="text-md mt-1">Due: ${new Date(
+                  details.dueDate
+                ).toLocaleDateString("en-US", DATE_OPTIONS)}</p>`
+              : ""
+          }
         </div>
       </div>
       <div class="mt-4">

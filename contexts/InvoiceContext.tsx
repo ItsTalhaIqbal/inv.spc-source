@@ -249,7 +249,7 @@ export const InvoiceContextProvider = ({
           details: {
             invoiceLogo: data.details?.invoiceLogo || "/public/assets/img/image.jpg",
             invoiceNumber: data.details.invoiceNumber || "",
-            invoiceDate: data.details?.invoiceDate,
+            invoiceDate: new Date(),
             dueDate: data.details?.dueDate ? new Date(data.details.dueDate) : null,
             items: (data.details.items || []).map((item) => ({
               name: item.name || "No description provided",
