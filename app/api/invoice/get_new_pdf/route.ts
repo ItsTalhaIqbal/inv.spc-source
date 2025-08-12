@@ -199,12 +199,17 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
   };
   const details = invoiceData.details || {};
 
-const DATE_OPTIONS :any = {
-  weekday: 'long',   // Full name of the weekday (e.g., "Tuesday")
-  year: 'numeric',   // Year in full (e.g., "2025")
-  month: 'long',     // Full name of the month (e.g., "August")
-  day: 'numeric',    // Day of the month (e.g., "12")
+const DATE_OPTIONS:any = {
+  weekday: 'long',  // Full weekday name (e.g., "Tuesday")
+  year: 'numeric',  // Full year (e.g., "2025")
+  month: 'long',    // Full month name (e.g., "December")
+  day: 'numeric',   // Day of the month (e.g., "8")
 };
+
+const date = new Date("2025-12-08T00:00:00.000+00:00");
+const formattedDate = date.toLocaleDateString("en-US", DATE_OPTIONS);
+
+
 
 
 
@@ -609,7 +614,7 @@ const DATE_OPTIONS :any = {
   }</span>
           </h2>
          <p class="text-md mt-1 text-right">
-  ${new Date(details.invoiceDate as any).toLocaleDateString("en-US", DATE_OPTIONS)}
+  ${formattedDate}
 </p>
 
        

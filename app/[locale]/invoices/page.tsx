@@ -1182,7 +1182,7 @@ const Page: React.FC = () => {
                   <p className="text-sm text-gray-500">
                     <strong>Created At:</strong>{" "}
                     {viewInvoice?.createdAt
-                      ? new Date(viewInvoice.createdAt).toLocaleString()
+                      ? new Date(viewInvoice.details.invoiceDate).toLocaleString()
                       : "N/A"}
                   </p>
                 </div>
