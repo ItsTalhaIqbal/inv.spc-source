@@ -608,7 +608,7 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
           </h2>
           <p class="text-md mt-1 text-right">${new Date(
             details.invoiceDate as any
-          ).toLocaleDateString("en-US", DATE_OPTIONS)}</p>
+          ).toLocaleDateString(DATE_OPTIONS as any)}</p>
        
         </div>
       </div>
