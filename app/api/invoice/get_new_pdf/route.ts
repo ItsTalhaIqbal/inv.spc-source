@@ -199,11 +199,12 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
   };
   const details = invoiceData.details || {};
 
-  const DATE_OPTIONS = {
-  year: 'numeric',
-  month: '2-digit',
-  day: '2-digit',
-}as const
+const DATE_OPTIONS = {
+  weekday: 'long',    // This will show the full day name (e.g., Tuesday)
+  month: 'long',      // This will show the full month name (e.g., August)
+  day: 'numeric',     // This will show the day without leading zero (e.g., 12)
+  year: 'numeric'     // This will show the full year (e.g., 2025)
+} as const;
 
 
   const formatNumberWithCommas = (num: number): string => {
