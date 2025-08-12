@@ -200,11 +200,11 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
   const details = invoiceData.details || {};
 
   const DATE_OPTIONS = {
-    year: "numeric",
-    month: "long",
-    day: "2-digit",
-    weekday: "long",
-  } as const;
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+}as const
+
 
   const formatNumberWithCommas = (num: number): string => {
     const fixedNum = Number(num).toFixed(2);
@@ -608,7 +608,7 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
           </h2>
           <p class="text-md mt-1 text-right">${new Date(
             details.invoiceDate as any
-          ).toLocaleDateString(DATE_OPTIONS as any)}</p>
+          ).toLocaleDateString("en-US", DATE_OPTIONS)}</p>
        
         </div>
       </div>
