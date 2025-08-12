@@ -198,33 +198,12 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
     paymentTerms: "",
   };
   const details = invoiceData.details || {};
-// Assuming details.invoiceDate is in the format: "2025-12-08T00:00:00.000+00:00"
-const DATE_OPTIONS = {
-  weekday: 'long',  // Full weekday name (e.g., "Tuesday")
-  year: 'numeric',  // Full year (e.g., "2025")
-  month: 'long',    // Full month name (e.g., "December")
-  day: 'numeric',   // Day of the month (e.g., "8")
-};
 
-// Parse the date string from details.invoiceDate
-const date = new Date(details.invoiceDate as any);
-
-// Extract the components using UTC methods
-const weekday = date.toLocaleString('en-US', { weekday: 'long', timeZone: 'UTC' });
-const year = date.getUTCFullYear();
-const month = date.toLocaleString('en-US', { month: 'long', timeZone: 'UTC' });
-const day = date.getUTCDate();
-
-// Format the date manually
-const formattedDate = `${weekday}, ${month} ${day}, ${year}`;
-
-console.log(formattedDate); // "Tuesday, December 8, 2025"
-
-
-
-
-
-
+  const DATE_OPTIONS = {
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+}as const
 
 
   const formatNumberWithCommas = (num: number): string => {
@@ -627,10 +606,9 @@ console.log(formattedDate); // "Tuesday, December 8, 2025"
     details.invoiceNumber
   }</span>
           </h2>
-         <p class="text-md mt-1 text-right">
-  ${formattedDate}
-</p>
-
+          <p class="text-md mt-1 text-right">${new Date(
+            details.invoiceDate as any
+          ).toLocaleDateString("en-US", DATE_OPTIONS)}</p>
        
         </div>
       </div>
