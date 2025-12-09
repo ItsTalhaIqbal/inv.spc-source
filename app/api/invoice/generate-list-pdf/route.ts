@@ -108,28 +108,9 @@ const generateListHtml = (invoices: InvoiceItem[]) => {
 </head>
 <body>
   <div class="container">
-    <div class="header">
-      <h1>SPC Source Technical Services LLC</h1>
-      <p>Professional Documents Summary Report</p>
-    </div>
+  
 
-    <div class="meta">
-      <div>
-        <p><strong>Generated on:</strong> ${new Date().toLocaleDateString(
-          "en-GB"
-        )} ${new Date().toLocaleTimeString("en-GB", {
-    hour: "2-digit",
-    minute: "2-digit",
-  })}</p>
-        <p><strong>Report Type:</strong> Filtered Documents List</p>
-      </div>
-      <div style="text-align:right">
-        <p><strong>Total Documents:</strong> <span style="font-size:24px; font-weight:900; color:#dc2626">${
-          invoices.length
-        }</span></p>
-        <p><strong>Filtered Results:</strong> Showing current view</p>
-      </div>
-    </div>
+ 
 
     <table>
       <thead>
@@ -162,13 +143,25 @@ const generateListHtml = (invoices: InvoiceItem[]) => {
         </tr>
       </tbody>
     </table>
-
-    <div class="footer">
-      <p style="margin:0; font-weight:700;">SPC Source Technical Services LLC</p>
-      <p style="margin:5px 0;">Iris Bay, Office D-43, Business Bay, Dubai, UAE</p>
-      <p style="margin:5px 0;">+971 54 500 4520 | contact@spcsource.com</p>
-      <p style="margin-top:10px; opacity:0.8;">© 2025 All Rights Reserved</p>
+       <div class="meta">
+      <div>
+        <p><strong>Generated on:</strong> ${new Date().toLocaleDateString(
+          "en-GB"
+        )} ${new Date().toLocaleTimeString("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+  })}</p>
+        <p><strong>Report Type:</strong> Filtered Documents List</p>
+      </div>
+      <div style="text-align:right">
+        <p><strong>Total Documents:</strong> <span style="font-size:24px; font-weight:900; color:#dc2626">${
+          invoices.length
+        }</span></p>
+        <p><strong>Filtered Results:</strong> Showing current view</p>
+      </div>
     </div>
+
+
   </div>
 </body>
 </html>
