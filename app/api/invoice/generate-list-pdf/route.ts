@@ -38,9 +38,7 @@ const generateListHtml = (invoices: InvoiceItem[]) => {
           <td style="padding:8px 12px; text-align:center;">
             <span style="display:inline-block; padding:3px 10px; border-radius:12px; font-size:11px; font-weight:bold; color:white; ${
               inv.details.isInvoice
-                ? vatAmount > 0
-                  ? "background:#dc2626;"
-                  : "background:#2563eb;"
+                ? "background:#2563eb;"
                 : "background:#16a34a;"
             }">
               ${inv.details.isInvoice ? "INV" : "QUT"}
