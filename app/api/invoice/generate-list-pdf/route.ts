@@ -56,9 +56,9 @@ const generateListHtml = (invoices: InvoiceItem[]) => {
             inv.receiver.phone || "N/A"
           }</td>
           <td style="padding:8px 12px; text-align:center; font-size:14px;">${date}</td>
-          <td style="padding:8px 12px; text-align:right; font-weight:600; font-size:14px;">${
-            vatAmount > 0 ? ";color:#dc2626" : ""
-          }">${inv.details.subTotal.toFixed(2)}</td>
+      <td style="padding:8px 12px; text-align:right; font-weight:600; font-size:14px;${
+        vatAmount > 0 ? " color:#dc2626;" : ""
+      }">${inv.details.subTotal.toFixed(2)}</td>
           <td style="padding:8px 12px; text-align:right; font-weight:bold; font-size:15px; color:${
             vatAmount > 0 ? "#dc2626" : "#6b7280"
           }">${vatAmount.toFixed(2)}</td>
