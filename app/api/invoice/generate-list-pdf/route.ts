@@ -32,7 +32,7 @@ const generateListHtml = (invoices: InvoiceItem[]) => {
         <tr style="height: 48px; ${
           index % 2 === 0 ? "background:#f8fafc;" : "background:white;"
         }">
-          <td style="padding:8px 12px; text-align:center; font-weight:600; font-size:14px;">${
+          <td style="padding:8px 12px; text-align:center; font-weight:600; font-size:14px; color:#000;">${
             index + 1
           }</td>
           <td style="padding:8px 12px; text-align:center;">
@@ -45,24 +45,24 @@ const generateListHtml = (invoices: InvoiceItem[]) => {
             }">
               ${inv.details.isInvoice ? "INV" : "QUT"}
             </span>
-            <span style="margin-left:8px; font-weight:bold; font-size:15px;">${
+            <span style="margin-left:8px; font-weight:bold; font-size:15px; color:#000;">${
               inv.details.invoiceNumber
             }</span>
           </td>
-          <td style="padding:8px 12px; font-weight:600; font-size:14px;">${
+          <td style="padding:8px 12px; font-weight:600; font-size:14px; color:#000;">${
             inv.receiver.name || "N/A"
           }</td>
-          <td style="padding:8px 12px; font-size:14px;">${
+          <td style="padding:8px 12px; font-size:14px; color:#000;">${
             inv.receiver.phone || "N/A"
           }</td>
-          <td style="padding:8px 12px; text-align:center; font-size:14px;">${date}</td>
-      <td style="padding:8px 12px; text-align:right; font-weight:600; font-size:14px;${
-        vatAmount > 0 ? " color:#dc2626;" : ""
-      }">${inv.details.subTotal.toFixed(2)}</td>
-          <td style="padding:8px 12px; text-align:right; font-weight:bold; font-size:15px; color:${
-            vatAmount > 0 ? "#dc2626" : "#6b7280"
-          }">${vatAmount.toFixed(2)}</td>
-          <td style="padding:8px 12px; text-align:right; font-weight:900; font-size:17px; color:#1e40af;">${inv.details.totalAmount.toFixed(
+          <td style="padding:8px 12px; text-align:center; font-size:14px; color:#000;">${date}</td>
+          <td style="padding:8px 12px; text-align:right; font-weight:600; font-size:14px; color:#000;">${inv.details.subTotal.toFixed(
+            2
+          )}</td>
+          <td style="padding:8px 12px; text-align:right; font-weight:bold; font-size:15px; color:#000;">${vatAmount.toFixed(
+            2
+          )}</td>
+          <td style="padding:8px 12px; text-align:right; font-weight:900; font-size:17px; color:#000;">${inv.details.totalAmount.toFixed(
             2
           )}</td>
         </tr>
@@ -96,11 +96,11 @@ const generateListHtml = (invoices: InvoiceItem[]) => {
     .header p { margin:8px 0 0; font-size:16px; opacity:0.9; }
     .meta { display:flex; justify-content:space-between; padding:15px 25px; background:#f8fafc; font-size:14px; }
     .meta strong { color:#1e40af; }
-    table { width:100%; border-collapse:collapse; font-size:13.mw-parser-output .template-bn{font-weight:bold}13px; }
+    table { width:100%; border-collapse:collapse; }
     th { background:#1e293b; color:white; padding:12px 10px; text-align:center; font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:0.5px; }
     td { padding:8px 12px; border-bottom:1px solid #e2e8f0; }
-    .total-row { background:#fff7ed !important; font-weight:900; }
-    .total-row td { padding:18px 12px; font-size:18px; }
+    .total-row { background:#fff7ed !important; }
+    .total-row td { padding:18px 12px; font-size:18px; font-weight:900; }
     .footer { background:#1e293b; color:white; text-align:center; padding:20px; font-size:13px; }
     @page { size: A4 landscape; margin:10mm; }
     @media print { body { padding:0; } .container { box-shadow:none; } }
@@ -108,8 +108,28 @@ const generateListHtml = (invoices: InvoiceItem[]) => {
 </head>
 <body>
   <div class="container">
+    <div class="header">
+      <h1>SPC Source Technical Services LLC</h1>
+      <p>Professional Documents Summary Report</p>
+    </div>
 
-  
+    <div class="meta">
+      <div>
+        <p><strong>Generated on:</strong> ${new Date().toLocaleDateString(
+          "en-GB"
+        )} ${new Date().toLocaleTimeString("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+  })}</p>
+        <p><strong>Report Type:</strong> Filtered Documents List</p>
+      </div>
+      <div style="text-align:right">
+        <p><strong>Total Documents:</strong> <span style="font-size:24px; font-weight:900; color:#dc2626">${
+          invoices.length
+        }</span></p>
+        <p><strong>Filtered Results:</strong> Showing current view</p>
+      </div>
+    </div>
 
     <table>
       <thead>
@@ -133,33 +153,22 @@ const generateListHtml = (invoices: InvoiceItem[]) => {
           <td style="text-align:right; font-size:19px;"><strong>AED ${totals.sub.toFixed(
             2
           )}</strong></td>
-          <td style="text-align:right; font-size:19px; color:#dc2626;"><strong>AED ${totals.vat.toFixed(
+          <td style="text-align:right; font-size:19px;"><strong>AED ${totals.vat.toFixed(
             2
           )}</strong></td>
-          <td style="text-align:right; font-size:22px; color:#1e40af;"><strong>AED ${totals.grand.toFixed(
+          <td style="text-align:right; font-size:22px;"><strong>AED ${totals.grand.toFixed(
             2
           )}</strong></td>
         </tr>
       </tbody>
     </table>
-    <div class="meta">
-      <div>
-        <p><strong>Generated on:</strong> ${new Date().toLocaleDateString(
-          "en-GB"
-        )} ${new Date().toLocaleTimeString("en-GB", {
-    hour: "2-digit",
-    minute: "2-digit",
-  })}</p>
-        <p><strong>Report Type:</strong> Filtered Documents List</p>
-      </div>
-      <div style="text-align:right">
-        <p><strong>Total Documents:</strong> <span style="font-size:24px; font-weight:900; color:#dc2626">${
-          invoices.length
-        }</span></p>
-        <p><strong>Filtered Results:</strong> Showing current view</p>
-      </div>
+
+    <div class="footer">
+      <p style="margin:0; font-weight:700;">SPC Source Technical Services LLC</p>
+      <p style="margin:5px 0;">Iris Bay, Office D-43, Business Bay, Dubai, UAE</p>
+      <p style="margin:5px 0;">+971 54 500 4520 | contact@spcsource.com</p>
+      <p style="margin-top:10px; opacity:0.8;">© 2025 All Rights Reserved</p>
     </div>
-    
   </div>
 </body>
 </html>
