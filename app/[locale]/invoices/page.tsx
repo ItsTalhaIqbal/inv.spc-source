@@ -149,6 +149,7 @@ const Page: React.FC = () => {
     title: string;
     description: string;
   } | null>(null);
+  const [listPdfLoading, setListPdfLoading] = useState(false);
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [convertInvoice, setConvertInvoice] = useState<any>(null);
   const [convertConfirm, setConvertConfirm] = useState<boolean>(false);
@@ -891,6 +892,8 @@ const Page: React.FC = () => {
   const downloadFilteredPdf = async () => {
     if (filteredInvoices.length === 0) return;
 
+    setListPdfLoading(true);
+
     try {
       const response = await fetch("/api/invoice/generate-list-pdf", {
         method: "POST",
@@ -898,7 +901,7 @@ const Page: React.FC = () => {
         body: JSON.stringify({ invoices: filteredInvoices }),
       });
 
-      if (!response.ok) throw new Error("Failed to generate PDF");
+      if (!response.ok) throw new Error("Failed to generate list PDF");
 
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
@@ -910,12 +913,19 @@ const Page: React.FC = () => {
       a.click();
       window.URL.revokeObjectURL(url);
 
-      setToast({ title: "Success", description: "List PDF downloaded!" });
+      setToast({
+        title: "Success!",
+        description: `List PDF downloaded (${filteredInvoices.length} documents)`,
+      });
     } catch (error) {
-      setToast({ title: "Error", description: "Failed to download list PDF" });
+      setToast({
+        title: "Error",
+        description: "Failed to generate list PDF",
+      });
+    } finally {
+      setListPdfLoading(false);
     }
   };
-
   return (
     <FormProvider {...methods}>
       <ToastProvider>
@@ -1016,7 +1026,11 @@ const Page: React.FC = () => {
                   <TooltipTrigger asChild>
                     <Button
                       onClick={downloadFilteredPdf}
-                      disabled={filteredInvoices.length === 0 || loading}
+                      disabled={
+                        filteredInvoices.length === 0 ||
+                        loading ||
+                        listPdfLoading
+                      }
                       variant="ghost"
                       size="sm"
                       className={
@@ -1025,11 +1039,19 @@ const Page: React.FC = () => {
                           : "bg-gray-200 text-black hover:bg-gray-300"
                       }
                     >
-                      <DownloadIcon className="h-4 w-4" />
+                      {listPdfLoading ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <DownloadIcon className="h-4 w-4" />
+                      )}
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>Download PDF</p>
+                    <p>
+                      {listPdfLoading
+                        ? "Generating List PDF..."
+                        : `Download List as PDF (${filteredInvoices.length})`}
+                    </p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
