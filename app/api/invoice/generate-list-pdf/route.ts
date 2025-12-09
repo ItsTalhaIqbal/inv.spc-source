@@ -19,29 +19,50 @@ interface InvoiceItem {
 const generateListHtml = (invoices: InvoiceItem[]) => {
   const rows = invoices
     .map((inv, index) => {
-      const tax = Number(inv.details.taxDetails?.amount || 0).toFixed(2);
+      const tax = Number(inv.details.taxDetails?.amount || 0);
       const date = new Date(inv.details.invoiceDate).toLocaleDateString(
         "en-GB"
       );
 
       return `
-        <tr class="border-b">
-          <td class="py-3 px-4 text-center">${index + 1}</td>
-          <td class="py-3 px-4 text-center font-medium">
-            ${inv.details.isInvoice ? "INV" : "QUT"}-${
-        inv.details.invoiceNumber
-      }
+        <tr class="${
+          index % 2 === 0 ? "bg-gray-50" : "bg-white"
+        } hover:bg-blue-50 transition-colors">
+          <td class="py-4 px-6 text-center font-medium text-gray-700">${
+            index + 1
+          }</td>
+          <td class="py-4 px-6 text-center">
+            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${
+              inv.details.isInvoice
+                ? tax > 0
+                  ? "bg-red-100 text-red-800"
+                  : "bg-blue-100 text-blue-800"
+                : "bg-green-100 text-green-800"
+            }">
+              ${inv.details.isInvoice ? "INV" : "QUT"}
+            </span>
+            <span class="ml-2 font-bold text-gray-900">${
+              inv.details.invoiceNumber
+            }</span>
           </td>
-          <td class="py-3 px-4">${inv.receiver.name || "N/A"}</td>
-          <td class="py-3 px-4">${inv.receiver.phone || "N/A"}</td>
-          <td class="py-3 px-4 text-center">${date}</td>
-          <td class="py-3 px-4 text-right">${Number(
+          <td class="py-4 px-6 font-semibold text-gray-800">${
+            inv.receiver.name || "N/A"
+          }</td>
+          <td class="py-4 px-6 text-gray-600">${
+            inv.receiver.phone || "N/A"
+          }</td>
+          <td class="py-4 px-6 text-center text-gray-700">${date}</td>
+          <td class="py-4 px-6 text-right text-gray-700 font-medium">${Number(
             inv.details.subTotal
           ).toFixed(2)}</td>
-          <td class="py-3 px-4 text-right font-medium">${tax}</td>
-          <td class="py-3 px-4 text-right font-bold text-lg">${Number(
-            inv.details.totalAmount
-          ).toFixed(2)}</td>
+          <td class="py-4 px-6 text-right ${
+            tax > 0 ? "text-red-600 font-bold" : "text-gray-500"
+          }">
+            ${tax.toFixed(2)}
+          </td>
+          <td class="py-4 px-6 text-right text-xl font-bold text-blue-700">
+            ${Number(inv.details.totalAmount).toFixed(2)}
+          </td>
         </tr>
       `;
     })
@@ -59,42 +80,144 @@ const generateListHtml = (invoices: InvoiceItem[]) => {
 
   return `
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Documents List - SPC Source</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SPC Source - Documents Report</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
-    body { font-family: 'Segoe UI', sans-serif; margin: 0; padding: 20px; background: #f9f9f9; }
-    .container { max-width: 1200px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 0 20px rgba(0,0,0,0.1); }
-    .header { text-align: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 3px solid #FFA733; }
-    .header h1 { color: #2c3e50; margin: 0; font-size: 28px; }
-    .header p { color: #7f8c8d; margin: 10px 0 0; }
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-    th { background: #34495e; color: white; padding: 15px; text-align: center; font-weight: 600; }
-    td { padding: 12px 8px; border-bottom: 1px solid #eee; }
-    tr:hover { background: #f1f8ff; }
-    .text-right { text-align: right; }
-    .text-center { text-align: center; }
-    .footer { margin-top: 40px; text-align: center; font-size: 14px; color: #95a5a6; }
-    .total-row { background: #ecf0f1; font-weight: bold; font-size: 18px; }
-    .logo { text-align: center; margin-bottom: 20px; }
-    .logo img { height: 80px; }
+    body {
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      color: #2d3748;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 40px auto;
+      background: white;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+    }
+    .header {
+      background: linear-gradient(90deg, #1e3a8a 0%, #3b82f6 100%);
+      color: white;
+      padding: 30px;
+      text-align: center;
+      position: relative;
+    }
+    .header::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 6px;
+      background: #FFA733;
+    }
+    .logo h1 {
+      font-size: 32px;
+      font-weight: 800;
+      margin: 0;
+      letter-spacing: 1px;
+    }
+    .logo p {
+      margin: 8px 0 0;
+      font-size: 18px;
+      opacity: 0.9;
+    }
+    .meta-info {
+      background: #f8fafc;
+      padding: 20px 40px;
+      display: flex;
+      justify-content: space-between;
+      font-size: 15px;
+      color: #4a5568;
+    }
+    .meta-info strong { color: #2d3748; font-weight: 600; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0;
+    }
+    th {
+      background: #1e293b;
+      color: white;
+      padding: 18px 12px;
+      text-align: center;
+      font-weight: 700;
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    td {
+      padding: 16px 12px;
+      text-align: center;
+    }
+    .total-row {
+      background: #fef3c7 !important;
+      font-weight: 800;
+      font-size: 18px;
+    }
+    .total-row td {
+      padding: 20px 12px;
+      color: #92400e;
+    }
+    .footer {
+      text-align: center;
+      padding: 30px;
+      background: #1e293b;
+      color: white;
+      margin-top: 40px;
+    }
+    .footer p {
+      margin: 8px 0;
+      font-size: 14px;
+    }
+    .badge {
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-weight: bold;
+      font-size: 11px;
+    }
+    @media print {
+      body { background: white; }
+      .container { box-shadow: none; margin: 0; }
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <div class="logo">
-      <h1>SPC Source Technical Services LLC</h1>
-      <p>Documents Summary Report</p>
-      <p>Generated on: ${new Date().toLocaleString("en-GB")}</p>
-      <p>Total Documents: ${invoices.length}</p>
+    <div class="header">
+      <div class="logo">
+        <h1>SPC Source Technical Services LLC</h1>
+        <p>Professional Documents Summary Report</p>
+      </div>
+    </div>
+
+    <div class="meta-info">
+      <div>
+        <p><strong>Generated on:</strong> ${new Date().toLocaleString(
+          "en-GB"
+        )}</p>
+        <p><strong>Report Type:</strong> Filtered Documents List</p>
+      </div>
+      <div style="text-align:right">
+        <p><strong>Total Documents:</strong> <span style="font-size:20px; color:#1e40af">${
+          invoices.length
+        }</span></p>
+        <p><strong>Filtered Results:</strong> Showing current view</p>
+      </div>
     </div>
 
     <table>
       <thead>
         <tr>
           <th>Sr.</th>
-          <th>INV#</th>
+          <th>Document No.</th>
           <th>Customer Name</th>
           <th>Phone</th>
           <th>Date</th>
@@ -106,16 +229,21 @@ const generateListHtml = (invoices: InvoiceItem[]) => {
       <tbody>
         ${rows}
         <tr class="total-row">
-          <td colspan="5" class="text-center font-bold">TOTAL</td>
-          <td class="text-right">${totals.sub.toFixed(2)}</td>
-          <td class="text-right">${totals.vat.toFixed(2)}</td>
-          <td class="text-right">${totals.grand.toFixed(2)}</td>
+          <td colspan="5"><strong>TOTAL (${
+            invoices.length
+          } Documents)</strong></td>
+          <td><strong>AED ${totals.sub.toFixed(2)}</strong></td>
+          <td><strong>AED ${totals.vat.toFixed(2)}</strong></td>
+          <td><strong>AED ${totals.grand.toFixed(2)}</strong></td>
         </tr>
       </tbody>
     </table>
 
     <div class="footer">
-      <p>© 2025 SPC Source Technical Services LLC | All rights reserved</p>
+      <p style="font-size:16px; margin:0">SPC Source Technical Services LLC</p>
+      <p>Iris Bay, Office D-43, Business Bay, Dubai, UAE</p>
+      <p>+971 54 500 4520 | contact@spcsource.com | www.spcsource.com</p>
+      <p style="margin-top:12px; opacity:0.8">© 2025 All Rights Reserved</p>
     </div>
   </div>
 </body>
