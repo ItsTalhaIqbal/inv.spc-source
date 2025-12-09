@@ -19,67 +19,60 @@ interface InvoiceItem {
 const generateListHtml = (invoices: InvoiceItem[]) => {
   const rows = invoices
     .map((inv, index) => {
-      // Calculate actual VAT amount (5% of subtotal if tax applied)
-      const taxRate = inv.details.taxDetails?.amount || 0;
-      const calculatedVat =
+      const taxRate = Number(inv.details.taxDetails?.amount || 0);
+      const vatAmount =
         taxRate > 0
           ? Number(((inv.details.subTotal * taxRate) / 100).toFixed(2))
           : 0;
-
       const date = new Date(inv.details.invoiceDate).toLocaleDateString(
         "en-GB"
       );
 
       return `
-        <tr class="${
-          index % 2 === 0 ? "bg-white" : "bg-gray-50"
-        } hover:bg-blue-50 transition-all">
-          <td class="py-5 px-6 text-center font-bold text-gray-800 text-lg">${
+        <tr style="height: 48px; ${
+          index % 2 === 0 ? "background:#f8fafc;" : "background:white;"
+        }">
+          <td style="padding:8px 12px; text-align:center; font-weight:600; font-size:14px;">${
             index + 1
           }</td>
-          <td class="py-5 px-6 text-center">
-            <div class="flex items-center justify-center gap-3">
-              <span class="inline-block px-4 py-2 rounded-full text-sm font-bold text-white ${
-                inv.details.isInvoice
-                  ? calculatedVat > 0
-                    ? "bg-red-600"
-                    : "bg-blue-600"
-                  : "bg-green-600"
-              }">
-                ${inv.details.isInvoice ? "INV" : "QUT"}
-              </span>
-              <span class="font-bold text-xl text-gray-900">${
-                inv.details.invoiceNumber
-              }</span>
-            </div>
+          <td style="padding:8px 12px; text-align:center;">
+            <span style="display:inline-block; padding:3px 10px; border-radius:12px; font-size:11px; font-weight:bold; color:white; ${
+              inv.details.isInvoice
+                ? vatAmount > 0
+                  ? "background:#dc2626;"
+                  : "background:#2563eb;"
+                : "background:#16a34a;"
+            }">
+              ${inv.details.isInvoice ? "INV" : "QUT"}
+            </span>
+            <span style="margin-left:8px; font-weight:bold; font-size:15px;">${
+              inv.details.invoiceNumber
+            }</span>
           </td>
-          <td class="py-5 px-6 font-semibold text-gray-800 text-lg">${
+          <td style="padding:8px 12px; font-weight:600; font-size:14px;">${
             inv.receiver.name || "N/A"
           }</td>
-          <td class="py-5 px-6 text-gray-700 text-lg">${
+          <td style="padding:8px 12px; font-size:14px;">${
             inv.receiver.phone || "N/A"
           }</td>
-          <td class="py-5 px-6 text-center text-gray-700 text-lg font-medium">${date}</td>
-          <td class="py-5 px-6 text-right text-gray-800 text-lg font-semibold">${inv.details.subTotal.toFixed(
+          <td style="padding:8px 12px; text-align:center; font-size:14px;">${date}</td>
+          <td style="padding:8px 12px; text-align:right; font-weight:600; font-size:14px;">${
+            vatAmount > 0 ? ";color:#dc2626" : ""
+          }">${inv.details.subTotal.toFixed(2)}</td>
+          <td style="padding:8px 12px; text-align:right; font-weight:bold; font-size:15px; color:${
+            vatAmount > 0 ? "#dc2626" : "#6b7280"
+          }">${vatAmount.toFixed(2)}</td>
+          <td style="padding:8px 12px; text-align:right; font-weight:900; font-size:17px; color:#1e40af;">${inv.details.totalAmount.toFixed(
             2
           )}</td>
-          <td class="py-5 px-6 text-right text-lg font-bold ${
-            calculatedVat > 0 ? "text-red-600" : "text-gray-500"
-          }">
-            ${calculatedVat.toFixed(2)}
-          </td>
-          <td class="py-5 px-6 text-right text-2xl font-extrabold text-blue-700">
-            ${inv.details.totalAmount.toFixed(2)}
-          </td>
         </tr>
       `;
     })
     .join("");
 
-  // Calculate totals
   const totals = invoices.reduce(
     (acc, inv) => {
-      const taxRate = inv.details.taxDetails?.amount || 0;
+      const taxRate = Number(inv.details.taxDetails?.amount || 0);
       const vat = taxRate > 0 ? (inv.details.subTotal * taxRate) / 100 : 0;
       acc.sub += inv.details.subTotal;
       acc.vat += vat;
@@ -91,148 +84,83 @@ const generateListHtml = (invoices: InvoiceItem[]) => {
 
   return `
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
- <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
- <title>SPC Source - Documents Report</title>
- <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
- <style>
-   * { box-sizing: border-box; }
-   body {
-     font-family: 'Inter', sans-serif;
-     margin: 0;
-     padding: 0;
-     background: linear-gradient(135deg, #1e3a8a, #3b82f6);
-     min-height: 100vh;
-   }
-   .container {
-     max-width: 1300px;
-     margin: 30px auto;
-     background: white;
-     border-radius: 20px;
-     overflow: hidden;
-     box-shadow: 0 25px 60px rgba(0,0,0,0.3);
-   }
-   .header {
-     background: linear-gradient(90deg, #1e40af, #2563eb);
-     color: white;
-     padding: 35px 40px;
-     text-align: center;
-   }
-   .header h1 {
-     font-size: 36px;
-     font-weight: 900;
-     margin: 0;
-     letter-spacing: 1.5px;
-   }
-   .header p {
-     font-size: 20px;
-     margin: 10px 0 0;
-     opacity: 0.95;
-   }
-   .meta {
-     display: flex;
-     justify-content: space-between;
-     padding: 25px 40px;
-     background: #f8fafc;
-     border-bottom: 1px solid #e2e8f0;
-     font-size: 16px;
-   }
-   .meta div strong { color: #1e40af; font-weight: 700; }
-   table {
-     width: 100%;
-     border-collapse: collapse;
-   }
-   th {
-     background: #1e293b;
-     color: white;
-     padding: 20px 15px;
-     font-weight: 800;
-     font-size: 15px;
-     text-transform: uppercase;
-     letter-spacing: 1px;
-   }
-   td {
-     padding: 18px 15px;
-     border-bottom: 1px solid #e2e8f0;
-   }
-   .total-row {
-     background: #fff7ed !important;
-   }
-   .total-row td {
-     padding: 30px 15px;
-     font-size: 20px;
-     font-weight: 900;
-     color: #9a3412;
-   }
-   .total-label {
-     text-align: left !important;
-     padding-left: 40px !important;
-   }
-   .footer {
-     background: #1e293b;
-     color: white;
-     text-align: center;
-     padding: 30px;
-     font-size: 15px;
-   }
-   .footer p { margin: 8px 0; }
-   @media print {
-     body { background: white; }
-     .container { box-shadow: none; margin: 0; border-radius: 0; }
-   }
- </style>
+  <meta charset="UTF-8">
+  <title>SPC Source - Documents Report</title>
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, sans-serif; margin:0; padding:15px; background:#f1f5f9; }
+    .container { width:100%; max-width:1300px; margin:0 auto; background:white; border-radius:12px; overflow:hidden; box-shadow:0 4px 20px rgba(0,0,0,0.1); }
+    .header { background:#1e40af; color:white; padding:20px; text-align:center; }
+    .header h1 { margin:0; font-size:28px; font-weight:800; }
+    .header p { margin:8px 0 0; font-size:16px; opacity:0.9; }
+    .meta { display:flex; justify-content:space-between; padding:15px 25px; background:#f8fafc; font-size:14px; }
+    .meta strong { color:#1e40af; }
+    table { width:100%; border-collapse:collapse; font-size:13.mw-parser-output .template-bn{font-weight:bold}13px; }
+    th { background:#1e293b; color:white; padding:12px 10px; text-align:center; font-weight:700; font-size:13px; text-transform:uppercase; letter-spacing:0.5px; }
+    td { padding:8px 12px; border-bottom:1px solid #e2e8f0; }
+    .total-row { background:#fff7ed !important; font-weight:900; }
+    .total-row td { padding:18px 12px; font-size:18px; }
+    .footer { background:#1e293b; color:white; text-align:center; padding:20px; font-size:13px; }
+    @page { size: A4 landscape; margin:10mm; }
+    @media print { body { padding:0; } .container { box-shadow:none; } }
+  </style>
 </head>
 <body>
- <div class="container">
-   <div class="meta">
-     <div>
-       <p><strong>Generated on:</strong> ${new Date().toLocaleString(
-         "en-GB"
-       )}</p>
-       <p><strong>Report Type:</strong> Filtered Documents List</p>
-     </div>
-     <div style="text-align:right">
-       <p><strong>Total Documents:</strong> <span style="font-size:28px; font-weight:900; color:#dc2626">${
-         invoices.length
-       }</span></p>
-       <p><strong>Filtered Results:</strong> Showing current view</p>
-     </div>
-   </div>
+  <div class="container">
 
-   <table>
-     <thead>
-       <tr>
-         <th>Sr.</th>
-         <th>DOCUMENT NO.</th>
-         <th>CUSTOMER NAME</th>
-         <th>PHONE</th>
-         <th>DATE</th>
-         <th>SUB TOTAL</th>
-         <th>VAT</th>
-         <th>GRAND TOTAL</th>
-       </tr>
-     </thead>
-     <tbody>
-       ${rows}
-       <tr class="total-row">
-         <td colspan="5" class="total-label"><strong>TOTAL (${
-           invoices.length
-         } Documents)</strong></td>
-         <td class="text-right"><strong>AED ${totals.sub.toFixed(
-           2
-         )}</strong></td>
-         <td class="text-right"><strong>AED ${totals.vat.toFixed(
-           2
-         )}</strong></td>
-         <td class="text-right text-3xl"><strong>AED ${totals.grand.toFixed(
-           2
-         )}</strong></td>
-       </tr>
-     </tbody>
-   </table>
- </div>
+  
+
+    <table>
+      <thead>
+        <tr>
+          <th>Sr.</th>
+          <th>DOCUMENT NO.</th>
+          <th>CUSTOMER NAME</th>
+          <th>PHONE</th>
+          <th>DATE</th>
+          <th>SUB TOTAL</th>
+          <th>VAT</th>
+          <th>GRAND TOTAL</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows}
+        <tr class="total-row">
+          <td colspan="5" style="text-align:left; padding-left:30px; font-size:18px;"><strong>TOTAL (${
+            invoices.length
+          } Documents)</strong></td>
+          <td style="text-align:right; font-size:19px;"><strong>AED ${totals.sub.toFixed(
+            2
+          )}</strong></td>
+          <td style="text-align:right; font-size:19px; color:#dc2626;"><strong>AED ${totals.vat.toFixed(
+            2
+          )}</strong></td>
+          <td style="text-align:right; font-size:22px; color:#1e40af;"><strong>AED ${totals.grand.toFixed(
+            2
+          )}</strong></td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="meta">
+      <div>
+        <p><strong>Generated on:</strong> ${new Date().toLocaleDateString(
+          "en-GB"
+        )} ${new Date().toLocaleTimeString("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+  })}</p>
+        <p><strong>Report Type:</strong> Filtered Documents List</p>
+      </div>
+      <div style="text-align:right">
+        <p><strong>Total Documents:</strong> <span style="font-size:24px; font-weight:900; color:#dc2626">${
+          invoices.length
+        }</span></p>
+        <p><strong>Filtered Results:</strong> Showing current view</p>
+      </div>
+    </div>
+    
+  </div>
 </body>
 </html>
   `;
