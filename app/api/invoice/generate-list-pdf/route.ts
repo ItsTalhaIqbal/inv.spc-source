@@ -19,59 +19,70 @@ interface InvoiceItem {
 const generateListHtml = (invoices: InvoiceItem[]) => {
   const rows = invoices
     .map((inv, index) => {
-      const tax = Number(inv.details.taxDetails?.amount || 0);
+      // Calculate actual VAT amount (5% of subtotal if tax applied)
+      const taxRate = inv.details.taxDetails?.amount || 0;
+      const calculatedVat =
+        taxRate > 0
+          ? Number(((inv.details.subTotal * taxRate) / 100).toFixed(2))
+          : 0;
+
       const date = new Date(inv.details.invoiceDate).toLocaleDateString(
         "en-GB"
       );
 
       return `
         <tr class="${
-          index % 2 === 0 ? "bg-gray-50" : "bg-white"
-        } hover:bg-blue-50 transition-colors">
-          <td class="py-4 px-6 text-center font-medium text-gray-700">${
+          index % 2 === 0 ? "bg-white" : "bg-gray-50"
+        } hover:bg-blue-50 transition-all">
+          <td class="py-5 px-6 text-center font-bold text-gray-800 text-lg">${
             index + 1
           }</td>
-          <td class="py-4 px-6 text-center">
-            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${
-              inv.details.isInvoice
-                ? tax > 0
-                  ? "bg-red-100 text-red-800"
-                  : "bg-blue-100 text-blue-800"
-                : "bg-green-100 text-green-800"
-            }">
-              ${inv.details.isInvoice ? "INV" : "QUT"}
-            </span>
-            <span class="ml-2 font-bold text-gray-900">${
-              inv.details.invoiceNumber
-            }</span>
+          <td class="py-5 px-6 text-center">
+            <div class="flex items-center justify-center gap-3">
+              <span class="inline-block px-4 py-2 rounded-full text-sm font-bold text-white ${
+                inv.details.isInvoice
+                  ? calculatedVat > 0
+                    ? "bg-red-600"
+                    : "bg-blue-600"
+                  : "bg-green-600"
+              }">
+                ${inv.details.isInvoice ? "INV" : "QUT"}
+              </span>
+              <span class="font-bold text-xl text-gray-900">${
+                inv.details.invoiceNumber
+              }</span>
+            </div>
           </td>
-          <td class="py-4 px-6 font-semibold text-gray-800">${
+          <td class="py-5 px-6 font-semibold text-gray-800 text-lg">${
             inv.receiver.name || "N/A"
           }</td>
-          <td class="py-4 px-6 text-gray-600">${
+          <td class="py-5 px-6 text-gray-700 text-lg">${
             inv.receiver.phone || "N/A"
           }</td>
-          <td class="py-4 px-6 text-center text-gray-700">${date}</td>
-          <td class="py-4 px-6 text-right text-gray-700 font-medium">${Number(
-            inv.details.subTotal
-          ).toFixed(2)}</td>
-          <td class="py-4 px-6 text-right ${
-            tax > 0 ? "text-red-600 font-bold" : "text-gray-500"
+          <td class="py-5 px-6 text-center text-gray-700 text-lg font-medium">${date}</td>
+          <td class="py-5 px-6 text-right text-gray-800 text-lg font-semibold">${inv.details.subTotal.toFixed(
+            2
+          )}</td>
+          <td class="py-5 px-6 text-right text-lg font-bold ${
+            calculatedVat > 0 ? "text-red-600" : "text-gray-500"
           }">
-            ${tax.toFixed(2)}
+            ${calculatedVat.toFixed(2)}
           </td>
-          <td class="py-4 px-6 text-right text-xl font-bold text-blue-700">
-            ${Number(inv.details.totalAmount).toFixed(2)}
+          <td class="py-5 px-6 text-right text-2xl font-extrabold text-blue-700">
+            ${inv.details.totalAmount.toFixed(2)}
           </td>
         </tr>
       `;
     })
     .join("");
 
+  // Calculate totals
   const totals = invoices.reduce(
     (acc, inv) => {
+      const taxRate = inv.details.taxDetails?.amount || 0;
+      const vat = taxRate > 0 ? (inv.details.subTotal * taxRate) / 100 : 0;
       acc.sub += inv.details.subTotal;
-      acc.vat += Number(inv.details.taxDetails?.amount || 0);
+      acc.vat += vat;
       acc.grand += inv.details.totalAmount;
       return acc;
     },
@@ -83,174 +94,149 @@ const generateListHtml = (invoices: InvoiceItem[]) => {
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>SPC Source - Documents Report</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <style>
-    body {
-      font-family: 'Inter', sans-serif;
-      margin: 0;
-      padding: 0;
-      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-      color: #2d3748;
-    }
-    .container {
-      max-width: 1200px;
-      margin: 40px auto;
-      background: white;
-      border-radius: 16px;
-      overflow: hidden;
-      box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-    }
-    .header {
-      background: linear-gradient(90deg, #1e3a8a 0%, #3b82f6 100%);
-      color: white;
-      padding: 30px;
-      text-align: center;
-      position: relative;
-    }
-    .header::after {
-      content: '';
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      width: 100%;
-      height: 6px;
-      background: #FFA733;
-    }
-    .logo h1 {
-      font-size: 32px;
-      font-weight: 800;
-      margin: 0;
-      letter-spacing: 1px;
-    }
-    .logo p {
-      margin: 8px 0 0;
-      font-size: 18px;
-      opacity: 0.9;
-    }
-    .meta-info {
-      background: #f8fafc;
-      padding: 20px 40px;
-      display: flex;
-      justify-content: space-between;
-      font-size: 15px;
-      color: #4a5568;
-    }
-    .meta-info strong { color: #2d3748; font-weight: 600; }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin: 0;
-    }
-    th {
-      background: #1e293b;
-      color: white;
-      padding: 18px 12px;
-      text-align: center;
-      font-weight: 700;
-      font-size: 14px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-    td {
-      padding: 16px 12px;
-      text-align: center;
-    }
-    .total-row {
-      background: #fef3c7 !important;
-      font-weight: 800;
-      font-size: 18px;
-    }
-    .total-row td {
-      padding: 20px 12px;
-      color: #92400e;
-    }
-    .footer {
-      text-align: center;
-      padding: 30px;
-      background: #1e293b;
-      color: white;
-      margin-top: 40px;
-    }
-    .footer p {
-      margin: 8px 0;
-      font-size: 14px;
-    }
-    .badge {
-      padding: 4px 10px;
-      border-radius: 20px;
-      font-weight: bold;
-      font-size: 11px;
-    }
-    @media print {
-      body { background: white; }
-      .container { box-shadow: none; margin: 0; }
-    }
-  </style>
+ <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+ <title>SPC Source - Documents Report</title>
+ <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+ <style>
+   * { box-sizing: border-box; }
+   body {
+     font-family: 'Inter', sans-serif;
+     margin: 0;
+     padding: 0;
+     background: linear-gradient(135deg, #1e3a8a, #3b82f6);
+     min-height: 100vh;
+   }
+   .container {
+     max-width: 1300px;
+     margin: 30px auto;
+     background: white;
+     border-radius: 20px;
+     overflow: hidden;
+     box-shadow: 0 25px 60px rgba(0,0,0,0.3);
+   }
+   .header {
+     background: linear-gradient(90deg, #1e40af, #2563eb);
+     color: white;
+     padding: 35px 40px;
+     text-align: center;
+   }
+   .header h1 {
+     font-size: 36px;
+     font-weight: 900;
+     margin: 0;
+     letter-spacing: 1.5px;
+   }
+   .header p {
+     font-size: 20px;
+     margin: 10px 0 0;
+     opacity: 0.95;
+   }
+   .meta {
+     display: flex;
+     justify-content: space-between;
+     padding: 25px 40px;
+     background: #f8fafc;
+     border-bottom: 1px solid #e2e8f0;
+     font-size: 16px;
+   }
+   .meta div strong { color: #1e40af; font-weight: 700; }
+   table {
+     width: 100%;
+     border-collapse: collapse;
+   }
+   th {
+     background: #1e293b;
+     color: white;
+     padding: 20px 15px;
+     font-weight: 800;
+     font-size: 15px;
+     text-transform: uppercase;
+     letter-spacing: 1px;
+   }
+   td {
+     padding: 18px 15px;
+     border-bottom: 1px solid #e2e8f0;
+   }
+   .total-row {
+     background: #fff7ed !important;
+   }
+   .total-row td {
+     padding: 30px 15px;
+     font-size: 20px;
+     font-weight: 900;
+     color: #9a3412;
+   }
+   .total-label {
+     text-align: left !important;
+     padding-left: 40px !important;
+   }
+   .footer {
+     background: #1e293b;
+     color: white;
+     text-align: center;
+     padding: 30px;
+     font-size: 15px;
+   }
+   .footer p { margin: 8px 0; }
+   @media print {
+     body { background: white; }
+     .container { box-shadow: none; margin: 0; border-radius: 0; }
+   }
+ </style>
 </head>
 <body>
-  <div class="container">
-    <div class="header">
-      <div class="logo">
-        <h1>SPC Source Technical Services LLC</h1>
-        <p>Professional Documents Summary Report</p>
-      </div>
-    </div>
+ <div class="container">
+   <div class="meta">
+     <div>
+       <p><strong>Generated on:</strong> ${new Date().toLocaleString(
+         "en-GB"
+       )}</p>
+       <p><strong>Report Type:</strong> Filtered Documents List</p>
+     </div>
+     <div style="text-align:right">
+       <p><strong>Total Documents:</strong> <span style="font-size:28px; font-weight:900; color:#dc2626">${
+         invoices.length
+       }</span></p>
+       <p><strong>Filtered Results:</strong> Showing current view</p>
+     </div>
+   </div>
 
-    <div class="meta-info">
-      <div>
-        <p><strong>Generated on:</strong> ${new Date().toLocaleString(
-          "en-GB"
-        )}</p>
-        <p><strong>Report Type:</strong> Filtered Documents List</p>
-      </div>
-      <div style="text-align:right">
-        <p><strong>Total Documents:</strong> <span style="font-size:20px; color:#1e40af">${
-          invoices.length
-        }</span></p>
-        <p><strong>Filtered Results:</strong> Showing current view</p>
-      </div>
-    </div>
-
-    <table>
-      <thead>
-        <tr>
-          <th>Sr.</th>
-          <th>Document No.</th>
-          <th>Customer Name</th>
-          <th>Phone</th>
-          <th>Date</th>
-          <th>Sub Total</th>
-          <th>VAT</th>
-          <th>Grand Total</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${rows}
-        <tr class="total-row">
-          <td colspan="5"><strong>TOTAL (${
-            invoices.length
-          } Documents)</strong></td>
-          <td><strong>AED ${totals.sub.toFixed(2)}</strong></td>
-          <td><strong>AED ${totals.vat.toFixed(2)}</strong></td>
-          <td><strong>AED ${totals.grand.toFixed(2)}</strong></td>
-        </tr>
-      </tbody>
-    </table>
-
-    <div class="footer">
-      <p style="font-size:16px; margin:0">SPC Source Technical Services LLC</p>
-      <p>Iris Bay, Office D-43, Business Bay, Dubai, UAE</p>
-      <p>+971 54 500 4520 | contact@spcsource.com | www.spcsource.com</p>
-      <p style="margin-top:12px; opacity:0.8">© 2025 All Rights Reserved</p>
-    </div>
-  </div>
+   <table>
+     <thead>
+       <tr>
+         <th>Sr.</th>
+         <th>DOCUMENT NO.</th>
+         <th>CUSTOMER NAME</th>
+         <th>PHONE</th>
+         <th>DATE</th>
+         <th>SUB TOTAL</th>
+         <th>VAT</th>
+         <th>GRAND TOTAL</th>
+       </tr>
+     </thead>
+     <tbody>
+       ${rows}
+       <tr class="total-row">
+         <td colspan="5" class="total-label"><strong>TOTAL (${
+           invoices.length
+         } Documents)</strong></td>
+         <td class="text-right"><strong>AED ${totals.sub.toFixed(
+           2
+         )}</strong></td>
+         <td class="text-right"><strong>AED ${totals.vat.toFixed(
+           2
+         )}</strong></td>
+         <td class="text-right text-3xl"><strong>AED ${totals.grand.toFixed(
+           2
+         )}</strong></td>
+       </tr>
+     </tbody>
+   </table>
+ </div>
 </body>
 </html>
   `;
 };
-
 export async function POST(req: NextRequest) {
   let browser = null;
   try {
