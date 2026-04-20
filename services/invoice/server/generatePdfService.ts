@@ -436,10 +436,14 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
   const footerTemplate = `
     <div style="
       width: 100%;
+      height: 24mm;
       font-family: 'Roboto', Arial, sans-serif;
       font-size: 11px;
       padding: 0 5mm;
       box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
     ">
       <!-- Receiver sign + company name row -->
       <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
@@ -724,7 +728,7 @@ ${new Date(new Date()).toLocaleDateString("en-US", DATE_OPTIONS)}
       displayHeaderFooter: true,
       headerTemplate: "<span></span>", // empty header
       footerTemplate: footerTemplate,
-      margin: { top: "5mm", right: "5mm", bottom: "22mm", left: "5mm" },
+      margin: { top: "5mm", right: "5mm", bottom: "28mm", left: "5mm" },
       // ────────────────────────────────────────────────────────────────────────
       preferCSSPageSize: false,
     });
