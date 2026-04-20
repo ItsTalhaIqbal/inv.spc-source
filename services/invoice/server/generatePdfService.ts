@@ -238,19 +238,22 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
       .toFixed(2)
   );
 
-  const taxAmount = Number(
-    taxDetails.amount && taxDetails.amount > 0
-      ? taxDetails.amountType === "percentage"
-        ? ((subtotal * taxDetails.amount) / 100).toFixed(2)
-        : taxDetails.amount.toFixed(2)
-      : 0
-  );
-
+  // ✅ FIX: VAT discount ke baad wali amount pe calculate ho
   const discountAmount = Number(
     discountDetails.amount && discountDetails.amount > 0
       ? discountDetails.amountType === "percentage"
         ? ((subtotal * discountDetails.amount) / 100).toFixed(2)
         : discountDetails.amount.toFixed(2)
+      : 0
+  );
+
+  const subtotalAfterDiscount = subtotal - discountAmount;
+
+  const taxAmount = Number(
+    taxDetails.amount && taxDetails.amount > 0
+      ? taxDetails.amountType === "percentage"
+        ? ((subtotalAfterDiscount * taxDetails.amount) / 100).toFixed(2)
+        : taxDetails.amount.toFixed(2)
       : 0
   );
 
@@ -263,16 +266,14 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
   );
 
   const grandTotal = Number(
-    (subtotal + taxAmount + shippingAmount - discountAmount).toFixed(2)
+    (subtotalAfterDiscount + taxAmount + shippingAmount).toFixed(2)
   );
 
-  // Calculate totalAmountInWords but only use it if needed
   const calculatedTotalInWords = formatPriceToString(
     grandTotal,
     details.currency || "AED"
   );
 
-  // Use the totalAmountInWords from the form input (body.details.totalAmountInWords)
   const totalAmountInWords = body.details?.totalAmountInWords || "";
 
   const itemsHtml = (details.items || [])
@@ -334,7 +335,8 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
   const hasTax = taxDetails.amount && taxDetails.amount > 0;
   const hasDiscount = discountDetails.amount && discountDetails.amount > 0;
   const hasShipping = shippingDetails.cost && shippingDetails.cost > 0;
-  const hasTotalInWords = totalAmountInWords && totalAmountInWords.trim() !== "";
+  const hasTotalInWords =
+    totalAmountInWords && totalAmountInWords.trim() !== "";
 
   const taxHtml = hasTax
     ? `
@@ -426,6 +428,9 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
     `
     : "";
 
+  // =============================================
+  // ✅ FOOTER FIX: position:fixed hataya, flex layout se bottom pe push hoga
+  // =============================================
   const htmlTemplate = `
 <html>
   <head>
@@ -434,6 +439,8 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
     <style>
       @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
       ${tailwindCss}
+
+      /* ✅ FIX 1: body ko flex column banao taake footer naturally bottom pe jaye */
       body {
         width: 100%;
         font-family: 'Roboto', sans-serif;
@@ -441,13 +448,19 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
         padding: 0;
         background-color: #ffffff;
         color: #000000;
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
       }
+
+      /* ✅ FIX 2: container flex:1 lega — footer ko neeche dhakelta hai */
       .container {
+        flex: 1;
         display: block;
-        min-height: calc(100vh - 80px);
         box-sizing: border-box;
         padding: 0;
       }
+
       .header {
         display: flex;
         justify-content: space-between;
@@ -527,25 +540,23 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
         margin-top: 8px;
         font-weight: bold;
       }
+
+      /* ✅ FIX 3: footer normal flow mein — position:fixed BILKUL nahi */
       .footer {
         width: 100%;
         padding: 0;
-        margin-top: 0;
+        margin-top: auto;
       }
+
+      /* ✅ FIX 4: print mein bhi position:fixed nahi — warna overlap hoga */
       @media print {
         body {
           -webkit-print-color-adjust: exact;
           print-color-adjust: exact;
         }
-        .container {
-          padding-bottom: 80px;
-        }
-        .footer {
-          position: fixed;
-          bottom: 0;
-          margin-top: 0;
-        }
+        /* footer ki FIXED positioning remove — normal flow mein rehne do */
       }
+
       @page {
         margin: 5mm;
         @bottom-right {
@@ -617,7 +628,6 @@ ${new Date(new Date()).toLocaleDateString("en-US", DATE_OPTIONS)}
         <div class="summary">
           <div class="notes-section">
             ${paymentTermsHtml}
-            
             ${PaymentDtails}
           </div>
           <div class="amounts-section">
@@ -640,6 +650,8 @@ ${new Date(new Date()).toLocaleDateString("en-US", DATE_OPTIONS)}
         </div>
       </div>
     </div>
+
+    <!-- ✅ Footer ab normal flow mein hai — har page ke bottom pe jayega, overlap nahi karega -->
     <div class="footer w-full">
       <div class="flex justify-between">
         <p class="text-base font-bold text-gray-800 ">Receiver's Sign _________________</p>
@@ -648,7 +660,7 @@ ${new Date(new Date()).toLocaleDateString("en-US", DATE_OPTIONS)}
         }</span></p>
       </div>
       <div class="flex justify-between h-[10px] mt-1 p-2 w-full" style="background-color: #FFA733;">
-        <p class="flex ">
+        <p class="flex">
           <svg class="mt-1 mr-1 w-4 h-4 text-gray-800 dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="4" height="4" fill="none" viewBox="0 0 24 24">
             <path stroke="currentColor" stroke-linecap="round" stroke-width="2" d="m3.5 5.5 7.893 6.036a1 1 0 0 0 1.214 0L20.5 5.5M4 19h16a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1Z"/>
           </svg>
