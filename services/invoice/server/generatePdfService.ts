@@ -433,17 +433,22 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
   // NOTE: footerTemplate must be self-contained HTML with inline styles.
   //       Tailwind & external CSS do NOT apply here.
   // ─────────────────────────────────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────────
+  // HOW PUPPETEER FOOTER WORKS:
+  // - footerTemplate is rendered inside the bottom margin area
+  // - It is automatically placed at the BOTTOM of each page
+  // - margin.bottom must be >= footer's actual rendered height
+  // - font-size MUST be set explicitly (Puppeteer resets it to 0)
+  // - No Tailwind / external CSS works here — inline styles only
+  // ─────────────────────────────────────────────────────────────────
   const footerTemplate = `
     <div style="
       width: 100%;
-      height: 24mm;
-      font-family: 'Roboto', Arial, sans-serif;
+      font-family: Arial, sans-serif;
       font-size: 11px;
-      padding: 0 5mm;
+      line-height: 1.4;
+      padding: 0 5mm 2mm 5mm;
       box-sizing: border-box;
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-end;
     ">
       <!-- Receiver sign + company name row -->
       <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
@@ -728,7 +733,8 @@ ${new Date(new Date()).toLocaleDateString("en-US", DATE_OPTIONS)}
       displayHeaderFooter: true,
       headerTemplate: "<span></span>", // empty header
       footerTemplate: footerTemplate,
-      margin: { top: "5mm", right: "5mm", bottom: "28mm", left: "5mm" },
+      // bottom margin must match footer rendered height (sign row ~8mm + orange bar ~8mm + padding = ~20mm)
+      margin: { top: "5mm", right: "0mm", bottom: "20mm", left: "0mm" },
       // ────────────────────────────────────────────────────────────────────────
       preferCSSPageSize: false,
     });
