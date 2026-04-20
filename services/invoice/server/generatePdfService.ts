@@ -238,7 +238,6 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
       .toFixed(2)
   );
 
-  // ✅ FIX: VAT discount ke baad wali amount pe calculate ho
   const discountAmount = Number(
     discountDetails.amount && discountDetails.amount > 0
       ? discountDetails.amountType === "percentage"
@@ -428,9 +427,76 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
     `
     : "";
 
-  // =============================================
-  // ✅ FOOTER FIX: position:fixed hataya, flex layout se bottom pe push hoga
-  // =============================================
+  // ─────────────────────────────────────────────────────────────────
+  // FOOTER TEMPLATE (runs on EVERY page via Puppeteer displayHeaderFooter)
+  // Uses Puppeteer's special classes: pageNumber, totalPages
+  // NOTE: footerTemplate must be self-contained HTML with inline styles.
+  //       Tailwind & external CSS do NOT apply here.
+  // ─────────────────────────────────────────────────────────────────
+  const footerTemplate = `
+    <div style="
+      width: 100%;
+      font-family: 'Roboto', Arial, sans-serif;
+      font-size: 11px;
+      padding: 0 5mm;
+      box-sizing: border-box;
+    ">
+      <!-- Receiver sign + company name row -->
+      <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+        <span style="font-weight:bold; color:#1f2937;">Receiver's Sign _________________</span>
+        <span style="color:#1f2937;">for <strong>${
+          senderData.name || ""
+        }</strong></span>
+      </div>
+
+      <!-- Orange bar row -->
+      <div style="
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        background-color:#FFA733;
+        padding:4px 8px;
+        border-radius:2px;
+      ">
+        <!-- Email -->
+        <span style="display:flex; align-items:center; gap:4px; color:#1f2937;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24">
+            <path stroke="#1f2937" stroke-linecap="round" stroke-width="2"
+              d="m3.5 5.5 7.893 6.036a1 1 0 0 0 1.214 0L20.5 5.5M4 19h16a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1Z"/>
+          </svg>
+          contact@spcsource.com
+        </span>
+
+        <!-- Page number (centre) -->
+        <span style="color:#1f2937; font-weight:bold;">
+          Page <span class="pageNumber"></span> of <span class="totalPages"></span>
+        </span>
+
+        <!-- Website -->
+        <span style="display:flex; align-items:center; gap:4px; color:#1f2937;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="#1f2937" viewBox="0 0 24 24">
+            <path fill-rule="evenodd" d="M8.64 4.737A7.97 7.97 0 0 1 12 4a7.997 7.997 0 0 1 6.933 4.006h-.738c-.65 0-1.177.25-1.177.9
+              0 .33 0 2.04-2.026 2.008-1.972 0-1.972-1.732-1.972-2.008
+              0-1.429-.787-1.65-1.752-1.923-.374-.105-.774-.218-1.166-.411
+              -1.004-.497-1.347-1.183-1.461-1.835ZM6 4a10.06 10.06 0 0 0-2.812 3.27A9.956 9.956 0 0 0 2 12
+              c0 5.289 4.106 9.619 9.304 9.976l.054.004a10.12 10.12 0 0 0 1.155.007h.002
+              a10.024 10.024 0 0 0 1.5-.19 9.925 9.925 0 0 0 2.259-.754
+              10.041 10.041 0 0 0 4.987-5.263A9.917 9.917 0 0 0 22 12
+              a10.025 10.025 0 0 0-.315-2.5A10.001 10.001 0 0 0 12 2
+              a9.964 9.964 0 0 0-6 2Zm13.372 11.113a2.575 2.575 0 0 0-.75-.112h-.217
+              A3.405 3.405 0 0 0 15 18.405v1.014a8.027 8.027 0 0 0 4.372-4.307Z
+              M12.114 20H12A8 8 0 0 1 5.1 7.95c.95.541 1.421 1.537 1.835 2.415
+              .209.441.403.853.637 1.162.54.712 1.063 1.019 1.591 1.328
+              .52.305 1.047.613 1.6 1.316 1.44 1.825 1.419 4.366 1.35 5.828Z"
+              clip-rule="evenodd"/>
+          </svg>
+          www.spcsource.com
+        </span>
+      </div>
+    </div>
+  `;
+
+  // Main HTML — footer div REMOVED from body; Puppeteer footerTemplate handles it
   const htmlTemplate = `
 <html>
   <head>
@@ -440,7 +506,6 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
       @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
       ${tailwindCss}
 
-      /* ✅ FIX 1: body ko flex column banao taake footer naturally bottom pe jaye */
       body {
         width: 100%;
         font-family: 'Roboto', sans-serif;
@@ -448,17 +513,6 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
         padding: 0;
         background-color: #ffffff;
         color: #000000;
-        display: flex;
-        flex-direction: column;
-        min-height: 100vh;
-      }
-
-      /* ✅ FIX 2: container flex:1 lega — footer ko neeche dhakelta hai */
-      .container {
-        flex: 1;
-        display: block;
-        box-sizing: border-box;
-        padding: 0;
       }
 
       .header {
@@ -541,29 +595,10 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
         font-weight: bold;
       }
 
-      /* ✅ FIX 3: footer normal flow mein — position:fixed BILKUL nahi */
-      .footer {
-        width: 100%;
-        padding: 0;
-        margin-top: auto;
-      }
-
-      /* ✅ FIX 4: print mein bhi position:fixed nahi — warna overlap hoga */
       @media print {
         body {
           -webkit-print-color-adjust: exact;
           print-color-adjust: exact;
-        }
-        /* footer ki FIXED positioning remove — normal flow mein rehne do */
-      }
-
-      @page {
-        margin: 5mm;
-        @bottom-right {
-          content: "Page " counter(page) " of " counter(pages);
-          font-family: 'Roboto', sans-serif;
-          font-size: 12px;
-          color: #000000;
         }
       }
     </style>
@@ -650,30 +685,6 @@ ${new Date(new Date()).toLocaleDateString("en-US", DATE_OPTIONS)}
         </div>
       </div>
     </div>
-
-    <!-- ✅ Footer ab normal flow mein hai — har page ke bottom pe jayega, overlap nahi karega -->
-    <div class="footer w-full">
-      <div class="flex justify-between">
-        <p class="text-base font-bold text-gray-800 ">Receiver's Sign _________________</p>
-        <p class="text-base text-gray-800">for <span class="font-bold">${
-          senderData.name || ""
-        }</span></p>
-      </div>
-      <div class="flex justify-between h-[10px] mt-1 p-2 w-full" style="background-color: #FFA733;">
-        <p class="flex">
-          <svg class="mt-1 mr-1 w-4 h-4 text-gray-800 dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="4" height="4" fill="none" viewBox="0 0 24 24">
-            <path stroke="currentColor" stroke-linecap="round" stroke-width="2" d="m3.5 5.5 7.893 6.036a1 1 0 0 0 1.214 0L20.5 5.5M4 19h16a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1Z"/>
-          </svg>
-          contact@spcsource.com
-        </p>
-        <p class="flex">
-          <svg class="w-4 h-4 mt-1 mr-1 text-gray-800 dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="4" height="4" fill="currentColor" viewBox="0 0 24 24">
-            <path fill-rule="evenodd" d="M8.64 4.737A7.97 7.97 0 0 1 12 4a7.997 7.997 0 0 1 6.933 4.006h-.738c-.65 0-1.177.25-1.177.9 0 .33 0 2.04-2.026 2.008-1.972 0-1.972-1.732-1.972-2.008 0-1.429-.787-1.65-1.752-1.923-.374-.105-.774-.218-1.166-.411-1.004-.497-1.347-1.183-1.461-1.835ZM6 4a10.06 10.06 0 0 0-2.812 3.27A9.956 9.956 0 0 0 2 12c0 5.289 4.106 9.619 9.304 9.976l.054.004a10.12 10.12 0 0 0 1.155.007h.002a10.024 10.024 0 0 0 1.5-.19 9.925 9.925 0 0 0 2.259-.754 10.041 10.041 0 0 0 4.987-5.263A9.917 9.917 0 0 0 22 12a10.025 10.025 0 0 0-.315-2.5A10.001 10.001 0 0 0 12 2a9.964 9.964 0 0 0-6 2Zm13.372 11.113a2.575 2.575 0 0 0-.75-.112h-.217A3.405 3.405 0 0 0 15 18.405v1.014a8.027 8.027 0 0 0 4.372-4.307ZM12.114 20H12A8 8 0 0 1 5.1 7.95c.95.541 1.421 1.537 1.835 2.415.209.441.403.853.637 1.162.54.712 1.063 1.019 1.591 1.328.52.305 1.047.613 1.6 1.316 1.44 1.825 1.419 4.366 1.35 5.828Z" clip-rule="evenodd"/>
-          </svg>
-          www.spcsource.com
-        </p>
-      </div>
-    </div>
   </body>
 </html>
 `;
@@ -707,8 +718,15 @@ ${new Date(new Date()).toLocaleDateString("en-US", DATE_OPTIONS)}
     const pdfBuffer: any = await page.pdf({
       format: "A4",
       printBackground: true,
-      margin: { top: "5mm", right: "5mm", bottom: "20mm", left: "5mm" },
-      preferCSSPageSize: true,
+      // ── KEY CHANGE ──────────────────────────────────────────────────────────
+      // displayHeaderFooter: true  →  Puppeteer injects footerTemplate on EVERY page
+      // bottom margin increased to give the footer room (adjust if needed)
+      displayHeaderFooter: true,
+      headerTemplate: "<span></span>", // empty header
+      footerTemplate: footerTemplate,
+      margin: { top: "5mm", right: "5mm", bottom: "22mm", left: "5mm" },
+      // ────────────────────────────────────────────────────────────────────────
+      preferCSSPageSize: false,
     });
 
     return pdfBuffer;
