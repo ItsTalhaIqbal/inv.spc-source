@@ -524,6 +524,13 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
         color: #000000;
       }
 
+      /* FIX: container was missing padding — content was rendering edge-to-edge */
+      .container {
+        display: block;
+        box-sizing: border-box;
+        padding: 0;
+      }
+
       .header {
         display: flex;
         justify-content: space-between;
@@ -626,7 +633,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
           </p>
           <p class="text-sm pt-1">${
             senderData.address ||
-            "Office A-74, EL SHAYE - 4, Port Saeed, Dubai, UAE"
+            "Iris Bay, Office D-43, Business Bay, Dubai, UAE."
           }</p>
           <p class="text-sm pt-1">TRN-105078528400003</p>
         </div>
@@ -733,8 +740,10 @@ ${new Date(new Date()).toLocaleDateString("en-US", DATE_OPTIONS)}
       displayHeaderFooter: true,
       headerTemplate: "<span></span>", // empty header
       footerTemplate: footerTemplate,
-      // bottom margin must match footer rendered height (sign row ~8mm + orange bar ~8mm + padding = ~20mm)
-      margin: { top: "5mm", right: "0mm", bottom: "20mm", left: "0mm" },
+      // FIX: left/right margins restored to 5mm (were 0mm, causing content
+      // to render edge-to-edge with no side padding). Footer keeps its own
+      // internal 5mm padding, so it still lines up visually with the body.
+      margin: { top: "5mm", right: "5mm", bottom: "20mm", left: "5mm" },
       // ────────────────────────────────────────────────────────────────────────
       preferCSSPageSize: false,
     });
