@@ -37,7 +37,12 @@ interface Details {
   totalAmount?: number;
   pdfTemplate?: number;
   paymentTerms?: string;
-  paymentInformation: { accountName: string; accountNumber: string; bankName: string; IBAN: string };
+  paymentInformation: {
+    accountName: string;
+    accountNumber: string;
+    bankName: string;
+    IBAN: string;
+  };
   additionalNotes?: string;
   totalAmountInWords?: string;
   currency?: string;
@@ -175,7 +180,7 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
   if (typeof invoiceData.details?.pdfTemplate !== "number") {
     console.error("Invalid PDF template:", invoiceData.details?.pdfTemplate);
     throw new Error(
-      `PDF template must be a number, received: ${invoiceData.details.pdfTemplate}`
+      `PDF template must be a number, received: ${invoiceData.details.pdfTemplate}`,
     );
   }
 
@@ -184,7 +189,7 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
     country: "UAE",
     state: "Dubai",
     email: "contact@spcsource.com",
-    address: "Iris Bay, Office D-43, Business Bay, Dubai, UAE.",
+    address: "Office A-74, EL SHAYE - 4, Port Saeed, Dubai, UAE",
     phone: "+971 54 500 4520",
   };
   const receiver = invoiceData.receiver || {
@@ -234,7 +239,7 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
         const unitPrice = item.unitPrice || 0;
         return sum + quantity * unitPrice;
       }, 0)
-      .toFixed(2)
+      .toFixed(2),
   );
 
   const taxAmount = Number(
@@ -242,7 +247,7 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
       ? taxDetails.amountType === "percentage"
         ? ((subtotal * taxDetails.amount) / 100).toFixed(2)
         : taxDetails.amount.toFixed(2)
-      : 0
+      : 0,
   );
 
   const discountAmount = Number(
@@ -250,7 +255,7 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
       ? discountDetails.amountType === "percentage"
         ? ((subtotal * discountDetails.amount) / 100).toFixed(2)
         : discountDetails.amount.toFixed(2)
-      : 0
+      : 0,
   );
 
   const shippingAmount = Number(
@@ -258,17 +263,17 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
       ? shippingDetails.costType === "percentage"
         ? ((subtotal * shippingDetails.cost) / 100).toFixed(2)
         : shippingDetails.cost.toFixed(2)
-      : 0
+      : 0,
   );
 
   const grandTotal = Number(
-    (subtotal + taxAmount + shippingAmount - discountAmount).toFixed(2)
+    (subtotal + taxAmount + shippingAmount - discountAmount).toFixed(2),
   );
 
   // Calculate totalAmountInWords but only use it if needed
   const calculatedTotalInWords = formatPriceToString(
     grandTotal,
-    details.currency || "AED"
+    details.currency || "AED",
   );
 
   // Use the totalAmountInWords from invoiceData (from request or database)
@@ -310,7 +315,7 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
     "public",
     "assets",
     "img",
-    "image.jpg"
+    "image.jpg",
   );
   let logoBase64 = "";
   try {
@@ -328,7 +333,7 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
   const localTailwindPath = path.join(
     process.cwd(),
     "public",
-    "tailwind.min.css"
+    "tailwind.min.css",
   );
   try {
     if (fs.existsSync(localTailwindPath)) {
@@ -345,15 +350,16 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
   const hasTax = taxDetails.amount && taxDetails.amount > 0;
   const hasDiscount = discountDetails.amount && discountDetails.amount > 0;
   const hasShipping = shippingDetails.cost && shippingDetails.cost > 0;
-  const hasTotalInWords = totalAmountInWords && totalAmountInWords.trim() !== "";
+  const hasTotalInWords =
+    totalAmountInWords && totalAmountInWords.trim() !== "";
   const isInvoice = details.isInvoice || false;
 
   const invoiceNumberPrefix =
     isInvoice && hasTax
       ? `TAX_INV-${details.invoiceNumber}`
       : isInvoice
-      ? `INV-${details.invoiceNumber}`
-      : `QUT-${details.invoiceNumber}`;
+        ? `INV-${details.invoiceNumber}`
+        : `QUT-${details.invoiceNumber}`;
 
   const taxHtml = hasTax
     ? `
@@ -429,8 +435,8 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
       <p class="font-normal text-md"><span class="font-semibold">IBAN:</span> ${details.paymentInformation.IBAN ? details.paymentInformation.IBAN : "AE450400000883578428001"}</p>
     </div>
   `
-    : "";                                               
-                 
+    : "";
+
   const additionalNotesHtml = details.additionalNotes
     ? `
       <div class="mt-2">
@@ -603,16 +609,16 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
         <div class="invoice-info">
           <h2 class="text-xl text-right">
             <span class="invoice-number">${isInvoice ? "INV-" : "QUT-"}${
-    details.invoiceNumber
-  }</span>
+              details.invoiceNumber
+            }</span>
           </h2>
           <p class="text-md mt-1 text-right">${new Date(
-            details.invoiceDate || new Date()
+            details.invoiceDate || new Date(),
           ).toLocaleDateString("en-US", DATE_OPTIONS)}</p>
           ${
             details.dueDate
               ? `<p class="text-md mt-1">Due: ${new Date(
-                  details.dueDate
+                  details.dueDate,
                 ).toLocaleDateString("en-US", DATE_OPTIONS)}</p>`
               : ""
           }
@@ -702,7 +708,7 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
         "--no-zygote",
       ],
       executablePath: await chromium.executablePath(
-        "https://github.com/Sparticuz/chromium/releases/download/v133.0.0/chromium-v133.0.0-pack.tar"
+        "https://github.com/Sparticuz/chromium/releases/download/v133.0.0/chromium-v133.0.0-pack.tar",
       ),
       headless: "new",
       defaultViewport: chromium.defaultViewport,
@@ -750,7 +756,7 @@ export async function POST(req: NextRequest) {
       console.error("Missing invoice number in POST request");
       return NextResponse.json(
         { error: "Invoice number is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -763,7 +769,7 @@ export async function POST(req: NextRequest) {
       : 0;
     const numericInvoiceNumber = invoiceData.details.invoiceNumber.replace(
       /\D/g,
-      ""
+      "",
     );
 
     let fileName = "";
@@ -778,7 +784,7 @@ export async function POST(req: NextRequest) {
     const headers = new Headers({
       "Content-Type": "application/pdf",
       "Content-Disposition": `attachment; filename="${encodeURIComponent(
-        fileName
+        fileName,
       )}"`,
       "Content-Length": pdfBuffer.length.toString(),
       "Cache-Control": "no-cache",
@@ -796,7 +802,7 @@ export async function POST(req: NextRequest) {
     });
     return NextResponse.json(
       { error: error.message || "Failed to generate PDF" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -811,7 +817,7 @@ export async function GET(req: NextRequest) {
       console.error("Missing invoice number in GET request");
       return NextResponse.json(
         { error: "Invoice number is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -833,7 +839,7 @@ export async function GET(req: NextRequest) {
       : 0;
     const numericInvoiceNumber = invoiceData.details?.invoiceNumber.replace(
       /\D/g,
-      ""
+      "",
     );
 
     let fileName = "";
@@ -848,7 +854,7 @@ export async function GET(req: NextRequest) {
     const headers = new Headers({
       "Content-Type": "application/pdf",
       "Content-Disposition": `attachment; filename="${encodeURIComponent(
-        fileName
+        fileName,
       )}"`,
       "Content-Length": pdfBuffer.length.toString(),
       "Cache-Control": "no-cache",
@@ -866,7 +872,7 @@ export async function GET(req: NextRequest) {
     });
     return NextResponse.json(
       { error: error.message || "Failed to regenerate PDF" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

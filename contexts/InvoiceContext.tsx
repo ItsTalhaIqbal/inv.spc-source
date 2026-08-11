@@ -31,7 +31,8 @@ const defaultInvoiceContext = {
   newInvoiceTrigger: 0,
   generatePdf: async (data: InvoiceType) => {},
   removeFinalPdf: () => {},
-  downloadPdf: async (invoiceNumber: string): Promise<void> => Promise.resolve(),
+  downloadPdf: async (invoiceNumber: string): Promise<void> =>
+    Promise.resolve(),
   printPdf: () => {},
   previewPdfInTab: () => {},
   saveInvoice: () => {},
@@ -49,7 +50,9 @@ export const InvoiceContext = createContext(defaultInvoiceContext);
 export const useInvoiceContext = () => {
   const context = useContext(InvoiceContext);
   if (!context) {
-    throw new Error("useInvoiceContext must be used within an InvoiceContextProvider");
+    throw new Error(
+      "useInvoiceContext must be used within an InvoiceContextProvider",
+    );
   }
   return context;
 };
@@ -79,22 +82,60 @@ export const InvoiceContextProvider = ({
   const [newInvoiceTrigger, setNewInvoiceTrigger] = useState<number>(0);
   const [currentWizardStep, setCurrentWizardStep] = useState<number>(0);
 
-  const getNumericInvoiceNumber = (invoiceNumber: string | undefined): string => {
+  const getNumericInvoiceNumber = (
+    invoiceNumber: string | undefined,
+  ): string => {
     if (!invoiceNumber) return "";
     return invoiceNumber.replace(/\D/g, "");
   };
 
   const numberToWords = (num: number): string => {
-    const units = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine"];
-    const teens = ["Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen"];
-    const tens = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"];
-    
+    const units = [
+      "",
+      "One",
+      "Two",
+      "Three",
+      "Four",
+      "Five",
+      "Six",
+      "Seven",
+      "Eight",
+      "Nine",
+    ];
+    const teens = [
+      "Ten",
+      "Eleven",
+      "Twelve",
+      "Thirteen",
+      "Fourteen",
+      "Fifteen",
+      "Sixteen",
+      "Seventeen",
+      "Eighteen",
+      "Nineteen",
+    ];
+    const tens = [
+      "",
+      "",
+      "Twenty",
+      "Thirty",
+      "Forty",
+      "Fifty",
+      "Sixty",
+      "Seventy",
+      "Eighty",
+      "Ninety",
+    ];
+
     if (num === 0) return "Zero";
     if (num < 10) return units[num];
     if (num < 20) return teens[num - 10];
-    if (num < 100) return `${tens[Math.floor(num / 10)]} ${units[num % 10]}`.trim();
-    if (num < 1000) return `${units[Math.floor(num / 100)]} Hundred ${numberToWords(num % 100)}`.trim();
-    if (num < 1000000) return `${numberToWords(Math.floor(num / 1000))} Thousand ${numberToWords(num % 1000)}`.trim();
+    if (num < 100)
+      return `${tens[Math.floor(num / 10)]} ${units[num % 10]}`.trim();
+    if (num < 1000)
+      return `${units[Math.floor(num / 100)]} Hundred ${numberToWords(num % 100)}`.trim();
+    if (num < 1000000)
+      return `${numberToWords(Math.floor(num / 1000))} Thousand ${numberToWords(num % 1000)}`.trim();
     return "Number too large";
   };
 
@@ -146,7 +187,7 @@ export const InvoiceContextProvider = ({
         })),
       },
     }),
-    []
+    [],
   );
 
   useEffect(() => {
@@ -176,7 +217,9 @@ export const InvoiceContextProvider = ({
             const numericInvoiceNumber = getNumericInvoiceNumber(invoiceNumber);
             const formValues = getValues();
             const isInvoice = formValues.details?.isInvoice || false;
-            const hasTax = formValues.details?.taxDetails?.amount && formValues.details.taxDetails.amount > 0;
+            const hasTax =
+              formValues.details?.taxDetails?.amount &&
+              formValues.details.taxDetails.amount > 0;
 
             let fileName = "";
             if (isInvoice && hasTax) {
@@ -190,7 +233,7 @@ export const InvoiceContextProvider = ({
             a.href = url;
             a.download = fileName;
 
-            a.addEventListener('click', () => {
+            a.addEventListener("click", () => {
               setTimeout(() => {
                 window.URL.revokeObjectURL(url);
                 resolve();
@@ -209,7 +252,7 @@ export const InvoiceContextProvider = ({
         }
       });
     },
-    [invoicePdf, getValues, getNumericInvoiceNumber]
+    [invoicePdf, getValues, getNumericInvoiceNumber],
   );
 
   const generatePdf = useCallback(
@@ -218,21 +261,28 @@ export const InvoiceContextProvider = ({
 
       setInvoicePdfLoading(true);
       try {
-        const numericInvoiceNumber = getNumericInvoiceNumber(data.details.invoiceNumber);
+        const numericInvoiceNumber = getNumericInvoiceNumber(
+          data.details.invoiceNumber,
+        );
         const subTotal = (data.details.items || []).reduce(
-          (sum, item) => sum + (Number(item.quantity) * Number(item.unitPrice) || 0),
-          0
+          (sum, item) =>
+            sum + (Number(item.quantity) * Number(item.unitPrice) || 0),
+          0,
         );
         const taxAmount = Number(data.details.taxDetails?.amount) || 0;
-        const discountAmount = Number(data.details?.discountDetails?.amount) || 0;
+        const discountAmount =
+          Number(data.details?.discountDetails?.amount) || 0;
         const shippingCost = Number(data.details?.shippingDetails?.cost) || 0;
-        const totalAmount = subTotal + taxAmount - discountAmount + shippingCost;
+        const totalAmount =
+          subTotal + taxAmount - discountAmount + shippingCost;
 
         const payload = {
           invoiceNumber: data.details.invoiceNumber || "",
           sender: {
             name: data.sender?.name || "SPC Source Technical Services LLC",
-            address: data.sender?.address || "Iris Bay, Office D-43, Business Bay, Dubai, UAE",
+            address:
+              data.sender?.address ||
+              "Office A-74, EL SHAYE - 4, Port Saeed, Dubai, UAE",
             state: data.sender?.state || "Dubai",
             country: data.sender?.country || "UAE",
             email: data.sender?.email || "contact@spcsource.com",
@@ -247,10 +297,13 @@ export const InvoiceContextProvider = ({
             phone: data.receiver?.phone || "",
           },
           details: {
-            invoiceLogo: data.details?.invoiceLogo || "/public/assets/img/image.jpg",
+            invoiceLogo:
+              data.details?.invoiceLogo || "/public/assets/img/image.jpg",
             invoiceNumber: data.details.invoiceNumber || "",
             invoiceDate: new Date(),
-            dueDate: data.details?.dueDate ? new Date(data.details.dueDate) : null,
+            dueDate: data.details?.dueDate
+              ? new Date(data.details.dueDate)
+              : null,
             items: (data.details.items || []).map((item) => ({
               name: item.name || "No description provided",
               description: item.description || "No description provided",
@@ -263,7 +316,10 @@ export const InvoiceContextProvider = ({
             language: data.details?.language || "English",
             taxDetails: {
               amount: taxAmount,
-              amountType: data.details.taxDetails?.amountType === "amount" ? "fixed" : data.details.taxDetails?.amountType || "percentage",
+              amountType:
+                data.details.taxDetails?.amountType === "amount"
+                  ? "fixed"
+                  : data.details.taxDetails?.amountType || "percentage",
               taxID: data.details.taxDetails?.taxID || undefined,
             },
             discountDetails: data.details?.discountDetails || {
@@ -275,16 +331,26 @@ export const InvoiceContextProvider = ({
               costType: "amount",
             },
             paymentInformation: {
-              bankName: data.details?.paymentInformation?.bankName || "Bank Inc.",
-              accountName: data.details?.paymentInformation?.accountName || "John Doe",
-              accountNumber: data.details?.paymentInformation?.accountNumber || "445566998877",
+              bankName:
+                data.details?.paymentInformation?.bankName || "Bank Inc.",
+              accountName:
+                data.details?.paymentInformation?.accountName || "John Doe",
+              accountNumber:
+                data.details?.paymentInformation?.accountNumber ||
+                "445566998877",
             },
-            additionalNotes: data.details?.additionalNotes || "Received above items in good condition.",
-            paymentTerms: data.details?.paymentTerms || "50% advance , 50% upon delivery or completion.",
+            additionalNotes:
+              data.details?.additionalNotes ||
+              "Received above items in good condition.",
+            paymentTerms:
+              data.details?.paymentTerms ||
+              "50% advance , 50% upon delivery or completion.",
             signature: data.details?.signature || undefined,
             subTotal,
             totalAmount,
-            totalAmountInWords: totalInWordsSwitch ? `${numberToWords(totalAmount)} AED` : "",
+            totalAmountInWords: totalInWordsSwitch
+              ? `${numberToWords(totalAmount)} AED`
+              : "",
             pdfTemplate: data.details?.pdfTemplate || 2,
             isInvoice: data.details?.isInvoice || false,
           },
@@ -333,7 +399,9 @@ export const InvoiceContextProvider = ({
                 });
                 if (!response.ok) {
                   const errorText = await response.text();
-                  throw new Error(`Failed to save invoice: ${response.status} - ${errorText}`);
+                  throw new Error(
+                    `Failed to save invoice: ${response.status} - ${errorText}`,
+                  );
                 }
               } catch (error) {
                 console.error("Failed to save invoice to server:", error);
@@ -347,7 +415,9 @@ export const InvoiceContextProvider = ({
               console.error("Failed to generate PDF after retries:", error);
               throw error;
             }
-            await new Promise((resolve) => setTimeout(resolve, 1000 * attempts));
+            await new Promise((resolve) =>
+              setTimeout(resolve, 1000 * attempts),
+            );
           }
         }
       } finally {
@@ -357,53 +427,55 @@ export const InvoiceContextProvider = ({
         }, 500);
       }
     },
-    [pdfGenerationSuccess, downloadPdf, newInvoice, totalInWordsSwitch]
+    [pdfGenerationSuccess, downloadPdf, newInvoice, totalInWordsSwitch],
   );
 
-  const saveInvoice = useCallback(
-    () => {
-      try {
-        if (invoicePdf instanceof Blob && invoicePdf.size > 0) {
-          const formValues = getValues();
-          if (!formValues?.details?.invoiceNumber) return;
+  const saveInvoice = useCallback(() => {
+    try {
+      if (invoicePdf instanceof Blob && invoicePdf.size > 0) {
+        const formValues = getValues();
+        if (!formValues?.details?.invoiceNumber) return;
 
-          const updatedDate = new Date().toLocaleDateString("en-US", SHORT_DATE_OPTIONS);
-          const numericInvoiceNumber = getNumericInvoiceNumber(formValues.details.invoiceNumber);
-          const updatedFormValues = {
-            ...formValues,
-            details: {
-              ...formValues.details,
-              invoiceNumber: numericInvoiceNumber,
-              updatedAt: updatedDate,
-              items: formValues.details.items.map((item) => ({
-                ...item,
-                unitType: item.unitType || "",
-              })),
-            },
-          };
+        const updatedDate = new Date().toLocaleDateString(
+          "en-US",
+          SHORT_DATE_OPTIONS,
+        );
+        const numericInvoiceNumber = getNumericInvoiceNumber(
+          formValues.details.invoiceNumber,
+        );
+        const updatedFormValues = {
+          ...formValues,
+          details: {
+            ...formValues.details,
+            invoiceNumber: numericInvoiceNumber,
+            updatedAt: updatedDate,
+            items: formValues.details.items.map((item) => ({
+              ...item,
+              unitType: item.unitType || "",
+            })),
+          },
+        };
 
-          const existingInvoiceIndex = savedInvoices.findIndex(
-            (invoice) => invoice.details.invoiceNumber === numericInvoiceNumber
-          );
+        const existingInvoiceIndex = savedInvoices.findIndex(
+          (invoice) => invoice.details.invoiceNumber === numericInvoiceNumber,
+        );
 
-          let updatedInvoices = [...savedInvoices];
-          if (existingInvoiceIndex !== -1) {
-            updatedInvoices[existingInvoiceIndex] = updatedFormValues;
-            modifiedInvoiceSuccess();
-          } else {
-            updatedInvoices.push(updatedFormValues);
-            saveInvoiceSuccess();
-          }
-
-          setSavedInvoices(updatedInvoices);
-          localStorage.setItem("savedInvoices", JSON.stringify(updatedInvoices));
+        let updatedInvoices = [...savedInvoices];
+        if (existingInvoiceIndex !== -1) {
+          updatedInvoices[existingInvoiceIndex] = updatedFormValues;
+          modifiedInvoiceSuccess();
+        } else {
+          updatedInvoices.push(updatedFormValues);
+          saveInvoiceSuccess();
         }
-      } catch (error) {
-        console.error("Error saving invoice:", error);
+
+        setSavedInvoices(updatedInvoices);
+        localStorage.setItem("savedInvoices", JSON.stringify(updatedInvoices));
       }
-    },
-    [getValues, savedInvoices, modifiedInvoiceSuccess, saveInvoiceSuccess]
-  );
+    } catch (error) {
+      console.error("Error saving invoice:", error);
+    }
+  }, [getValues, savedInvoices, modifiedInvoiceSuccess, saveInvoiceSuccess]);
 
   const onFormSubmit = useCallback(
     (data: InvoiceType) => {
@@ -419,7 +491,7 @@ export const InvoiceContextProvider = ({
       generatePdf(data);
       saveInvoice();
     },
-    [generatePdf, saveInvoice]
+    [generatePdf, saveInvoice],
   );
 
   const removeFinalPdf = useCallback(() => {
@@ -465,7 +537,7 @@ export const InvoiceContextProvider = ({
         localStorage.setItem("savedInvoices", JSON.stringify(updatedInvoices));
       }
     },
-    [savedInvoices]
+    [savedInvoices],
   );
 
   const sendPdfToMail = useCallback(
@@ -479,11 +551,18 @@ export const InvoiceContextProvider = ({
         return;
       }
 
-      const originalInvoiceNumber = getValues().details.invoiceNumber || "unknown";
-      const numericInvoiceNumber = getNumericInvoiceNumber(getValues().details.invoiceNumber);
+      const originalInvoiceNumber =
+        getValues().details.invoiceNumber || "unknown";
+      const numericInvoiceNumber = getNumericInvoiceNumber(
+        getValues().details.invoiceNumber,
+      );
       const fd = new FormData();
       fd.append("email", email);
-      fd.append("invoicePdf", invoicePdf, `invoice_${originalInvoiceNumber}.pdf`);
+      fd.append(
+        "invoicePdf",
+        invoicePdf,
+        `invoice_${originalInvoiceNumber}.pdf`,
+      );
       fd.append("invoiceNumber", numericInvoiceNumber);
 
       let attempts = 0;
@@ -507,7 +586,7 @@ export const InvoiceContextProvider = ({
         }
       }
     },
-    [invoicePdf, getValues, sendPdfError]
+    [invoicePdf, getValues, sendPdfError],
   );
 
   const exportInvoiceAs = useCallback(
@@ -516,7 +595,9 @@ export const InvoiceContextProvider = ({
         const formValues = getValues();
         if (!formValues?.details?.invoiceNumber) return;
 
-        const numericInvoiceNumber = getNumericInvoiceNumber(formValues.details.invoiceNumber);
+        const numericInvoiceNumber = getNumericInvoiceNumber(
+          formValues.details.invoiceNumber,
+        );
         exportInvoice(exportAs, {
           ...formValues,
           details: {
@@ -532,7 +613,7 @@ export const InvoiceContextProvider = ({
         console.error("Error exporting invoice:", error);
       }
     },
-    [getValues]
+    [getValues],
   );
 
   const importInvoice = useCallback(
@@ -557,7 +638,9 @@ export const InvoiceContextProvider = ({
               ...importedData.details,
               invoiceNumber: importedData.details.invoiceNumber || "UNKNOWN",
               currency: "AED",
-              totalAmountInWords: totalInWordsSwitch ? importedData.details.totalAmountInWords || "" : "",
+              totalAmountInWords: totalInWordsSwitch
+                ? importedData.details.totalAmountInWords || ""
+                : "",
               invoiceDate: importedData.details.invoiceDate
                 ? new Date(importedData.details.invoiceDate).toISOString()
                 : new Date().toISOString(),
@@ -565,7 +648,10 @@ export const InvoiceContextProvider = ({
                 name: item.name || "No description provided",
                 quantity: Number(item.quantity) || 0,
                 unitPrice: Number(item.unitPrice) || 0,
-                unitType: item.unitType && UNIT_TYPES.includes(item.unitType) ? item.unitType : "",
+                unitType:
+                  item.unitType && UNIT_TYPES.includes(item.unitType)
+                    ? item.unitType
+                    : "",
                 total: Number(item.quantity) * Number(item.unitPrice) || 0,
               })),
             },
@@ -579,7 +665,7 @@ export const InvoiceContextProvider = ({
       reader.onerror = importInvoiceError;
       reader.readAsText(file);
     },
-    [reset, importInvoiceError, totalInWordsSwitch]
+    [reset, importInvoiceError, totalInWordsSwitch],
   );
 
   return (

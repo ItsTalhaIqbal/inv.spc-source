@@ -134,10 +134,10 @@ const Page: React.FC = () => {
   const [viewInvoiceDialog, setViewInvoiceDialog] = useState<boolean>(false);
   const [editInvoiceDialog, setEditInvoiceDialog] = useState<boolean>(false);
   const [viewInvoice, setViewInvoice] = useState<Invoice | undefined>(
-    undefined
+    undefined,
   );
   const [editInvoice, setEditInvoice] = useState<Invoice | undefined>(
-    undefined
+    undefined,
   );
   const [loading, setLoading] = useState<boolean>(true);
   const [authChecked, setAuthChecked] = useState<boolean>(false);
@@ -161,7 +161,7 @@ const Page: React.FC = () => {
     defaultValues: {
       sender: {
         name: "SPC Source Technical Services LLC",
-        address: "Iris Bay, Office D-43, Business Bay, Dubai, UAE",
+        address: "Office A-74, EL SHAYE - 4, Port Saeed, Dubai, UAE",
         state: "Dubai",
         country: "UAE",
         email: "contact@spcsource.com",
@@ -230,7 +230,7 @@ const Page: React.FC = () => {
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentInvoices = filteredInvoices.slice(
     indexOfFirstItem,
-    indexOfLastItem
+    indexOfLastItem,
   );
 
   useEffect(() => {
@@ -246,9 +246,9 @@ const Page: React.FC = () => {
     items
       .reduce(
         (sum, item) => sum + (item.quantity || 0) * (item.unitPrice || 0),
-        0
+        0,
       )
-      .toFixed(2)
+      .toFixed(2),
   );
 
   const taxAmount = Number(
@@ -257,7 +257,7 @@ const Page: React.FC = () => {
         ? subTotal * (taxDetails.amount / 100)
         : taxDetails.amount
       : 0
-    ).toFixed(2)
+    ).toFixed(2),
   );
 
   const discountAmount = Number(
@@ -266,7 +266,7 @@ const Page: React.FC = () => {
         ? subTotal * (discountDetails.amount / 100)
         : discountDetails.amount
       : 0
-    ).toFixed(2)
+    ).toFixed(2),
   );
 
   const shippingAmount = Number(
@@ -275,7 +275,7 @@ const Page: React.FC = () => {
         ? subTotal * (shippingDetails.cost / 100)
         : shippingDetails.cost
       : 0
-    ).toFixed(2)
+    ).toFixed(2),
   );
 
   const totalAmount = Number(
@@ -284,7 +284,7 @@ const Page: React.FC = () => {
       (showTax ? taxAmount : 0) +
       (showShipping ? shippingAmount : 0) -
       (showDiscount ? discountAmount : 0)
-    ).toFixed(2)
+    ).toFixed(2),
   );
 
   const numberToWords = (num: number): string => {
@@ -450,7 +450,7 @@ const Page: React.FC = () => {
         name: invoice.sender?.name || "SPC Source Technical Services LLC",
         address:
           invoice.sender?.address ||
-          "Iris Bay, Office D-43, Business Bay, Dubai, UAE",
+          "Office A-74, EL SHAYE - 4, Port Saeed, Dubai, UAE",
         state: invoice.sender?.state || "Dubai",
         country: invoice.sender?.country || "UAE",
         email: invoice.sender?.email || "contact@spcsource.com",
@@ -547,13 +547,13 @@ const Page: React.FC = () => {
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(
-          errorData.error || `HTTP error! Status: ${response.status}`
+          errorData.error || `HTTP error! Status: ${response.status}`,
         );
       }
       const blob = await response.blob();
       const numericInvoiceNumber = formData.details.invoiceNumber.replace(
         /\D/g,
-        ""
+        "",
       );
       const isInvoice = formData.details.isInvoice || false;
       const taxAmount = formData.details.taxDetails?.amount || 0;
@@ -594,7 +594,7 @@ const Page: React.FC = () => {
     setEditInvoiceDialog(true);
     setShowTax(
       !!invoice.details.taxDetails?.amount &&
-        invoice.details.taxDetails.amount > 0
+        invoice.details.taxDetails.amount > 0,
     );
     setShowDiscount(!!invoice.details.discountDetails?.amount);
     setShowShipping(!!invoice.details.shippingDetails?.cost);
@@ -627,7 +627,7 @@ const Page: React.FC = () => {
       }
       if (calculatedTotal < 0) {
         setErrorMessage(
-          "Total amount cannot be negative. Please adjust the discount or other amounts."
+          "Total amount cannot be negative. Please adjust the discount or other amounts.",
         );
         setIsSaving(false);
         return;
@@ -638,7 +638,7 @@ const Page: React.FC = () => {
         return;
       }
       const hasEmptyName = data.details.items.some(
-        (item: any) => !item.name.trim()
+        (item: any) => !item.name.trim(),
       );
       if (hasEmptyName) {
         setErrorMessage("Item name is required.");
@@ -694,7 +694,7 @@ const Page: React.FC = () => {
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(
-          errorData.message || `HTTP error! Status: ${response.status}`
+          errorData.message || `HTTP error! Status: ${response.status}`,
         );
       }
 
@@ -707,7 +707,7 @@ const Page: React.FC = () => {
     } catch (error) {
       console.error("Error updating invoice:", error);
       setErrorMessage(
-        error instanceof Error ? error.message : "Failed to update document"
+        error instanceof Error ? error.message : "Failed to update document",
       );
     } finally {
       setIsSaving(false);
@@ -975,8 +975,8 @@ const Page: React.FC = () => {
                       {documentType === "all"
                         ? "All Documents"
                         : documentType === "invoices"
-                        ? "Invoices Only"
-                        : "Quotations Only"}
+                          ? "Invoices Only"
+                          : "Quotations Only"}
                     </span>
                   </Button>
                 </DropdownMenuTrigger>
@@ -1252,7 +1252,7 @@ const Page: React.FC = () => {
                     <strong>Created At:</strong>{" "}
                     {viewInvoice?.createdAt
                       ? new Date(
-                          viewInvoice.details.invoiceDate
+                          viewInvoice.details.invoiceDate,
                         ).toLocaleString()
                       : "N/A"}
                   </p>
@@ -1279,7 +1279,7 @@ const Page: React.FC = () => {
                         <strong>Date:</strong>{" "}
                         <span>
                           {new Date(
-                            viewInvoice.details.invoiceDate
+                            viewInvoice.details.invoiceDate,
                           ).toLocaleDateString()}
                         </span>
                       </p>
@@ -1288,7 +1288,7 @@ const Page: React.FC = () => {
                         <span>
                           {viewInvoice.details.dueDate
                             ? new Date(
-                                viewInvoice.details.dueDate
+                                viewInvoice.details.dueDate,
                               ).toLocaleDateString()
                             : "N/A"}
                         </span>
@@ -1411,7 +1411,7 @@ const Page: React.FC = () => {
                         <span>
                           {viewInvoice.details.taxDetails?.amount
                             ? Number(
-                                viewInvoice.details.taxDetails.amount
+                                viewInvoice.details.taxDetails.amount,
                               ).toFixed(2)
                             : "0.00"}
                         </span>
@@ -1421,7 +1421,7 @@ const Page: React.FC = () => {
                         <span>
                           {viewInvoice.details.discountDetails?.amount
                             ? Number(
-                                viewInvoice.details.discountDetails.amount
+                                viewInvoice.details.discountDetails.amount,
                               ).toFixed(2)
                             : "0.00"}
                         </span>
@@ -1431,7 +1431,7 @@ const Page: React.FC = () => {
                         <span>
                           {viewInvoice.details.shippingDetails?.cost
                             ? Number(
-                                viewInvoice.details.shippingDetails.cost
+                                viewInvoice.details.shippingDetails.cost,
                               ).toFixed(2)
                             : "0.00"}
                         </span>
@@ -1626,7 +1626,7 @@ const Page: React.FC = () => {
                                       value === "" ||
                                       UNIT_TYPES.includes(value as any) ||
                                       "Please select a valid unit type",
-                                  }
+                                  },
                                 )}
                                 className={`mt-1 w-full rounded-md border p-2 focus:ring-2 focus:ring-blue-500 ${
                                   theme === "dark"
@@ -1657,7 +1657,7 @@ const Page: React.FC = () => {
                                       value: 0,
                                       message: "Quantity cannot be negative",
                                     },
-                                  }
+                                  },
                                 )}
                                 className={`mt-1 w-full focus:ring-2 focus:ring-blue-500 ${
                                   theme === "dark"
@@ -1665,7 +1665,7 @@ const Page: React.FC = () => {
                                     : "bg-white text-black border-gray-300"
                                 }`}
                                 onChange={(
-                                  e: React.ChangeEvent<HTMLInputElement>
+                                  e: React.ChangeEvent<HTMLInputElement>,
                                 ) => {
                                   const value = e.target.value;
                                   const parsedValue =
@@ -1675,7 +1675,7 @@ const Page: React.FC = () => {
                                   setValue(
                                     `details.items.${index}.quantity`,
                                     parsedValue,
-                                    { shouldValidate: true }
+                                    { shouldValidate: true },
                                   );
                                 }}
                               />
@@ -1695,7 +1695,7 @@ const Page: React.FC = () => {
                                       value: 0,
                                       message: "Unit price cannot be negative",
                                     },
-                                  }
+                                  },
                                 )}
                                 className={`mt-1 w-full focus:ring-2 focus:ring-blue-500 ${
                                   theme === "dark"
@@ -1703,7 +1703,7 @@ const Page: React.FC = () => {
                                     : "bg-white text-black border-gray-300"
                                 }`}
                                 onChange={(
-                                  e: React.ChangeEvent<HTMLInputElement>
+                                  e: React.ChangeEvent<HTMLInputElement>,
                                 ) => {
                                   const value = e.target.value;
                                   const parsedValue =
@@ -1713,7 +1713,7 @@ const Page: React.FC = () => {
                                   setValue(
                                     `details.items.${index}.unitPrice`,
                                     parsedValue,
-                                    { shouldValidate: true }
+                                    { shouldValidate: true },
                                   );
                                 }}
                               />
@@ -1859,7 +1859,7 @@ const Page: React.FC = () => {
                             </label>
                             <select
                               {...register(
-                                "details.discountDetails.amountType"
+                                "details.discountDetails.amountType",
                               )}
                               className={`mt-1 w-full rounded-md border p-2 focus:ring-2 focus:ring-blue-500 ${
                                 theme === "dark"

@@ -176,7 +176,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
 
   if (typeof body.details?.pdfTemplate !== "number") {
     throw new Error(
-      `PDF template must be a number, received: ${body.details.pdfTemplate}`
+      `PDF template must be a number, received: ${body.details.pdfTemplate}`,
     );
   }
 
@@ -185,7 +185,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
     country: "UAE",
     state: "Dubai",
     email: "contact@spcsource.com",
-    address: "Iris Bay, Office D-43, Business Bay, Dubai, UAE.",
+    address: "Office A-74, EL SHAYE - 4, Port Saeed, Dubai, UAE",
     phone: "+971 54 500 4520",
   };
   const receiver = body.receiver || {
@@ -235,7 +235,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
         const unitPrice = item.unitPrice || 0;
         return sum + quantity * unitPrice;
       }, 0)
-      .toFixed(2)
+      .toFixed(2),
   );
 
   const discountAmount = Number(
@@ -243,7 +243,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
       ? discountDetails.amountType === "percentage"
         ? ((subtotal * discountDetails.amount) / 100).toFixed(2)
         : discountDetails.amount.toFixed(2)
-      : 0
+      : 0,
   );
 
   const subtotalAfterDiscount = subtotal - discountAmount;
@@ -253,7 +253,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
       ? taxDetails.amountType === "percentage"
         ? ((subtotalAfterDiscount * taxDetails.amount) / 100).toFixed(2)
         : taxDetails.amount.toFixed(2)
-      : 0
+      : 0,
   );
 
   const shippingAmount = Number(
@@ -261,16 +261,16 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
       ? shippingDetails.costType === "percentage"
         ? ((subtotal * shippingDetails.cost) / 100).toFixed(2)
         : shippingDetails.cost.toFixed(2)
-      : 0
+      : 0,
   );
 
   const grandTotal = Number(
-    (subtotalAfterDiscount + taxAmount + shippingAmount).toFixed(2)
+    (subtotalAfterDiscount + taxAmount + shippingAmount).toFixed(2),
   );
 
   const calculatedTotalInWords = formatPriceToString(
     grandTotal,
-    details.currency || "AED"
+    details.currency || "AED",
   );
 
   const totalAmountInWords = body.details?.totalAmountInWords || "";
@@ -318,7 +318,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
   let tailwindCss = "";
   const localTailwindPath = path.resolve(
     process.cwd(),
-    "public/tailwind.min.css"
+    "public/tailwind.min.css",
   );
   try {
     if (fs.existsSync(localTailwindPath)) {
@@ -346,7 +346,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
             : ""
         }</span>
         <span class="text-base text-gray-800">AED ${formatNumberWithCommas(
-          taxAmount
+          taxAmount,
         )}</span>
       </div>
     `
@@ -361,7 +361,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
             : ""
         }</span>
         <span class="text-base text-gray-800">AED ${formatNumberWithCommas(
-          discountAmount
+          discountAmount,
         )}</span>
       </div>
     `
@@ -376,7 +376,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
             : ""
         }</span>
         <span class="text-base text-gray-800">AED ${formatNumberWithCommas(
-          shippingAmount
+          shippingAmount,
         )}</span>
       </div>
     `
@@ -633,7 +633,7 @@ export async function generatePdfService(body: InvoiceType): Promise<Buffer> {
           </p>
           <p class="text-sm pt-1">${
             senderData.address ||
-            "Iris Bay, Office D-43, Business Bay, Dubai, UAE."
+            "Office A-74, EL SHAYE - 4, Port Saeed, Dubai, UAE"
           }</p>
           <p class="text-sm pt-1">TRN-105078528400003</p>
         </div>
@@ -685,7 +685,7 @@ ${new Date(new Date()).toLocaleDateString("en-US", DATE_OPTIONS)}
             <div class="flex justify-between amount-line">
               <span class="text-base text-gray-800">Subtotal</span>
               <span class="text-base text-gray-800">AED ${formatNumberWithCommas(
-                subtotal
+                subtotal,
               )}</span>
             </div>
             ${shippingHtml}
@@ -694,7 +694,7 @@ ${new Date(new Date()).toLocaleDateString("en-US", DATE_OPTIONS)}
             <div class="flex justify-between total-amount">
               <span class="text-base font-bold text-gray-800">Grand Total</span>
               <span class="text-base font-bold text-gray-800">AED ${formatNumberWithCommas(
-                grandTotal
+                grandTotal,
               )}</span>
             </div>
           </div>
@@ -716,7 +716,7 @@ ${new Date(new Date()).toLocaleDateString("en-US", DATE_OPTIONS)}
         "--single-process",
       ],
       executablePath: await chromium.executablePath(
-        "https://github.com/Sparticuz/chromium/releases/download/v133.0.0/chromium-v133.0.0-pack.tar"
+        "https://github.com/Sparticuz/chromium/releases/download/v133.0.0/chromium-v133.0.0-pack.tar",
       ),
       headless: "new",
       defaultViewport: chromium.defaultViewport,
