@@ -161,7 +161,7 @@ const Page: React.FC = () => {
     defaultValues: {
       sender: {
         name: "SPC Source Technical Services LLC",
-        address: "Office A-74, EL SHAYE - 4, Port Saeed, Dubai, UAE",
+        address: "Office A-74, EL SHAYE - 4,<br> Port Saeed, Dubai, UAE",
         state: "Dubai",
         country: "UAE",
         email: "contact@spcsource.com",
@@ -450,7 +450,7 @@ const Page: React.FC = () => {
         name: invoice.sender?.name || "SPC Source Technical Services LLC",
         address:
           invoice.sender?.address ||
-          "Office A-74, EL SHAYE - 4, Port Saeed, Dubai, UAE",
+          "Office A-74, EL SHAYE - 4,<br> Port Saeed, Dubai, UAE",
         state: invoice.sender?.state || "Dubai",
         country: invoice.sender?.country || "UAE",
         email: invoice.sender?.email || "contact@spcsource.com",

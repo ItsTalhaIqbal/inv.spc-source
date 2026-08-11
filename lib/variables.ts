@@ -118,7 +118,7 @@ export const FORM_DEFAULT_VALUES = {
     country: "UAE",
     state: "Dubai",
     email: "contact@spcsource.com",
-    address: "Office A-74, EL SHAYE - 4, Port Saeed, Dubai, UAE",
+    address: "Office A-74, EL SHAYE - 4,<br> Port Saeed, Dubai, UAE",
     phone: "+971 54 500 4520",
   },
   receiver: {

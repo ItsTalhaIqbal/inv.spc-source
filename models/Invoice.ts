@@ -73,7 +73,7 @@ const InvoiceSchema = new Schema<IInvoice>({
     name: { type: String, default: "SPC Source Technical Serivces LLC" },
     address: {
       type: String,
-      default: "Office A-74, EL SHAYE - 4, Port Saeed, Dubai, UAE",
+      default: "Office A-74, EL SHAYE - 4,<br> Port Saeed, Dubai, UAE",
     },
     state: { type: String, default: "Dubai" },
     country: { type: String, default: "UAE" },

@@ -189,7 +189,7 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
     country: "UAE",
     state: "Dubai",
     email: "contact@spcsource.com",
-    address: "Office A-74, EL SHAYE - 4, Port Saeed, Dubai, UAE",
+    address: "Office A-74, EL SHAYE - 4,<br> Port Saeed, Dubai, UAE",
     phone: "+971 54 500 4520",
   };
   const receiver = invoiceData.receiver || {
@@ -595,7 +595,7 @@ async function generatePdf(invoiceData: InvoiceType): Promise<Buffer> {
           </p>
           <p class="text-sm pt-1">${
             senderData.address ||
-            "Office A-74, EL SHAYE - 4, Port Saeed, Dubai, UAE"
+            "Office A-74, EL SHAYE - 4,<br> Port Saeed, Dubai, UAE"
           }</p>
           <p class="text-sm pt-1">TRN-105078528400003</p>
         </div>
