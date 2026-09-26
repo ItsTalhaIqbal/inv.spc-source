@@ -69,7 +69,7 @@ Follow these instructions to get Invoify up and running on your local machine.
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/al1abb/invoify.git
+   git clone https://github.com/ItsTalhaIqbal/inv.spc-source
    cd invoify
    ```
 2. Install dependencies
@@ -93,5 +93,4 @@ Follow these instructions to get Invoify up and running on your local machine.
 
 Distributed under the MIT License. See `LICENSE.txt` for more information.
 
-## Discord
-Join the Discord server [here](https://discord.gg/uhXKHbVKHZ)
+
